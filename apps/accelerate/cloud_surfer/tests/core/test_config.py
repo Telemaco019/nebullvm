@@ -5,8 +5,11 @@ from tempfile import TemporaryDirectory
 import yaml
 
 from surfer.core.config import SurferConfigManager, SurferConfig
+from surfer.storage.models import StorageConfig, StorageProvider
 
-SAMPLE_AZURE_STORAGE_SIGNED_URL = "https://sample.blob.core.windows.net/sample"
+
+class MockedStorageConfig(StorageConfig):
+    provider = StorageProvider.AZURE
 
 
 class TestSurferConfig(unittest.TestCase):
@@ -20,14 +23,14 @@ class TestSurferConfig(unittest.TestCase):
         with self.assertRaises(Exception):
             SurferConfig(
                 cluster_file=Path("/invalid/path"),
-                bucket_signed_url=SAMPLE_AZURE_STORAGE_SIGNED_URL,
+                storage=MockedStorageConfig(),
             )
 
     def test_cluster_file__path_not_a_file(self):
         with self.assertRaises(Exception):
             SurferConfig(
                 cluster_file=Path(self.tmp_dir.name),
-                bucket_signed_url=SAMPLE_AZURE_STORAGE_SIGNED_URL,
+                storage=MockedStorageConfig(),
             )
 
     def test_cluster_file__invalid_yaml(self):
@@ -37,7 +40,7 @@ class TestSurferConfig(unittest.TestCase):
         with self.assertRaises(yaml.YAMLError):
             SurferConfig(
                 cluster_file=invalid_yaml_path,
-                bucket_signed_url=SAMPLE_AZURE_STORAGE_SIGNED_URL,
+                storage=MockedStorageConfig(),
             )
 
     def test_cluster_file__valid_yaml(self):
@@ -46,7 +49,7 @@ class TestSurferConfig(unittest.TestCase):
             f.write("foo: bar")
         SurferConfig(
             cluster_file=valid_yaml_path,
-            bucket_signed_url=SAMPLE_AZURE_STORAGE_SIGNED_URL,
+            storage=MockedStorageConfig(),
         )
 
 
@@ -76,3 +79,15 @@ class TestConfigManager(unittest.TestCase):
             f.write("foo: bar")
         with self.assertRaises(Exception):
             manager.load_config()
+
+    def test_save_config(self):
+        manager = SurferConfigManager(base_path=Path(self.tmp_dir.name))
+        cluster_file_path = Path(self.tmp_dir.name, "cluster.yaml")
+        with open(cluster_file_path, "w") as f:
+            f.write("")
+        config = SurferConfig(
+            cluster_file=cluster_file_path,
+            storage=MockedStorageConfig(),
+        )
+        manager.save_config(config)
+        self.assertEqual(config, manager.load_config())

@@ -16,11 +16,17 @@ ray = "^2.3.0"
 speedster = "^0.2.1"
 rich = "^13.3.1"
 pyyaml = "^6.0"
+pydantic = "^1.10.5"
+random-word = "^1.0.11"
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
 coverage = "^7.2.1"
+
+
+[tool.poetry.group.gcp.dependencies]
+google-cloud-storage = "^2.7.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,35 +1,31 @@
-from dataclasses import dataclass, asdict
+import json
 from pathlib import Path
 from typing import Optional
 
 import yaml
+from pydantic import BaseModel
+from pydantic.class_validators import validator
+from pydantic.types import FilePath
 
 from surfer.core import constants
+from surfer.storage.models import StorageConfig
 
 
-@dataclass
-class SurferConfig:
-    cluster_file: Path
-    bucket_signed_url: str
+class SurferConfig(BaseModel):
+    cluster_file: FilePath
+    storage: StorageConfig
 
-    def __validate_cluster_file(self):
-        # Check cluster config path
-        if not self.cluster_file.exists():
-            raise FileNotFoundError(f"Ray cluster YAML config file not found: {self.cluster_file}")
-        if not self.cluster_file.is_file():
-            raise FileNotFoundError(f"{self.cluster_file} is not a file")
-        # Validate cluster config
-        with open(self.cluster_file) as f:
+    class Config:
+        extra = "forbid"
+
+    @validator("cluster_file")
+    def validate_cluster_file(cls, v):
+        with open(v) as f:
             try:
                 _ = yaml.safe_load(f.read())
             except yaml.YAMLError as e:
-                raise yaml.YAMLError(f"{self.cluster_file} is not a valid YAML: {e}")
-
-    def __post_init__(self):
-        self.__validate_cluster_file()
-
-    def dict(self):
-        return {k: str(v) for k, v in asdict(self).items()}
+                raise yaml.YAMLError(f"{v} is not a valid YAML: {e}")
+        return v
 
 
 class SurferConfigManager:
@@ -47,7 +43,8 @@ class SurferConfigManager:
         # Create config file
         self.config_file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.config_file_path, "w") as f:
-            f.write(yaml.dump(config.dict()))
+            config_dict = json.loads(config.json())
+            f.write(yaml.dump(config_dict))
 
     def load_config(self) -> Optional[SurferConfig]:
         if not self.config_exists():
@@ -55,6 +52,6 @@ class SurferConfigManager:
         try:
             with open(self.config_file_path) as f:
                 config_dict = yaml.safe_load(f.read())
-                return SurferConfig(cluster_file=Path(config_dict["cluster_file"]))
+                return SurferConfig(**config_dict)
         except Exception as e:
             raise Exception(f"Error parsing CloudSurfer config at {self.config_file_path}: {e}")
