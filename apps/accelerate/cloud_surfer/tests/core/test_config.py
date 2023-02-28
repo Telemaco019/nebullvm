@@ -6,6 +6,8 @@ import yaml
 
 from surfer.core.config import SurferConfigManager, SurferConfig
 
+SAMPLE_AZURE_STORAGE_SIGNED_URL = "https://sample.blob.core.windows.net/sample"
+
 
 class TestSurferConfig(unittest.TestCase):
     def setUp(self) -> None:
@@ -16,24 +18,36 @@ class TestSurferConfig(unittest.TestCase):
 
     def test_cluster_file__path_not_exist(self):
         with self.assertRaises(Exception):
-            SurferConfig(cluster_file=Path("/invalid/path"))
+            SurferConfig(
+                cluster_file=Path("/invalid/path"),
+                bucket_signed_url=SAMPLE_AZURE_STORAGE_SIGNED_URL,
+            )
 
     def test_cluster_file__path_not_a_file(self):
         with self.assertRaises(Exception):
-            SurferConfig(cluster_file=Path(self.tmp_dir.name))
+            SurferConfig(
+                cluster_file=Path(self.tmp_dir.name),
+                bucket_signed_url=SAMPLE_AZURE_STORAGE_SIGNED_URL,
+            )
 
     def test_cluster_file__invalid_yaml(self):
         invalid_yaml_path = Path(self.tmp_dir.name) / "invalid.yaml"
         with open(invalid_yaml_path, "w") as f:
             f.write("{")
         with self.assertRaises(yaml.YAMLError):
-            SurferConfig(cluster_file=invalid_yaml_path)
+            SurferConfig(
+                cluster_file=invalid_yaml_path,
+                bucket_signed_url=SAMPLE_AZURE_STORAGE_SIGNED_URL,
+            )
 
     def test_cluster_file__valid_yaml(self):
         valid_yaml_path = Path(self.tmp_dir.name) / "valid.yaml"
         with open(valid_yaml_path, "w") as f:
             f.write("foo: bar")
-        SurferConfig(cluster_file=valid_yaml_path)
+        SurferConfig(
+            cluster_file=valid_yaml_path,
+            bucket_signed_url=SAMPLE_AZURE_STORAGE_SIGNED_URL,
+        )
 
 
 class TestConfigManager(unittest.TestCase):
