@@ -13,10 +13,11 @@ app = typer.Typer()
 )
 def list_experiments(
         cluster_config: Path = typer.Argument(
-            lambda: util.must_get_cluster_config(),
+            lambda: util.must_get_cluster_file(),
             hidden=True,
         )
 ):
+
     print(cluster_config)
 
 
