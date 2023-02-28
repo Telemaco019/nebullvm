@@ -1,12 +1,12 @@
 from pathlib import Path
 
 import typer as typer
-from rich.prompt import Confirm
+from rich.prompt import Confirm, Prompt
 
 from surfer.cli.experiments import app as experiment_app
-from surfer.core import storage
 from surfer.core.config import SurferConfigManager, SurferConfig
 from surfer.log import logger
+from surfer.storage.models import StorageProvider, StorageConfig
 
 app = typer.Typer(no_args_is_help=True)
 app.add_typer(
@@ -17,11 +17,31 @@ app.add_typer(
 )
 
 
-def _validate_signed_url(url: str):
+def _new_azure_storage_config() -> StorageConfig:
     try:
-        storage.SignedURL(url)
-    except Exception as e:
-        raise typer.BadParameter(str(e))
+        from surfer.storage import azure
+        sas_url = azure.URLPrompt.ask("Please enter a Storage Container SAS URL")
+        return azure.AzureStorageConfig(sas_url=sas_url)
+    except ImportError as e:
+        raise ImportError(f'{e} - Please install "surfer[azure]" it to use Azure as storage provider')
+
+
+def _new_gcp_storage_config() -> StorageConfig:
+    try:
+        from surfer.storage import gcp
+        bucket = Prompt.ask("Insert bucket name")
+        project = Prompt.ask("Insert project name")
+        return gcp.GCPStorageConfig(bucket=bucket, project=project)
+    except ImportError as e:
+        raise ImportError(f'{e} - Please install "surfer[gcp]" it to use GCP as storage provider')
+
+
+def _new_aws_storage_config():
+    try:
+        from surfer.storage import aws
+        raise NotImplementedError("AWS storage is not yet implemented")
+    except ImportError as e:
+        raise ImportError(f'{e} - Please install "surfer[aws]" it to use AWS as storage provider')
 
 
 @app.command(
@@ -36,13 +56,22 @@ def init(
             exists=True,
             dir_okay=False,
         ),
-        bucket_signed_url: str = typer.Option(
+        storage_provider: StorageProvider = typer.Option(
             ...,
-            help="The signed URL to the cloud bucket where the experiment data and optimized models will be stored",
-            prompt=True,
-            callback=_validate_signed_url,
+            metavar="storage-provider",
+            help="The cloud storage provider used for storing experiment data and optimized models",
         ),
 ):
+    # Init storage config
+    storage_config = None
+    if storage_provider is StorageProvider.AZURE:
+        storage_config = _new_azure_storage_config()
+    if storage_provider is StorageProvider.AWS:
+        storage_config = _new_aws_storage_config()
+    if storage_provider is StorageProvider.GCP:
+        storage_config = _new_gcp_storage_config()
+
+    # Save config
     config_manager = SurferConfigManager()
     write_config = True
     if config_manager.config_exists():
@@ -54,7 +83,7 @@ def init(
     if write_config:
         config = SurferConfig(
             cluster_file=cluster_file,
-            bucket_signed_url=bucket_signed_url,
+            storage=storage_config,
         )
         config_manager.save_config(config)
         logger.info("Cloud Surfer configuration initialized", config_manager.load_config())
