@@ -18,9 +18,10 @@ class GCPStorageConfig(StorageConfig):
 
 
 class GCSBucketClient(StorageClient):
+
     def __init__(self, config: GCPStorageConfig):
-        gcs_client = storage.Client(project=config.project)
-        self.bucket = storage.Bucket(gcs_client, config.bucket)
+        self.gcs_client = storage.Client(project=config.project)
+        self.bucket = storage.Bucket(self.gcs_client, config.bucket)
 
     @staticmethod
     async def _async_upload_from_from_string(blob: Blob, content: str):
@@ -52,10 +53,10 @@ class GCSBucketClient(StorageClient):
     async def upload(self, source: Path, dest: Path, exclude_globs: List[str] = None) -> Path:
         if source.is_dir():
             await self._upload_dir(source, dest, exclude_globs)
-            return Path(self.bucket.name, dest, source.name)
+            return Path(dest, source.name)
         elif source.is_file():
             await self._upload_file(source, dest)
-            return Path(self.bucket.name, dest, source.name)
+            return Path(dest, source.name)
         else:
             raise ValueError(f"Source path must either link a File or a Directory, got {source}")
 
@@ -74,3 +75,13 @@ class GCSBucketClient(StorageClient):
         blob = self.bucket.blob(dest.as_posix())
         logger.debug(f"uploading content to {dest}")
         await self._async_upload_from_from_string(blob, content)
+
+    async def list(self, prefix: Optional[str] = None) -> List[Path]:
+        def _list_blobs():
+            res = []
+            for blob in self.gcs_client.list_blobs(bucket_or_name=self.bucket, prefix=prefix or ""):
+                res.append(blob.name)
+            return res
+
+        blob_names = await asyncio.get_running_loop().run_in_executor(None, _list_blobs)
+        return [Path(n) for n in blob_names]

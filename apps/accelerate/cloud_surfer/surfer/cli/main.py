@@ -4,6 +4,7 @@ import typer as typer
 from rich.prompt import Confirm, Prompt
 
 from surfer.cli.experiments import app as experiment_app
+from surfer.core import constants
 from surfer.core.config import SurferConfigManager, SurferConfig
 from surfer.log import logger
 from surfer.storage.models import StorageProvider, StorageConfig
@@ -61,6 +62,11 @@ def init(
             metavar="storage-provider",
             help="The cloud storage provider used for storing experiment data and optimized models",
         ),
+        ray_address: str = typer.Option(
+            constants.DEFAULT_RAY_ADDRESS,
+            metavar="ray-address",
+            help="Address of the head node of the Ray cluster",
+        ),
 ):
     # Init storage config
     storage_config = None
@@ -84,6 +90,7 @@ def init(
         config = SurferConfig(
             cluster_file=cluster_file,
             storage=storage_config,
+            ray_address=ray_address,
         )
         config_manager.save_config(config)
         logger.info("Cloud Surfer configuration initialized", config_manager.load_config())

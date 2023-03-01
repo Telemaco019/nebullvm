@@ -45,6 +45,7 @@ class AzureStorageConfig(StorageConfig):
 
 
 class BlobStorageClient(StorageClient):
+
     def __init__(self, config: AzureStorageConfig):
         self.config = config
 
@@ -55,4 +56,7 @@ class BlobStorageClient(StorageClient):
         pass
 
     async def upload(self, source: Path, dest: Path, exclude_glob: Optional[str] = None):
+        pass
+
+    async def list(self, glob: str) -> List[Path]:
         pass
