@@ -15,23 +15,17 @@ app = typer.Typer()
 config_manager = SurferConfigManager()
 
 
-def _must_get_config() -> SurferConfig:
+def _must_load_config() -> SurferConfig:
     config = config_manager.load_config()
     if config is None:
         logger.error("Cloud Surfer is not initialized. Please run `surfer init` first.")
         raise typer.Exit(1)
-    # if not config.cluster_file.exists():
-    #     logger.error(
-    #         f"Surfer configuration refers to a non-existent cluster file: {config.cluster_file}."
-    #         "\nPlease run `surfer init` to re-initialize the configuration."
-    #     )
-    #     raise typer.Exit(1)
     return config
 
 
 async def _list_experiments():
     # Init services
-    config = _must_get_config()
+    config = _must_load_config()
     experiment_service = services.Factory.new_experiment_service(config)
 
     # List experiments
@@ -65,7 +59,7 @@ def submit_experiment():
 
 async def _stop_experiment(name: str):
     # Init services
-    config = _must_get_config()
+    config = _must_load_config()
     experiment_service = services.Factory.new_experiment_service(config)
 
     # Stop experiment
@@ -97,7 +91,7 @@ def stop_experiment(
 
 async def _describe_experiment(name: str):
     # Init services
-    config = _must_get_config()
+    config = _must_load_config()
     experiment_service = services.Factory.new_experiment_service(config)
 
     # Fetch experiment
