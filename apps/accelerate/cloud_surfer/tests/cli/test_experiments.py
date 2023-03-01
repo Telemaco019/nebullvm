@@ -6,7 +6,7 @@ from unittest.mock import patch
 import typer
 from typer.testing import CliRunner
 
-from surfer.cli.experiments import app, _must_get_config
+from surfer.cli.experiments import app, _must_load_config
 from surfer.core import exceptions
 from surfer.core.config import SurferConfigManager, SurferConfig
 from surfer.core.services import ExperimentService
@@ -20,7 +20,7 @@ class TestMustGetConfig(unittest.TestCase):
     def test_config_not_found(self, load_config_mock):
         load_config_mock.return_value = None
         with self.assertRaises(typer.Exit):
-            _must_get_config()
+            _must_load_config()
 
     @patch.object(SurferConfigManager, "load_config")
     def test_config_found(self, load_config_mock):
@@ -31,7 +31,7 @@ class TestMustGetConfig(unittest.TestCase):
                 storage=MockedStorageConfig(),
             )
             load_config_mock.return_value = config
-            self.assertEqual(config, _must_get_config())
+            self.assertEqual(config, _must_load_config())
 
 
 @patch.object(SurferConfigManager, "load_config")
