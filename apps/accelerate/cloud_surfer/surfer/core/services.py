@@ -10,7 +10,6 @@ from ray.job_submission import JobSubmissionClient
 from surfer.core import constants
 from surfer.core.models import SubmitExperimentRequest, ExperimentSummary, ExperimentDetails, ExperimentStatus
 from surfer.core.schemas import SurferConfig
-from surfer.log import logger
 from surfer.storage.clients import StorageClient
 
 
@@ -52,14 +51,23 @@ class ExperimentService:
         pass
 
     async def list(self) -> List[ExperimentSummary]:
+        """List all experiments
+
+        List all the available experiments for which there is any data saved in the storage.
+
+        Returns
+        -------
+        List[ExperimentSummary]
+            Summary containing essential information of each available experiment
+        """
         # Fetch experiments data from storage
-        paths = await self.storage_client.list(f"{constants.EXPERIMENTS_STORAGE_PREFIX}/*")
+        paths = await self.storage_client.list(f"{constants.EXPERIMENTS_STORAGE_PREFIX}/")
         summaries = []
         for path in paths:
             try:
                 summaries.append(ExperimentSummary.from_path(path))
-            except ValueError:
-                logger.warn(f"Found invalid path in experiments storage: {path}")
+            except Exception:
+                pass
         # No experiment data is found, we are done
         if len(summaries) == 0:
             return summaries

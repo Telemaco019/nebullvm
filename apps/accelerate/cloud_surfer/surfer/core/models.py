@@ -41,7 +41,7 @@ class ExperimentSummary:
             ValueError: If the format of the Path is not valid.
         """
         relative_path = path.relative_to(constants.EXPERIMENTS_STORAGE_PREFIX)
-        created_at = datetime.strptime(relative_path.parts[0], constants.DATETIME_FORMAT)
+        created_at = datetime.strptime(relative_path.parts[0], constants.INTERNAL_DATETIME_FORMAT)
         name = relative_path.parts[1]
         return cls(name=name, created_at=created_at)  # type: ignore
 
@@ -49,7 +49,7 @@ class ExperimentSummary:
         """Return the path to the experiment data on a cloud storage."""
         return Path(
             constants.EXPERIMENTS_STORAGE_PREFIX,
-            self.created_at.strftime(constants.DATETIME_FORMAT),
+            self.created_at.strftime(constants.INTERNAL_DATETIME_FORMAT),
             self.name,
         )
 

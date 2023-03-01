@@ -27,4 +27,4 @@ def load_module(module_path: pathlib.Path) -> ModuleType:
 
 
 def format_datetime(dt: datetime) -> str:
-    return dt.strftime(constants.DATETIME_FORMAT)
+    return dt.strftime(constants.INTERNAL_DATETIME_FORMAT)
