@@ -36,3 +36,8 @@ class ExperimentSummary:
     name: str
     status: ExperimentStatus
     created_at: datetime.datetime
+
+
+@dataclass
+class ExperimentDetails:
+    pass
