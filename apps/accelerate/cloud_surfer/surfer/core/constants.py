@@ -9,3 +9,5 @@ SURFER_CONFIG_FILE_NAME = "config.yaml"
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 EXPERIMENTS_STORAGE_PREFIX = "nebuly/surfer/experiments"
+
+JOB_METADATA_EXPERIMENT_NAME = "experiment_name"

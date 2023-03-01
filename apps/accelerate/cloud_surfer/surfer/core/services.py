@@ -1,12 +1,14 @@
+import asyncio
 import json
 from pathlib import Path
 from typing import List, Optional
 
 import yaml
+from ray.job_submission import JobDetails, JobStatus
 from ray.job_submission import JobSubmissionClient
 
 from surfer.core import constants
-from surfer.core.models import SubmitExperimentRequest, ExperimentSummary, ExperimentDetails
+from surfer.core.models import SubmitExperimentRequest, ExperimentSummary, ExperimentDetails, ExperimentStatus
 from surfer.core.schemas import SurferConfig
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
@@ -16,6 +18,29 @@ class ExperimentService:
     def __init__(self, storage_client: StorageClient, job_client: JobSubmissionClient):
         self.storage_client = storage_client
         self.job_client = job_client
+
+    @staticmethod
+    def _filter_experiment_jobs(jobs: List[JobDetails], experiment_name: str) -> List[JobDetails]:
+        return [j for j in jobs if experiment_name == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)]
+
+    @staticmethod
+    def _get_experiment_status(jobs: List[JobDetails]) -> ExperimentStatus:
+        if len(jobs) == 0:
+            return ExperimentStatus.UNKNOWN
+        # If any job is running, the experiment is running
+        if any([j.status is JobStatus.RUNNING for j in jobs]):
+            return ExperimentStatus.RUNNING
+        # If any job is pending, the experiment is pending
+        if any([j.status is JobStatus.PENDING for j in jobs]):
+            return ExperimentStatus.PENDING
+        # If all jobs are succeeded, the experiment is succeeded
+        if all([j.status is JobStatus.SUCCEEDED for j in jobs]):
+            return ExperimentStatus.SUCCEEDED
+        # If any job is failed, the experiment is failed
+        if any([j.status is JobStatus.FAILED for j in jobs]):
+            return ExperimentStatus.FAILED
+        # Default - the experiment status is unknown
+        return ExperimentStatus.UNKNOWN
 
     async def submit(self, req: SubmitExperimentRequest):
         pass
@@ -35,10 +60,14 @@ class ExperimentService:
                 summaries.append(ExperimentSummary.from_path(path))
             except ValueError:
                 logger.warn(f"Found invalid path in experiments storage: {path}")
-        # Fetch experiment running status TODO
-        # client = JobSubmissionClient("http://127.0.0.1:8265")
-        # for j in client.list_jobs():
-        #     j.status
+        # No experiment data is found, we are done
+        if len(summaries) == 0:
+            return summaries
+        # Fetch experiments status and update summaries
+        jobs = await asyncio.get_event_loop().run_in_executor(None, self.job_client.list_jobs)
+        for summary in summaries:
+            experiment_jobs = self._filter_experiment_jobs(jobs, summary.name)
+            summary.status = self._get_experiment_status(experiment_jobs)
         return summaries
 
     async def get(self, experiment_name: str) -> Optional[ExperimentDetails]:

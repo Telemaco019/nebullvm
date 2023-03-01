@@ -12,7 +12,7 @@ from surfer.core.schemas import ExperimentConfig
 class ExperimentStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
-    COMPLETED = "completed"
+    SUCCEEDED = "completed"
     FAILED = "failed"
     UNKNOWN = "unknown"
 
@@ -44,6 +44,14 @@ class ExperimentSummary:
         created_at = datetime.strptime(relative_path.parts[0], constants.DATETIME_FORMAT)
         name = relative_path.parts[1]
         return cls(name=name, created_at=created_at)  # type: ignore
+
+    def get_path(self) -> Path:
+        """Return the path to the experiment data on a cloud storage."""
+        return Path(
+            constants.EXPERIMENTS_STORAGE_PREFIX,
+            self.created_at.strftime(constants.DATETIME_FORMAT),
+            self.name,
+        )
 
 
 @dataclass
