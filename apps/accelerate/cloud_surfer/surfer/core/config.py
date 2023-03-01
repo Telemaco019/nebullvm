@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 from pydantic import BaseModel
@@ -8,15 +8,18 @@ from pydantic.class_validators import validator
 from pydantic.types import FilePath
 
 from surfer.core import constants
-from surfer.storage.models import StorageConfig
+from surfer.storage.aws import AWSStorageConfig
+from surfer.storage.azure import AzureStorageConfig
+from surfer.storage.gcp import GCPStorageConfig
 
 
 class SurferConfig(BaseModel):
     cluster_file: FilePath
-    storage: StorageConfig
+    storage: Union[AzureStorageConfig, GCPStorageConfig, AWSStorageConfig]
 
     class Config:
         extra = "forbid"
+        frozen = True
 
     @validator("cluster_file")
     def validate_cluster_file(cls, v):
@@ -52,6 +55,6 @@ class SurferConfigManager:
         try:
             with open(self.config_file_path) as f:
                 config_dict = yaml.safe_load(f.read())
-                return SurferConfig(**config_dict)
+                return SurferConfig.parse_obj(config_dict)
         except Exception as e:
             raise Exception(f"Error parsing CloudSurfer config at {self.config_file_path}: {e}")

@@ -5,6 +5,9 @@ from tempfile import TemporaryDirectory
 import yaml
 
 from surfer.core.config import SurferConfigManager, SurferConfig
+from surfer.storage.aws import AWSStorageConfig
+from surfer.storage.azure import AzureStorageConfig
+from surfer.storage.gcp import GCPStorageConfig
 from surfer.storage.models import StorageConfig, StorageProvider
 
 
@@ -87,7 +90,34 @@ class TestConfigManager(unittest.TestCase):
             f.write("")
         config = SurferConfig(
             cluster_file=cluster_file_path,
-            storage=MockedStorageConfig(),
+            storage=AzureStorageConfig(sas_url="https://myaccount.blob.core.windows.net/pictures"),
         )
         manager.save_config(config)
         self.assertEqual(config, manager.load_config())
+
+    def test_save_config__storage_serialization(self):
+        # Init config file
+        manager = SurferConfigManager(base_path=Path(self.tmp_dir.name))
+        cluster_file_path = Path(self.tmp_dir.name, "cluster.yaml")
+        with open(cluster_file_path, "w") as f:
+            f.write("")
+        # Available storage configs
+        storage_configs = [
+            AzureStorageConfig(
+                sas_url="https://myaccount.blob.core.windows.net/pictures",
+            ),
+            GCPStorageConfig(
+                project="my-project",
+                bucket="my-bucket",
+            ),
+            AWSStorageConfig()
+        ]
+        # For each storage config, test whether it gets serialized/deserialized correctly
+        for c in storage_configs:
+            surfer_config = SurferConfig(
+                cluster_file=cluster_file_path,
+                storage=c,
+            )
+            manager.save_config(surfer_config)
+            loaded_config = manager.load_config()
+            self.assertEqual(c, loaded_config.storage)
