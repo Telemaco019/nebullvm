@@ -6,8 +6,9 @@ from rich.table import Table
 
 from surfer.core import services
 from surfer.core import util
-from surfer.core.config import SurferConfig, SurferConfigManager
 from surfer.core.exceptions import NotFoundError
+from surfer.core.schemas import SurferConfig
+from surfer.core.services import SurferConfigManager
 from surfer.log import logger
 
 app = typer.Typer()

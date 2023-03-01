@@ -8,8 +8,9 @@ from typer.testing import CliRunner
 
 from surfer.cli.experiments import app, _must_load_config
 from surfer.core import exceptions, services
-from surfer.core.config import SurferConfigManager, SurferConfig
-from tests.core.test_config import MockedStorageConfig
+from surfer.core.schemas import SurferConfig
+from surfer.core.services import SurferConfigManager
+from tests.core.test_services import MockedStorageConfig
 
 runner = CliRunner()
 

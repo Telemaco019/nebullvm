@@ -1,10 +1,13 @@
+import json
+from pathlib import Path
 from typing import List, Optional
 
+import yaml
 from ray.job_submission import JobSubmissionClient
 
 from surfer.core import constants
-from surfer.core.config import SurferConfig
 from surfer.core.models import SubmitExperimentRequest, ExperimentSummary, ExperimentDetails
+from surfer.core.schemas import SurferConfig
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
 
@@ -48,3 +51,32 @@ class Factory:
         storage_client = StorageClient.from_config(config.storage)
         job_client = JobSubmissionClient(address=config.ray_address)
         return ExperimentService(storage_client=storage_client, job_client=job_client)
+
+
+class SurferConfigManager:
+    def __init__(
+            self,
+            base_path: Path = constants.SURFER_CONFIG_BASE_DIR_PATH,
+            config_file_name=constants.SURFER_CONFIG_FILE_NAME,
+    ):
+        self.config_file_path = base_path / config_file_name
+
+    def config_exists(self) -> bool:
+        return self.config_file_path.exists()
+
+    def save_config(self, config: SurferConfig):
+        # Create config file
+        self.config_file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.config_file_path, "w") as f:
+            config_dict = json.loads(config.json())
+            f.write(yaml.dump(config_dict))
+
+    def load_config(self) -> Optional[SurferConfig]:
+        if not self.config_exists():
+            return None
+        try:
+            with open(self.config_file_path) as f:
+                config_dict = yaml.safe_load(f.read())
+                return SurferConfig.parse_obj(config_dict)
+        except Exception as e:
+            raise Exception(f"Error parsing CloudSurfer config at {self.config_file_path}: {e}")
