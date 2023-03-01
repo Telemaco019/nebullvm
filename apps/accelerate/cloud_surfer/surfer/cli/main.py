@@ -5,7 +5,8 @@ from rich.prompt import Confirm, Prompt
 
 from surfer.cli.experiments import app as experiment_app
 from surfer.core import constants
-from surfer.core.config import SurferConfigManager, SurferConfig
+from surfer.core.schemas import SurferConfig
+from surfer.core.services import SurferConfigManager
 from surfer.log import logger
 from surfer.storage.models import StorageProvider, StorageConfig
 

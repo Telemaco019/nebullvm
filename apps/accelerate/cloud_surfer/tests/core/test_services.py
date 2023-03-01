@@ -2,58 +2,12 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import yaml
-
-from surfer.core.config import SurferConfigManager, SurferConfig
+from surfer.core.schemas import SurferConfig
+from surfer.core.services import SurferConfigManager
 from surfer.storage.aws import AWSStorageConfig
 from surfer.storage.azure import AzureStorageConfig
 from surfer.storage.gcp import GCPStorageConfig
 from surfer.storage.models import StorageConfig, StorageProvider
-
-
-class MockedStorageConfig(StorageConfig):
-    provider = StorageProvider.AZURE
-
-
-class TestSurferConfig(unittest.TestCase):
-    def setUp(self) -> None:
-        self.tmp_dir = TemporaryDirectory()
-
-    def tearDown(self) -> None:
-        self.tmp_dir.cleanup()
-
-    def test_cluster_file__path_not_exist(self):
-        with self.assertRaises(Exception):
-            SurferConfig(
-                cluster_file=Path("/invalid/path/cluster.yaml"),
-                storage=MockedStorageConfig(),
-            )
-
-    def test_cluster_file__path_not_a_file(self):
-        with self.assertRaises(Exception):
-            SurferConfig(
-                cluster_file=Path(self.tmp_dir.name),
-                storage=MockedStorageConfig(),
-            )
-
-    def test_cluster_file__invalid_yaml(self):
-        invalid_yaml_path = Path(self.tmp_dir.name) / "invalid.yaml"
-        with open(invalid_yaml_path, "w") as f:
-            f.write("{")
-        with self.assertRaises(yaml.YAMLError):
-            SurferConfig(
-                cluster_file=invalid_yaml_path,
-                storage=MockedStorageConfig(),
-            )
-
-    def test_cluster_file__valid_yaml(self):
-        valid_yaml_path = Path(self.tmp_dir.name) / "valid.yaml"
-        with open(valid_yaml_path, "w") as f:
-            f.write("foo: bar")
-        SurferConfig(
-            cluster_file=valid_yaml_path,
-            storage=MockedStorageConfig(),
-        )
 
 
 class TestConfigManager(unittest.TestCase):
@@ -93,7 +47,7 @@ class TestConfigManager(unittest.TestCase):
             storage=AzureStorageConfig(sas_url="https://myaccount.blob.core.windows.net/pictures"),
         )
         manager.save_config(config)
-        self.assertEqual(config, manager.load_config())
+        self.assertEqual(config.json(), manager.load_config().json())
 
     def test_save_config__storage_serialization(self):
         # Init config file
@@ -121,3 +75,7 @@ class TestConfigManager(unittest.TestCase):
             manager.save_config(surfer_config)
             loaded_config = manager.load_config()
             self.assertEqual(c, loaded_config.storage)
+
+
+class MockedStorageConfig(StorageConfig):
+    provider = StorageProvider.AZURE
