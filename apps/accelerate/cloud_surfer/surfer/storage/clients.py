@@ -8,15 +8,16 @@ from surfer.storage.models import StorageProvider
 class StorageClient(abc.ABC):
     @staticmethod
     def from_config(config):
-        if config.provider is StorageProvider.GCP:
+        if config.provider == StorageProvider.GCP.value:
             from surfer.storage import gcp
             return gcp.GCSBucketClient(config)
-        if config.provider is StorageProvider.AWS:
+        if config.provider == StorageProvider.AWS.value:
             from surfer.storage import aws
             return aws.S3Client(config)
-        if config.provider is StorageProvider.AZURE:
+        if config.provider == StorageProvider.AZURE.value:
             from surfer.storage import azure
             return azure.BlobStorageClient(config)
+        raise ValueError(f"Unknown storage provider: {config.provider}")
 
     @abc.abstractmethod
     async def upload(self, source: Path, dest: Path, exclude_glob: Optional[str] = None):
@@ -53,5 +54,22 @@ class StorageClient(abc.ABC):
         otherwise "dest" is used as prefix for the uploaded file names.
 
         There can be multiple upload_many(...) coroutines running concurrently at the same time.
+        """
+        pass
+
+    @abc.abstractmethod
+    async def list(self, prefix: Optional[str]) -> List[Path]:
+        """List all the files in the storage
+
+        Parameters
+        ----------
+        prefix: Optional[str]
+            The prefix used to filter the returned files. If provided, only files whose name starts with the
+            prefix are returned.
+
+        Returns
+        -------
+        List[Path]
+            The paths to the files matching the provided prefix pattern
         """
         pass

@@ -5,6 +5,8 @@ from typing import Optional, Union
 import yaml
 from pydantic import BaseModel
 from pydantic.class_validators import validator
+from pydantic.fields import Field
+from pydantic.networks import AnyUrl
 from pydantic.types import FilePath
 
 from surfer.core import constants
@@ -14,12 +16,28 @@ from surfer.storage.gcp import GCPStorageConfig
 
 
 class SurferConfig(BaseModel):
-    cluster_file: FilePath
+    """
+    CloudSurfer configuration.
+
+    Attributes
+    ----------
+    cluster_file: Path
+        Path to the Ray cluster YAML file
     storage: Union[AzureStorageConfig, GCPStorageConfig, AWSStorageConfig]
+        Storage configuration
+    ray_address: str
+        Address of the head node of the Ray cluster
+    """
+    cluster_file: FilePath = Field()
+    storage: Union[AzureStorageConfig, GCPStorageConfig, AWSStorageConfig]
+    ray_address: AnyUrl = constants.DEFAULT_RAY_ADDRESS
 
     class Config:
         extra = "forbid"
         frozen = True
+        json_encoders = {
+            Path: lambda v: v.resolve().as_posix(),
+        }
 
     @validator("cluster_file")
     def validate_cluster_file(cls, v):
