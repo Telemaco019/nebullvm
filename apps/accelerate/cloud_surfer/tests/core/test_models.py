@@ -17,7 +17,7 @@ class TestExperimentSummary(unittest.TestCase):
 
     def test_from_path__valid_path(self):
         experiment_name = "test"
-        creation_date = datetime.datetime.now().strftime(constants.DATETIME_FORMAT)
+        creation_date = datetime.datetime.now().strftime(constants.INTERNAL_DATETIME_FORMAT)
         path = Path(
             constants.EXPERIMENTS_STORAGE_PREFIX,
             creation_date,
@@ -25,5 +25,5 @@ class TestExperimentSummary(unittest.TestCase):
         )
         summary = models.ExperimentSummary.from_path(path)
         self.assertEqual(experiment_name, summary.name)
-        self.assertEqual(creation_date, summary.created_at.strftime(constants.DATETIME_FORMAT))
+        self.assertEqual(creation_date, summary.created_at.strftime(constants.INTERNAL_DATETIME_FORMAT))
         self.assertEqual(ExperimentStatus.UNKNOWN, summary.status)

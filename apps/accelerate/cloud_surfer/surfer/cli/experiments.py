@@ -4,8 +4,7 @@ import typer
 from rich import print
 from rich.table import Table
 
-from surfer.core import services
-from surfer.core import util
+from surfer.core import services, constants
 from surfer.core.exceptions import NotFoundError
 from surfer.core.schemas import SurferConfig
 from surfer.core.services import SurferConfigManager
@@ -38,7 +37,7 @@ async def _list_experiments():
     table.add_column("Status", header_style="cyan")
     table.add_column("Created at", header_style="cyan")
     for e in experiments:
-        table.add_row(e.name, e.status, util.format_datetime(e.created_at))
+        table.add_row(e.name, e.status, e.created_at.strftime(constants.UI_DATETIME_FORMAT))
     print(table)
 
 
