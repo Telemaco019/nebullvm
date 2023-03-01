@@ -25,7 +25,7 @@ class TestSurferConfig(unittest.TestCase):
     def test_cluster_file__path_not_exist(self):
         with self.assertRaises(Exception):
             SurferConfig(
-                cluster_file=Path("/invalid/path"),
+                cluster_file=Path("/invalid/path/cluster.yaml"),
                 storage=MockedStorageConfig(),
             )
 
