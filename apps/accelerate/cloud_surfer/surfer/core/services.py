@@ -117,6 +117,23 @@ class ExperimentService:
             raise InternalError(f"Failed to parse experiment result: {e}")
 
     async def get(self, experiment_name: str) -> Optional[ExperimentDetails]:
+        """
+
+        Parameters
+        ----------
+        experiment_name: str
+            Name of the experiment to fetch
+
+        Raises
+        ------
+        InternalError
+            If the experiment results are found but failed to parse
+
+        Returns
+        -------
+        Optional[ExperimentDetails]
+            Experiment details if found, None otherwise
+        """
         # Get experiment path
         paths = await self._get_experiment_paths(experiment_name)
         if len(paths) == 0:
@@ -164,9 +181,9 @@ class Factory:
 
 class SurferConfigManager:
     def __init__(
-            self,
-            base_path: Path = constants.SURFER_CONFIG_BASE_DIR_PATH,
-            config_file_name=constants.SURFER_CONFIG_FILE_NAME,
+        self,
+        base_path: Path = constants.SURFER_CONFIG_BASE_DIR_PATH,
+        config_file_name=constants.SURFER_CONFIG_FILE_NAME,
     ):
         self.config_file_path = base_path / config_file_name
 

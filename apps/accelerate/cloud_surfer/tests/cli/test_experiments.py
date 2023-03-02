@@ -37,7 +37,7 @@ class TestMustGetConfig(unittest.TestCase):
             self.assertEqual(config, _must_load_config())
 
 
-@patch.object(services.Factory, "new_experiment_service", return_value=AsyncMock())
+@patch.object(services.Factory, "new_experiment_service")
 @patch.object(SurferConfigManager, "load_config")
 class TestExperimentCli(unittest.TestCase):
     def setUp(self) -> None:
@@ -58,11 +58,13 @@ class TestExperimentCli(unittest.TestCase):
     def test_list_experiments__empty_list(
         self,
         load_config_mock,
-        new_experiment_service_mock,
+        factory,
         *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
-        new_experiment_service_mock().list.return_value = []
+        service_mock = AsyncMock()
+        service_mock.list.return_value = []
+        factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, "list")
         self.assertEqual(0, result.exit_code)
@@ -70,11 +72,13 @@ class TestExperimentCli(unittest.TestCase):
     def test_describe_experiment__not_found(
         self,
         load_config_mock,
-        new_experiment_service_mock,
+        factory,
         *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
-        new_experiment_service_mock().get.return_value = None
+        service_mock = AsyncMock()
+        service_mock.get.return_value = None
+        factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["describe", "test"])
         self.assertEqual(1, result.exit_code)
@@ -82,11 +86,13 @@ class TestExperimentCli(unittest.TestCase):
     def test_describe_experiment__no_results(
         self,
         load_config_mock,
-        new_experiment_service_mock,
+        factory,
         *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
-        new_experiment_service_mock().get.return_value = ExperimentDetails(
+
+        service_mock = AsyncMock()
+        service_mock.get.return_value = ExperimentDetails(
             summary=ExperimentSummary(
                 name="test",
                 created_at=datetime.datetime.now(),
@@ -95,18 +101,33 @@ class TestExperimentCli(unittest.TestCase):
             jobs=[],
             result=None,
         )
+        factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["describe", "test"])
         self.assertEqual(0, result.exit_code)
 
+    def test_describe_experiment__internal_error(
+        self,
+        _,
+        factory,
+        *__,
+    ):
+        service_mock = AsyncMock()
+        service_mock.get.side_effect = exceptions.InternalError
+        factory.return_value = service_mock
+        # Run command
+        result = runner.invoke(app, ["describe", "test"])
+        self.assertEqual(1, result.exit_code)
+
     def test_describe_experiment(
         self,
         load_config_mock,
-        new_experiment_service_mock,
+        factory,
         *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
-        new_experiment_service_mock().get.return_value = ExperimentDetails(
+        service_mock = AsyncMock()
+        service_mock.get.return_value = ExperimentDetails(
             summary=ExperimentSummary(
                 name="test",
                 created_at=datetime.datetime.now(),
@@ -124,30 +145,89 @@ class TestExperimentCli(unittest.TestCase):
             ],
             result=None,
         )
+        factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["describe", "test"])
         self.assertEqual(0, result.exit_code)
 
-    def test_stop_experiment__not_found(
+    def test_stop_experiment__should_abort_without_confirm(
         self,
         load_config_mock,
-        new_experiment_service_mock,
+        factory,
         *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
-        new_experiment_service_mock().stop.side_effect = exceptions.NotFoundError
+        service_mock = AsyncMock()
+        service_mock.stop.side_effect = exceptions.NotFoundError
+        factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["stop", "test"])
+        self.assertEqual(1, result.exit_code)
+
+    def test_stop_experiment__not_found(
+        self,
+        load_config_mock,
+        factory,
+        *_,
+    ):
+        load_config_mock.return_value = self._new_mocked_config()
+        service_mock = AsyncMock()
+        service_mock.stop.side_effect = exceptions.NotFoundError
+        factory.return_value = service_mock
+        # Run command
+        result = runner.invoke(app, ["stop", "test"], input="y")
+        self.assertEqual(1, result.exit_code)
+
+    def test_stop_experiment__internal_error(
+        self,
+        _,
+        factory,
+        *__,
+    ):
+        service_mock = AsyncMock()
+        service_mock.stop.side_effect = exceptions.InternalError
+        factory.return_value = service_mock
+        # Run command
+        result = runner.invoke(app, ["stop", "test"], input="y")
+        self.assertEqual(1, result.exit_code)
+
+    def test_delete_experiment__should_abort_without_confirm(
+        self,
+        load_config_mock,
+        factory,
+        *_,
+    ):
+        load_config_mock.return_value = self._new_mocked_config()
+        service_mock = AsyncMock()
+        service_mock.delete.side_effect = exceptions.NotFoundError
+        factory.return_value = service_mock
+        # Run command
+        result = runner.invoke(app, ["delete", "test"])
         self.assertEqual(1, result.exit_code)
 
     def test_delete_experiment__not_found(
         self,
         load_config_mock,
-        new_experiment_service_mock,
+        factory,
         *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
-        new_experiment_service_mock().delete.side_effect = exceptions.NotFoundError
+        service_mock = AsyncMock()
+        service_mock.delete.side_effect = exceptions.NotFoundError
+        factory.return_value = service_mock
         # Run command
-        result = runner.invoke(app, ["delete", "test"])
+        result = runner.invoke(app, ["delete", "test"], input="y")
+        self.assertEqual(1, result.exit_code)
+
+    def test_delete_experiment__internal_error(
+        self,
+        _,
+        factory,
+        *__,
+    ):
+        service_mock = AsyncMock()
+        service_mock.delete.side_effect = exceptions.InternalError
+        factory.return_value = service_mock
+        # Run command
+        result = runner.invoke(app, ["delete", "test"], input="y")
         self.assertEqual(1, result.exit_code)
