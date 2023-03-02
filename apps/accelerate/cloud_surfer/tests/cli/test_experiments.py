@@ -9,7 +9,12 @@ from typer.testing import CliRunner
 
 from surfer.cli.experiments import app, _must_load_config
 from surfer.core import exceptions, services
-from surfer.core.models import ExperimentDetails, ExperimentSummary, ExperimentStatus, JobSummary
+from surfer.core.models import (
+    ExperimentDetails,
+    ExperimentSummary,
+    ExperimentStatus,
+    JobSummary,
+)
 from surfer.core.schemas import SurferConfig
 from surfer.core.services import SurferConfigManager
 from tests.core.test_services import MockedStorageConfig
@@ -191,6 +196,18 @@ class TestExperimentCli(unittest.TestCase):
         result = runner.invoke(app, ["stop", "test"], input="y")
         self.assertEqual(1, result.exit_code)
 
+    def test_stop_experiment__success(
+        self,
+        _,
+        factory,
+        *__,
+    ):
+        service_mock = AsyncMock()
+        factory.return_value = service_mock
+        # Run command
+        result = runner.invoke(app, ["stop", "test"], input="y")
+        self.assertEqual(0, result.exit_code)
+
     def test_delete_experiment__should_abort_without_confirm(
         self,
         load_config_mock,
@@ -231,3 +248,15 @@ class TestExperimentCli(unittest.TestCase):
         # Run command
         result = runner.invoke(app, ["delete", "test"], input="y")
         self.assertEqual(1, result.exit_code)
+
+    def test_delete_experiment__success(
+        self,
+        _,
+        factory,
+        *__,
+    ):
+        service_mock = AsyncMock()
+        factory.return_value = service_mock
+        # Run command
+        result = runner.invoke(app, ["delete", "test"], input="y")
+        self.assertEqual(0, result.exit_code)

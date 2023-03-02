@@ -12,7 +12,7 @@ from surfer.storage.gcp import GCPStorageConfig
 
 class SurferConfig(BaseModel):
     """
-    CloudSurfer configuration.
+    Cloud Surfer configuration.
 
     Attributes
     ----------
@@ -53,6 +53,7 @@ class ExperimentConfig(BaseModel):
 
     class Config:
         extra = "forbid"
+        frozen = True
 
 
 class ExperimentResult(BaseModel):

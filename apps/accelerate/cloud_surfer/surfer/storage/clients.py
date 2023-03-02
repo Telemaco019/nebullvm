@@ -17,7 +17,7 @@ class StorageClient(abc.ABC):
         if config.provider == StorageProvider.AZURE.value:
             from surfer.storage import azure
             return azure.BlobStorageClient(config)
-        raise ValueError(f"Unknown storage provider: {config.provider}")
+        raise ValueError(f"unknown storage provider: {config.provider}")
 
     @abc.abstractmethod
     async def upload(self, source: Path, dest: Path, exclude_glob: Optional[str] = None):
@@ -87,5 +87,21 @@ class StorageClient(abc.ABC):
         -------
         Optional[str]
             The content of the file if it exists, None otherwise
+        """
+        pass
+
+    @abc.abstractmethod
+    async def delete(self, path: Path):
+        """Delete the file or directory at the specified path
+
+        Parameters
+        ----------
+        path: Path
+            The path to the file or directory to delete
+
+        Raises
+        ------
+        FileNotFoundError
+            If the file or directory does not exist
         """
         pass

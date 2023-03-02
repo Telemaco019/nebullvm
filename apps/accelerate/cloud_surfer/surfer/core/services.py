@@ -1,6 +1,5 @@
 import asyncio
 import json
-from pathlib import Path
 from typing import List, Optional
 
 import yaml
@@ -9,7 +8,7 @@ from ray.job_submission import JobDetails, JobStatus
 from ray.job_submission import JobSubmissionClient
 
 from surfer.core import constants
-from surfer.core.exceptions import InternalError
+from surfer.core.exceptions import InternalError, NotFoundError
 from surfer.core.models import (
     SubmitExperimentRequest,
     ExperimentSummary,
@@ -51,15 +50,6 @@ class ExperimentService:
         # Default - the experiment status is unknown
         return ExperimentStatus.UNKNOWN
 
-    async def submit(self, req: SubmitExperimentRequest):
-        pass
-
-    async def delete(self, experiment_name: str):
-        pass
-
-    async def stop(self, experiment_name: str):
-        pass
-
     async def _fetch_all_jobs(self) -> List[JobDetails]:
         return await asyncio.get_event_loop().run_in_executor(None, self.job_client.list_jobs)
 
@@ -78,10 +68,76 @@ class ExperimentService:
                 pass
         return experiment_paths
 
+    async def _fetch_result(self, path: ExperimentPath) -> Optional[ExperimentResult]:
+        try:
+            raw_data = await self.storage_client.get(path.as_path())
+            if raw_data is None:
+                return None
+            return ExperimentResult.parse_raw(raw_data)
+        except ValidationError as e:
+            raise InternalError(f"failed to parse experiment result: {e}")
+
+    async def submit(self, req: SubmitExperimentRequest):
+        pass
+
+    async def delete(self, experiment_name: str):
+        """Delete the experiment and all its data
+
+        Delete the experiment with the specified name and remove all its data:
+        * metrics
+        * optimized models
+        * jobs on the Ray cluster
+
+        The experiment can only be deleted if all its jobs are in a terminal state (succeeded or failed).
+
+        Parameters
+        ----------
+        experiment_name: str
+            Name of the experiment to delete
+
+        Raises
+        ------
+        NotFoundError
+            If the experiment does not exist
+        InternalError
+            If the experiment is not in a terminal state, or any error occurs during deletion
+        """
+        # Check if all jobs are in a terminal state
+        all_jobs = await self._fetch_all_jobs()
+        experiment_jobs = self._filter_experiment_jobs(all_jobs, experiment_name)
+        for j in experiment_jobs:
+            if j.status is JobStatus.RUNNING:
+                raise InternalError("job {} is still running, stop experiment first".format(j.job_id))
+            if j.status.PENDING:
+                raise InternalError("job {} is still pending, stop experiment first".format(j.job_id))
+        # Delete experiment data
+        experiment_paths = await self._get_experiment_paths(experiment_name)
+        if len(experiment_paths) == 0:
+            raise NotFoundError("experiment {} does not exist".format(experiment_name))
+        logger.info("Deleting experiment data...")
+        delete_data_coros = []
+        for path in experiment_paths:
+            delete_data_coros.append(self.storage_client.delete(path.as_path()))
+        try:
+            await asyncio.gather(*delete_data_coros)
+        except FileNotFoundError:
+            pass
+        # Delete Jobs
+        logger.info("Deleting experiment jobs...")
+        delete_job_coros = []
+        for j in experiment_jobs:
+            coro = asyncio.get_event_loop().run_in_executor(None, self.job_client.delete_job, j.job_id)
+            delete_job_coros.append(coro)
+        await asyncio.gather(*delete_job_coros)
+
+    async def stop(self, experiment_name: str):
+        pass
+
     async def list(self) -> List[ExperimentSummary]:
         """List all experiments
 
-        List all the available experiments for which there is any data saved in the storage.
+        List all the current and past experiments. For each experiment,
+        only a summary including its essential information is returned.
 
         Returns
         -------
@@ -106,15 +162,6 @@ class ExperimentService:
             experiment_jobs = self._filter_experiment_jobs(jobs, summary.name)
             summary.status = self._get_experiment_status(experiment_jobs)
         return summaries
-
-    async def _fetch_result(self, path: ExperimentPath) -> Optional[ExperimentResult]:
-        try:
-            raw_data = await self.storage_client.get(path.as_path())
-            if raw_data is None:
-                return None
-            return ExperimentResult.parse_raw(raw_data)
-        except ValidationError as e:
-            raise InternalError(f"Failed to parse experiment result: {e}")
 
     async def get(self, experiment_name: str) -> Optional[ExperimentDetails]:
         """
@@ -182,15 +229,39 @@ class Factory:
 class SurferConfigManager:
     def __init__(
         self,
-        base_path: Path = constants.SURFER_CONFIG_BASE_DIR_PATH,
+        base_path=constants.SURFER_CONFIG_BASE_DIR_PATH,
         config_file_name=constants.SURFER_CONFIG_FILE_NAME,
     ):
+        """
+        Parameters
+        ----------
+        base_path: Path
+            The base path to the directory containing Cloud Surfer files
+        config_file_name: str
+            The name of the Cloud Surfer configuration file
+        """
         self.config_file_path = base_path / config_file_name
 
     def config_exists(self) -> bool:
+        """Check if the Cloud Surfer configuration file exists
+
+        Returns
+        -------
+        bool
+            True if the Cloud Surfer configuration file exists, False otherwise
+        """
         return self.config_file_path.exists()
 
     def save_config(self, config: SurferConfig):
+        """Save to file the Cloud Surfer configuration
+
+        If the Cloud Surfer configuration file already exists, it will be overwritten.
+
+        Parameters
+        ----------
+        config: SurferConfig
+            The Cloud Surfer configuration to save
+        """
         # Create config file
         self.config_file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.config_file_path, "w") as f:
@@ -198,6 +269,18 @@ class SurferConfigManager:
             f.write(yaml.dump(config_dict))
 
     def load_config(self) -> Optional[SurferConfig]:
+        """Load the Cloud Surfer configuration
+
+        Raises
+        ------
+        InternalError
+            If the Cloud Surfer file is found but failed to parse
+
+        Returns
+        -------
+        Optional[SurferConfig]
+            The Cloud Surfer configuration if Cloud Surfer has been already initialized, None otherwise
+        """
         if not self.config_exists():
             return None
         try:
@@ -205,4 +288,4 @@ class SurferConfigManager:
                 config_dict = yaml.safe_load(f.read())
                 return SurferConfig.parse_obj(config_dict)
         except Exception as e:
-            raise Exception(f"Error parsing CloudSurfer config at {self.config_file_path}: {e}")
+            raise InternalError(f"error parsing CloudSurfer config at {self.config_file_path}: {e}")

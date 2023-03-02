@@ -5,7 +5,8 @@ from rich import print
 from rich.rule import Rule
 from rich.table import Table
 
-from surfer.core import services, constants
+from surfer.cli import util
+from surfer.core import services
 from surfer.core.exceptions import NotFoundError, InternalError
 from surfer.core.schemas import SurferConfig
 from surfer.core.services import SurferConfigManager, ExperimentService
@@ -43,7 +44,11 @@ async def _list_experiments():
     table.add_column("Status", header_style="cyan")
     table.add_column("Created at", header_style="cyan")
     for e in experiments:
-        table.add_row(e.name, e.status, e.created_at.strftime(constants.DISPLAYED_DATETIME_FORMAT))
+        table.add_row(
+            e.name,
+            e.status,
+            util.format_datetime_ui(e.created_at),
+        )
     print(table)
 
 
@@ -108,7 +113,9 @@ async def _describe_experiment(name: str):
     # Render summary
     print(Rule("Summary"))
     print("[bold]Experiment name[/bold]: {}".format(experiment.name))
-    print("[bold]Created at[/bold]: {}".format(experiment.created_at.strftime(constants.DISPLAYED_DATETIME_FORMAT)))
+    print("[bold]Created at[/bold]: {}".format(
+        util.format_datetime_ui(experiment.created_at))
+    )
     print("[bold]Status[/bold]: {}".format(experiment.status))
     # List jobs
     print(Rule("Jobs"))
@@ -141,7 +148,18 @@ def describe_experiment(
 
 
 async def _delete_experiment(name: str):
-    pass
+    # Init services
+    experiment_service = _new_experiment_service()
+    # Delete experiment
+    try:
+        await experiment_service.delete(name)
+    except NotFoundError:
+        logger.error(f"Experiment {name} not found")
+        raise typer.Exit(1)
+    except InternalError as e:
+        logger.error(f"Failed to delete experiment {name}: {e}")
+        raise typer.Exit(1)
+    logger.info(f"Experiment {name} deleted")
 
 
 @app.command(

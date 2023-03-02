@@ -28,3 +28,6 @@ class S3Client(StorageClient):
 
     async def get(self, path: Path) -> Optional[str]:
         pass
+
+    async def delete(self, path: Path):
+        pass
