@@ -60,3 +60,6 @@ class BlobStorageClient(StorageClient):
 
     async def list(self, glob: str) -> List[Path]:
         pass
+
+    async def get(self, path: Path) -> str:
+        pass

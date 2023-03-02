@@ -73,3 +73,24 @@ class StorageClient(abc.ABC):
             The paths to the files matching the provided prefix pattern
         """
         pass
+
+    @abc.abstractmethod
+    async def get(self, path: Path) -> str:
+        """Get the content of the file at the specified path
+
+        Parameters
+        ----------
+        path: Path
+            The path to the file whose content is to be retrieved
+
+        Raises
+        ------
+        FileNotFoundError
+            If the provided path does not exist
+
+        Returns
+        -------
+        str
+            The content of the file
+        """
+        pass

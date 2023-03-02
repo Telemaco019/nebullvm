@@ -9,7 +9,7 @@ from ray.job_submission import JobDetails
 from ray.job_submission import JobStatus, JobType
 
 from surfer.core import constants
-from surfer.core.models import ExperimentStatus, ExperimentSummary
+from surfer.core.models import ExperimentStatus, ExperimentSummary, ExperimentPath
 from surfer.core.schemas import SurferConfig
 from surfer.core.services import SurferConfigManager, ExperimentService
 from surfer.storage.aws import AWSStorageConfig
@@ -167,7 +167,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             name="exp-2",
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
-        storage_client.list.return_value = [exp_1.get_path(), exp_2.get_path()]
+        storage_client.list.return_value = [
+            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+            ExperimentPath(experiment_name=exp_2.name, experiment_creation_time=exp_2.created_at).as_path(),
+        ]
         # Run
         experiments = await service.list()
         self.assertEqual(2, len(experiments))
@@ -188,7 +191,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             name="exp-1",
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
-        storage_client.list.return_value = [exp_1.get_path(), Path("foo/bar")]
+        storage_client.list.return_value = [
+            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+            Path("foo/bar")
+        ]
         # Run
         experiments = await service.list()
         self.assertEqual(1, len(experiments))  # invalid paths should be ignored
@@ -210,7 +216,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             name="exp-2",
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
-        storage_client.list.return_value = [exp_1.get_path(), exp_2.get_path()]
+        storage_client.list.return_value = [
+            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+            ExperimentPath(experiment_name=exp_2.name, experiment_creation_time=exp_2.created_at).as_path(),
+        ]
         # Setup job client mock
         job_client.list_jobs.return_value = [
             *self._get_job_details(JobStatus.RUNNING, metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name}),
