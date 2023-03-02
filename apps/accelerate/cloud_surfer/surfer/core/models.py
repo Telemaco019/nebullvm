@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from surfer.core import constants
-from surfer.core.schemas import ExperimentConfig
+from surfer.core.schemas import ExperimentConfig, ExperimentResult
 
 
 class ExperimentStatus(str, Enum):
@@ -73,6 +73,7 @@ class JobSummary:
 class ExperimentDetails:
     summary: ExperimentSummary
     jobs: List[JobSummary]
+    result: Optional[ExperimentResult]
 
     @property
     def name(self):

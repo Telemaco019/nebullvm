@@ -86,7 +86,7 @@ class GCSBucketClient(StorageClient):
         blob_names = await asyncio.get_running_loop().run_in_executor(None, _list_blobs)
         return [Path(n) for n in blob_names]
 
-    async def get(self, path: Path) -> str:
+    async def get(self, path: Path) -> Optional[str]:
         def _download_blob() -> str:
             blob = self.bucket.get_blob(path.as_posix())
             with blob.open() as f:

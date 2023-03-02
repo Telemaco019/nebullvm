@@ -2,13 +2,14 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict
+from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
 from ray.job_submission import JobDetails
 from ray.job_submission import JobStatus, JobType
 
 from surfer.core import constants
+from surfer.core.exceptions import InternalError
 from surfer.core.models import ExperimentStatus, ExperimentSummary, ExperimentPath
 from surfer.core.schemas import SurferConfig
 from surfer.core.services import SurferConfigManager, ExperimentService
@@ -91,7 +92,7 @@ class TestConfigManager(unittest.TestCase):
 
 class TestExperimentService(unittest.IsolatedAsyncioTestCase):
     @staticmethod
-    def _get_job_details(*statuses: JobStatus, metadata: Dict = None) -> list[JobDetails]:
+    def _get_job_details(*statuses: JobStatus, metadata: Dict = None) -> List[JobDetails]:
         if metadata is None:
             metadata = {}
         return [JobDetails(type=JobType.SUBMISSION, entrypoint="", status=s, metadata=metadata) for s in statuses]
@@ -222,10 +223,16 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         ]
         # Setup job client mock
         job_client.list_jobs.return_value = [
-            *self._get_job_details(JobStatus.RUNNING, metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name}),
-            *self._get_job_details(JobStatus.SUCCEEDED, metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name}),
-            *self._get_job_details(JobStatus.SUCCEEDED, metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_2.name}),
-            *self._get_job_details(JobStatus.FAILED, metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_2.name}),
+            *self._get_job_details(
+                JobStatus.RUNNING,
+                JobStatus.SUCCEEDED,
+                metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name}
+            ),
+            *self._get_job_details(
+                JobStatus.SUCCEEDED,
+                JobStatus.FAILED,
+                metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_2.name}
+            ),
         ]
 
         # Run
@@ -237,3 +244,107 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(ExperimentStatus.RUNNING, e.status)
             if e.name == exp_2.name:
                 self.assertEqual(ExperimentStatus.FAILED, e.status)
+
+    async def test_get__experiment_not_found(self):
+        # Init
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        storage_client.list.return_value = []
+        self.assertIsNone(await service.get("not-found"))
+        job_client.list_jobs.assert_not_called()
+
+    async def test_get__experiment_not_succeeded_should_not_include_results(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        exp_2 = ExperimentSummary(
+            name="exp-2",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+            ExperimentPath(experiment_name=exp_2.name, experiment_creation_time=exp_2.created_at).as_path(),
+        ]
+        # Setup job client mock
+        job_client.list_jobs.return_value = self._get_job_details(
+            JobStatus.RUNNING,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+
+        details = await service.get(exp_1.name)
+        self.assertEqual(ExperimentStatus.RUNNING, details.status)
+        self.assertEqual(exp_1.created_at, details.created_at)
+        self.assertIsNone(details.result)
+
+    async def test_get__experiment_succeeded_but_results_are_missing(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+        ]
+        storage_client.get.return_value = None
+        # Setup job client mock
+        jobs = self._get_job_details(
+            JobStatus.SUCCEEDED,
+            JobStatus.SUCCEEDED,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+        job_client.list_jobs.return_value = jobs
+
+        details = await service.get(exp_1.name)
+        self.assertEqual(ExperimentStatus.SUCCEEDED, details.status)
+        self.assertEqual(exp_1.created_at, details.created_at)
+        self.assertEqual(len(jobs), len(details.jobs))
+        self.assertIsNone(details.result)
+
+    async def test_get__experiment_results_wrong_format(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+        ]
+        storage_client.get.return_value = "invalid"
+        # Setup job client mock
+        job_client.list_jobs.return_value = self._get_job_details(
+            JobStatus.SUCCEEDED,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+        # Run
+        with self.assertRaises(InternalError):
+            await service.get(exp_1.name)
