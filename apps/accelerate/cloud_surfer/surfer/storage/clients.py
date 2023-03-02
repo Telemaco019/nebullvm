@@ -75,7 +75,7 @@ class StorageClient(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def get(self, path: Path) -> str:
+    async def get(self, path: Path) -> Optional[str]:
         """Get the content of the file at the specified path
 
         Parameters
@@ -83,14 +83,9 @@ class StorageClient(abc.ABC):
         path: Path
             The path to the file whose content is to be retrieved
 
-        Raises
-        ------
-        FileNotFoundError
-            If the provided path does not exist
-
         Returns
         -------
-        str
-            The content of the file
+        Optional[str]
+            The content of the file if it exists, None otherwise
         """
         pass

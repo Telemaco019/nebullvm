@@ -10,17 +10,6 @@ from surfer.storage.azure import AzureStorageConfig
 from surfer.storage.gcp import GCPStorageConfig
 
 
-class ExperimentConfig(BaseModel):
-    description: Optional[str]
-    data_loader_module: Path
-    model_loader_module: Path
-    model_evaluator_module: Optional[Path]
-    additional_requirements: List[str] = []
-
-    class Config:
-        extra = "forbid"
-
-
 class SurferConfig(BaseModel):
     """
     CloudSurfer configuration.
@@ -53,3 +42,18 @@ class SurferConfig(BaseModel):
             except yaml.YAMLError as e:
                 raise yaml.YAMLError(f"{v} is not a valid YAML: {e}")
         return v
+
+
+class ExperimentConfig(BaseModel):
+    description: Optional[str]
+    data_loader_module: Path
+    model_loader_module: Path
+    model_evaluator_module: Optional[Path]
+    additional_requirements: List[str] = []
+
+    class Config:
+        extra = "forbid"
+
+
+class ExperimentResult(BaseModel):
+    pass
