@@ -8,7 +8,8 @@ from ray.job_submission import JobDetails, JobStatus
 from ray.job_submission import JobSubmissionClient
 
 from surfer.core import constants
-from surfer.core.models import SubmitExperimentRequest, ExperimentSummary, ExperimentDetails, ExperimentStatus
+from surfer.core.models import SubmitExperimentRequest, ExperimentSummary, ExperimentDetails, ExperimentStatus, \
+    ExperimentPath
 from surfer.core.schemas import SurferConfig
 from surfer.storage.clients import StorageClient
 
@@ -50,6 +51,19 @@ class ExperimentService:
     async def stop(self, experiment_name: str):
         pass
 
+    async def _fetch_all_jobs(self) -> List[JobDetails]:
+        return await asyncio.get_event_loop().run_in_executor(None, self.job_client.list_jobs)
+
+    async def _get_experiment_paths(self) -> List[ExperimentPath]:
+        experiment_paths = []
+        paths = await self.storage_client.list(f"{constants.EXPERIMENTS_STORAGE_PREFIX}/")
+        for path in paths:
+            try:
+                experiment_paths.append(ExperimentPath.from_path(path))
+            except ValueError:
+                pass
+        return experiment_paths
+
     async def list(self) -> List[ExperimentSummary]:
         """List all experiments
 
@@ -60,26 +74,42 @@ class ExperimentService:
         List[ExperimentSummary]
             Summary containing essential information of each available experiment
         """
-        # Fetch experiments data from storage
-        paths = await self.storage_client.list(f"{constants.EXPERIMENTS_STORAGE_PREFIX}/")
-        summaries = []
-        for path in paths:
-            try:
-                summaries.append(ExperimentSummary.from_path(path))
-            except Exception:
-                pass
+        paths = await self._get_experiment_paths()
         # No experiment data is found, we are done
-        if len(summaries) == 0:
-            return summaries
-        # Fetch experiments status and update summaries
-        jobs = await asyncio.get_event_loop().run_in_executor(None, self.job_client.list_jobs)
+        if len(paths) == 0:
+            return []
+        # Init summaries
+        summaries = [
+            ExperimentSummary(
+                name=p.experiment_name,
+                created_at=p.experiment_creation_time,
+            )
+            for p in paths
+        ]
+        # Fetch jobs and update summaries status
+        jobs = await self._fetch_all_jobs()
         for summary in summaries:
             experiment_jobs = self._filter_experiment_jobs(jobs, summary.name)
             summary.status = self._get_experiment_status(experiment_jobs)
         return summaries
 
     async def get(self, experiment_name: str) -> Optional[ExperimentDetails]:
-        return None
+        # Fetch experiment summary
+        # prefix = f"{constants.EXPERIMENTS_STORAGE_PREFIX}/{experiment_name}/{constants.EXPERIMENT_RESULTS_FILE_NAME}"
+        # self.storage_client.list()
+        # # Fetch jobs and update summary status
+        # jobs = await self._fetch_all_jobs()
+        # experiment_jobs = self._filter_experiment_jobs(jobs, summary.name)
+        # summary.status = self._get_experiment_status(experiment_jobs)
+        # # Init Experiment details
+        # job_summaries = []
+        # for job in experiment_jobs:
+        #     job_summaries.append(JobSummary(status=job.status, job_id=job.job_id))
+        # return ExperimentDetails(
+        #     summary=summary,
+        #     jobs=job_summaries,
+        # )
+        pass
 
 
 class Factory:

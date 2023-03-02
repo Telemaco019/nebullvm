@@ -37,7 +37,7 @@ async def _list_experiments():
     table.add_column("Status", header_style="cyan")
     table.add_column("Created at", header_style="cyan")
     for e in experiments:
-        table.add_row(e.name, e.status, e.created_at.strftime(constants.UI_DATETIME_FORMAT))
+        table.add_row(e.name, e.status, e.created_at.strftime(constants.DISPLAYED_DATETIME_FORMAT))
     print(table)
 
 

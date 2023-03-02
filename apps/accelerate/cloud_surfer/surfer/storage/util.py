@@ -11,3 +11,6 @@ def rglob(source: Path, glob: str, excluded_globs: Optional[List[str]]) -> List[
         for g in excluded_globs:
             files = files - set(source.rglob(g))
     return files
+
+def get_experiment_storage_prefix(experiment):
+    pass
