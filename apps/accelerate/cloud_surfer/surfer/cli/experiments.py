@@ -6,9 +6,9 @@ from rich.rule import Rule
 from rich.table import Table
 
 from surfer.core import services, constants
-from surfer.core.exceptions import NotFoundError
+from surfer.core.exceptions import NotFoundError, InternalError
 from surfer.core.schemas import SurferConfig
-from surfer.core.services import SurferConfigManager
+from surfer.core.services import SurferConfigManager, ExperimentService
 from surfer.log import logger
 
 app = typer.Typer()
@@ -22,6 +22,11 @@ def _must_load_config() -> SurferConfig:
         logger.error("Cloud Surfer is not initialized. Please run `surfer init` first.")
         raise typer.Exit(1)
     return config
+
+
+def _new_experiment_service() -> ExperimentService:
+    config = _must_load_config()
+    return services.Factory.new_experiment_service(config)
 
 
 async def _list_experiments():
@@ -60,16 +65,14 @@ def submit_experiment():
 
 async def _stop_experiment(name: str):
     # Init services
-    config = _must_load_config()
-    experiment_service = services.Factory.new_experiment_service(config)
-
+    experiment_service = _new_experiment_service()
     # Stop experiment
     try:
         await experiment_service.stop(name)
     except NotFoundError:
         logger.error(f"Experiment {name} not found")
         raise typer.Exit(1)
-    except ValueError as e:
+    except InternalError as e:
         logger.error(f"Failed to stop experiment {name}: {e}")
         raise typer.Exit(1)
     logger.info(f"Experiment {name} stopped")
@@ -92,11 +95,13 @@ def stop_experiment(
 
 async def _describe_experiment(name: str):
     # Init services
-    config = _must_load_config()
-    experiment_service = services.Factory.new_experiment_service(config)
-
+    experiment_service = _new_experiment_service()
     # Fetch experiment
-    experiment = await experiment_service.get(name)
+    try:
+        experiment = await experiment_service.get(name)
+    except InternalError as e:
+        logger.error("Failed to fetch experiment: {}".format(e))
+        raise typer.Exit(1)
     if experiment is None:
         logger.error(f"Experiment {name} not found")
         raise typer.Exit(1)
