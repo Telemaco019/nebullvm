@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 from typing import Optional, TextIO, List
 
-from google.cloud import storage
+from google.cloud import storage, exceptions
 from google.cloud.storage import Blob
 
 from surfer.log import logger
@@ -58,7 +58,7 @@ class GCSBucketClient(StorageClient):
             await self._upload_file(source, dest)
             return Path(dest, source.name)
         else:
-            raise ValueError(f"Source path must either link a File or a Directory, got {source}")
+            raise ValueError(f"source path must either link a File or a Directory, got {source}")
 
     async def upload_many(self, sources: List[Path], dest: Path, exclude_globs: List[str] = None):
         coros = []
@@ -68,12 +68,12 @@ class GCSBucketClient(StorageClient):
             elif s.is_file():
                 coros.append(self._upload_file(s, dest))
             else:
-                raise ValueError(f"Source path must either link a File or a Directory, got {s}")
+                raise ValueError(f"source path must either link a File or a Directory, got {s}")
         await asyncio.gather(*coros)
 
     async def upload_content(self, content: str, dest: Path):
         blob = self.bucket.blob(dest.as_posix())
-        logger.debug(f"uploading content to {dest}")
+        logger.debug(f"Uploading content to {dest}")
         await self._async_upload_from_from_string(blob, content)
 
     async def list(self, prefix: Optional[str] = None) -> List[Path]:
@@ -95,3 +95,16 @@ class GCSBucketClient(StorageClient):
                 return f.read()
 
         return await asyncio.get_running_loop().run_in_executor(None, _download_blob)
+
+    async def delete(self, path: Path):
+        def _delete_blob():
+            blob: Blob = self.bucket.get_blob(path.as_posix())
+            try:
+                blob.delete()
+            except exceptions.NotFound:
+                raise FileNotFoundError("blob {} does not exist in bucket {}".format(
+                    path.as_posix(),
+                    self.bucket.name,
+                ))
+
+        return await asyncio.get_running_loop().run_in_executor(None, _delete_blob)
