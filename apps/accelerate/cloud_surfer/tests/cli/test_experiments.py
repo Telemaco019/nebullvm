@@ -1,3 +1,4 @@
+import datetime
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory, NamedTemporaryFile
@@ -8,6 +9,7 @@ from typer.testing import CliRunner
 
 from surfer.cli.experiments import app, _must_load_config
 from surfer.core import exceptions, services
+from surfer.core.models import ExperimentDetails, ExperimentSummary, ExperimentStatus, JobSummary
 from surfer.core.schemas import SurferConfig
 from surfer.core.services import SurferConfigManager
 from tests.core.test_services import MockedStorageConfig
@@ -54,10 +56,10 @@ class TestExperimentCli(unittest.TestCase):
         )
 
     def test_list_experiments__empty_list(
-            self,
-            load_config_mock,
-            new_experiment_service_mock,
-            *_,
+        self,
+        load_config_mock,
+        new_experiment_service_mock,
+        *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
         new_experiment_service_mock().list.return_value = []
@@ -66,10 +68,10 @@ class TestExperimentCli(unittest.TestCase):
         self.assertEqual(0, result.exit_code)
 
     def test_describe_experiment__not_found(
-            self,
-            load_config_mock,
-            new_experiment_service_mock,
-            *_,
+        self,
+        load_config_mock,
+        new_experiment_service_mock,
+        *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
         new_experiment_service_mock().get.return_value = None
@@ -77,11 +79,60 @@ class TestExperimentCli(unittest.TestCase):
         result = runner.invoke(app, ["describe", "test"])
         self.assertEqual(1, result.exit_code)
 
+    def test_describe_experiment__no_results(
+        self,
+        load_config_mock,
+        new_experiment_service_mock,
+        *_,
+    ):
+        load_config_mock.return_value = self._new_mocked_config()
+        new_experiment_service_mock().get.return_value = ExperimentDetails(
+            summary=ExperimentSummary(
+                name="test",
+                created_at=datetime.datetime.now(),
+                status=ExperimentStatus.UNKNOWN,
+            ),
+            jobs=[],
+            result=None,
+        )
+        # Run command
+        result = runner.invoke(app, ["describe", "test"])
+        self.assertEqual(0, result.exit_code)
+
+    def test_describe_experiment(
+        self,
+        load_config_mock,
+        new_experiment_service_mock,
+        *_,
+    ):
+        load_config_mock.return_value = self._new_mocked_config()
+        new_experiment_service_mock().get.return_value = ExperimentDetails(
+            summary=ExperimentSummary(
+                name="test",
+                created_at=datetime.datetime.now(),
+                status=ExperimentStatus.UNKNOWN,
+            ),
+            jobs=[
+                JobSummary(
+                    job_id="test-1",
+                    status="unknown",
+                ),
+                JobSummary(
+                    job_id="test-2",
+                    status="unknown",
+                ),
+            ],
+            result=None,
+        )
+        # Run command
+        result = runner.invoke(app, ["describe", "test"])
+        self.assertEqual(0, result.exit_code)
+
     def test_stop_experiment__not_found(
-            self,
-            load_config_mock,
-            new_experiment_service_mock,
-            *_,
+        self,
+        load_config_mock,
+        new_experiment_service_mock,
+        *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
         new_experiment_service_mock().stop.side_effect = exceptions.NotFoundError
@@ -90,10 +141,10 @@ class TestExperimentCli(unittest.TestCase):
         self.assertEqual(1, result.exit_code)
 
     def test_delete_experiment__not_found(
-            self,
-            load_config_mock,
-            new_experiment_service_mock,
-            *_,
+        self,
+        load_config_mock,
+        new_experiment_service_mock,
+        *_,
     ):
         load_config_mock.return_value = self._new_mocked_config()
         new_experiment_service_mock().delete.side_effect = exceptions.NotFoundError
