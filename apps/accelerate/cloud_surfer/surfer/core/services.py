@@ -108,7 +108,7 @@ class ExperimentService:
         for j in experiment_jobs:
             if j.status is JobStatus.RUNNING:
                 raise InternalError("job {} is still running, stop experiment first".format(j.job_id))
-            if j.status.PENDING:
+            if j.status is JobStatus.PENDING:
                 raise InternalError("job {} is still pending, stop experiment first".format(j.job_id))
         # Delete experiment data
         experiment_paths = await self._get_experiment_paths(experiment_name)
