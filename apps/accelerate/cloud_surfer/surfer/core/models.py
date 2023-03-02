@@ -1,4 +1,3 @@
-import datetime
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -10,11 +9,20 @@ from surfer.core.schemas import ExperimentConfig, ExperimentResult
 
 
 class ExperimentStatus(str, Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    SUCCEEDED = "completed"
-    FAILED = "failed"
-    UNKNOWN = "unknown"
+    PENDING = "pending", "⚠️"
+    RUNNING = "running", "▶️"
+    SUCCEEDED = "completed", "✅"
+    FAILED = "failed", "❌"
+    UNKNOWN = "unknown", "[?]"
+
+    def __new__(cls, *values):
+        obj = super().__new__(cls)
+        obj._value_ = values[0]
+        obj.icon = values[1]
+        return obj
+
+    def __str__(self):
+        return "{} {}".format(self.value, self.icon)
 
 
 @dataclass
@@ -67,6 +75,7 @@ class ExperimentSummary:
 class JobSummary:
     status: str
     job_id: str
+    additional_info: Optional[str] = None
 
 
 @dataclass

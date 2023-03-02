@@ -2,6 +2,7 @@ import asyncio
 
 import typer
 from rich import print
+from rich.rule import Rule
 from rich.table import Table
 
 from surfer.core import services, constants
@@ -79,11 +80,11 @@ async def _stop_experiment(name: str):
     help="Stop a running experiment",
 )
 def stop_experiment(
-        name: str = typer.Argument(
-            ...,
-            metavar="name",
-            help="The name of the experiment to stop",
-        )
+    name: str = typer.Argument(
+        ...,
+        metavar="name",
+        help="The name of the experiment to stop",
+    )
 ):
     typer.confirm(f"Are you sure you want to stop experiment {name}?", abort=True)
     asyncio.run(_stop_experiment(name))
@@ -99,6 +100,25 @@ async def _describe_experiment(name: str):
     if experiment is None:
         logger.error(f"Experiment {name} not found")
         raise typer.Exit(1)
+    # Render summary
+    print(Rule("Summary"))
+    print("[bold]Experiment name[/bold]: {}".format(experiment.name))
+    print("[bold]Created at[/bold]: {}".format(experiment.created_at.strftime(constants.DISPLAYED_DATETIME_FORMAT)))
+    print("[bold]Status[/bold]: {}".format(experiment.status))
+    # List jobs
+    print(Rule("Jobs"))
+    jobs_table = Table(box=None)
+    jobs_table.add_column("ID", header_style="cyan")
+    jobs_table.add_column("Status", header_style="cyan")
+    jobs_table.add_column("Details", header_style="cyan")
+    for j in experiment.jobs:
+        jobs_table.add_row(j.job_id, j.status, j.additional_info)
+    if len(experiment.jobs) == 0:
+        print("No jobs")
+    else:
+        print(jobs_table)
+    # Show results
+    print(Rule("Results"))
 
 
 @app.command(
@@ -106,11 +126,11 @@ async def _describe_experiment(name: str):
     help="Show the details of an experiment",
 )
 def describe_experiment(
-        name: str = typer.Argument(
-            ...,
-            metavar="name",
-            help="The name of the experiment to describe",
-        )
+    name: str = typer.Argument(
+        ...,
+        metavar="name",
+        help="The name of the experiment to describe",
+    )
 ):
     asyncio.run(_describe_experiment(name))
 
@@ -124,11 +144,11 @@ async def _delete_experiment(name: str):
     help="Delete an experiment. If the experiment is running, it will be stopped and deleted."
 )
 def delete_experiment(
-        name: str = typer.Argument(
-            ...,
-            metavar="name",
-            help="The name of the experiment to delete",
-        )
+    name: str = typer.Argument(
+        ...,
+        metavar="name",
+        help="The name of the experiment to delete",
+    )
 ):
     typer.confirm(f"Are you sure you want to delete experiment {name}?", abort=True)
     asyncio.run(_delete_experiment(name))

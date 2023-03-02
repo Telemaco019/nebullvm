@@ -10,8 +10,14 @@ from ray.job_submission import JobSubmissionClient
 
 from surfer.core import constants
 from surfer.core.exceptions import InternalError
-from surfer.core.models import SubmitExperimentRequest, ExperimentSummary, ExperimentDetails, ExperimentStatus, \
-    ExperimentPath, JobSummary
+from surfer.core.models import (
+    SubmitExperimentRequest,
+    ExperimentSummary,
+    ExperimentDetails,
+    ExperimentStatus,
+    ExperimentPath,
+    JobSummary,
+)
 from surfer.core.schemas import SurferConfig, ExperimentResult
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
@@ -67,6 +73,8 @@ class ExperimentService:
             try:
                 experiment_paths.append(ExperimentPath.from_path(path))
             except ValueError:
+                pass
+            except IndexError:
                 pass
         return experiment_paths
 
@@ -133,7 +141,12 @@ class ExperimentService:
         # Init Experiment details
         job_summaries = []
         for job in experiment_jobs:
-            job_summaries.append(JobSummary(status=job.status, job_id=job.job_id))
+            job_summary = JobSummary(
+                status=job.status,
+                job_id=job.job_id,
+                additional_info=job.message,
+            )
+            job_summaries.append(job_summary)
         return ExperimentDetails(
             summary=summary,
             jobs=job_summaries,

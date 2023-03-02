@@ -3,6 +3,8 @@ from pathlib import Path
 from unittest import mock
 from unittest.mock import patch, MagicMock
 
+from google.cloud import storage
+
 from surfer.storage import gcp
 
 
@@ -36,3 +38,15 @@ class TestGCSBucketClient(unittest.IsolatedAsyncioTestCase):
         results = await client.list(filter_str)
         self.assertEqual(0, len(results))
         client.gcs_client.list_blobs.assert_called_with(bucket_or_name=mock.ANY, prefix=filter_str)
+
+    @patch.object(storage.Bucket, "get_blob", return_value=None)
+    async def test_get__not_found(self, *_):
+        client = gcp.GCSBucketClient(MagicMock())
+        res = await client.get(Path("invalid"))
+        self.assertIsNone(res)
+
+    @patch.object(storage.Bucket, "get_blob")
+    async def test_get__found(self, *_):
+        client = gcp.GCSBucketClient(MagicMock())
+        res = await client.get(Path("valid"))
+        self.assertIsNotNone(res)

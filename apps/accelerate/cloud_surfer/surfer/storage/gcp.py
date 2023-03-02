@@ -87,8 +87,10 @@ class GCSBucketClient(StorageClient):
         return [Path(n) for n in blob_names]
 
     async def get(self, path: Path) -> Optional[str]:
-        def _download_blob() -> str:
+        def _download_blob() -> Optional[str]:
             blob = self.bucket.get_blob(path.as_posix())
+            if blob is None:
+                return None
             with blob.open() as f:
                 return f.read()
 
