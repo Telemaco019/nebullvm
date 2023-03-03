@@ -46,14 +46,24 @@ class SurferConfig(BaseModel):
 
 class ExperimentConfig(BaseModel):
     description: Optional[str]
-    data_loader_module: Path
-    model_loader_module: Path
-    model_evaluator_module: Optional[Path]
+    data_loader_module: FilePath
+    model_loader_module: FilePath
+    model_evaluator_module: Optional[FilePath]
     additional_requirements: List[str] = []
 
     class Config:
         extra = "forbid"
         frozen = True
+        json_encoders = {
+            Path: lambda v: v.resolve().as_posix(),
+        }
+
+    def dict(self, *args, **kwargs):
+        res = super().dict(*args, **kwargs)
+        for k, v in res.items():
+            if isinstance(v, Path):
+                res[k] = v.resolve().as_posix()
+        return res
 
 
 class ExperimentResult(BaseModel):

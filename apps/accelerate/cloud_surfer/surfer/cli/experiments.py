@@ -2,14 +2,18 @@ import asyncio
 from pathlib import Path
 
 import typer
+import yaml
+from pydantic.error_wrappers import ValidationError
 from rich import print
+from rich import progress
 from rich.rule import Rule
 from rich.table import Table
 
 from surfer.cli import util
 from surfer.core import services
 from surfer.core.exceptions import NotFoundError, InternalError
-from surfer.core.schemas import SurferConfig
+from surfer.core.models import SubmitExperimentRequest
+from surfer.core.schemas import SurferConfig, ExperimentConfig
 from surfer.core.services import SurferConfigManager, ExperimentService
 from surfer.log import logger
 
@@ -67,8 +71,30 @@ def list_experiments(
     asyncio.run(_list_experiments())
 
 
-async def _submit_experiment(experiment_config: Path):
-    pass
+def _load_experiments_config(path: Path) -> ExperimentConfig:
+    try:
+        with progress.open(path, "r", description=f"Loading experiment config...") as f:
+            content = yaml.safe_load(f.read())
+            return ExperimentConfig.parse_obj(content)
+    except ValidationError as e:
+        logger.error(f"Error parsing experiment config", e)
+        raise typer.Exit(1)
+
+
+async def _submit_experiment(name: str, config_path: Path):
+    config = _load_experiments_config(config_path)
+    # Init services
+    experiment_service = _new_experiment_service()
+    # Submit experiment
+    req = SubmitExperimentRequest(
+        config=config,
+        name=name,
+    )
+    try:
+        await experiment_service.submit(req)
+    except InternalError as e:
+        logger.error(f"Failed to submit experiment: {e}")
+        raise typer.Exit(1)
 
 
 @app.command(
@@ -84,13 +110,18 @@ def submit_experiment(
         dir_okay=False,
         file_okay=True,
     ),
+    name: str = typer.Option(
+        ...,
+        metavar="name",
+        help="The name of the experiment. Must be unique.",
+    ),
     debug: bool = typer.Option(
         False,
         help="Enable debug mode",
     ),
 ):
     util.configure_debug_mode(debug)
-    asyncio.run(_submit_experiment(experiment_config))
+    asyncio.run(_submit_experiment(name, experiment_config))
 
 
 async def _stop_experiment(name: str):
@@ -100,12 +131,12 @@ async def _stop_experiment(name: str):
     try:
         await experiment_service.stop(name)
     except NotFoundError:
-        logger.error(f"Experiment {name} not found")
+        logger.error(f"Experiment not found")
         raise typer.Exit(1)
     except (InternalError, ValueError) as e:
-        logger.error(f"Failed to stop experiment {name}: {e}")
+        logger.error(f"Failed to stop experiment: {e}")
         raise typer.Exit(1)
-    logger.info(f"Experiment {name} stopped")
+    logger.info(f"Experiment stopped")
 
 
 @app.command(
@@ -135,10 +166,10 @@ async def _describe_experiment(name: str):
     try:
         experiment = await experiment_service.get(name)
     except InternalError as e:
-        logger.error("Failed to fetch experiment: {}".format(e))
+        logger.error(f"Failed to fetch experiment: {e}")
         raise typer.Exit(1)
     if experiment is None:
-        logger.error(f"Experiment {name} not found")
+        logger.error("Experiment not found")
         raise typer.Exit(1)
     # Render summary
     print(Rule("Summary"))
@@ -189,12 +220,12 @@ async def _delete_experiment(name: str):
     try:
         await experiment_service.delete(name)
     except NotFoundError:
-        logger.error(f"Experiment {name} not found")
+        logger.error(f"Experiment not found")
         raise typer.Exit(1)
     except InternalError as e:
-        logger.error(f"Failed to delete experiment {name}: {e}")
+        logger.error(f"Failed to delete experiment: {e}")
         raise typer.Exit(1)
-    logger.info(f"Experiment {name} deleted")
+    logger.info(f"Experiment deleted")
 
 
 @app.command(
