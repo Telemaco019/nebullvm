@@ -28,6 +28,13 @@ class ExperimentService:
         self.job_client = job_client
 
     @staticmethod
+    def __can_stop_experiment(status: ExperimentStatus) -> bool:
+        return status.value in [
+            ExperimentStatus.RUNNING.value,
+            ExperimentStatus.PENDING.value,
+        ]
+
+    @staticmethod
     def _filter_experiment_jobs(jobs: List[JobDetails], experiment_name: str) -> List[JobDetails]:
         return [j for j in jobs if experiment_name == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)]
 
@@ -47,11 +54,21 @@ class ExperimentService:
         # If any job is failed, the experiment is failed
         if any([j.status is JobStatus.FAILED for j in jobs]):
             return ExperimentStatus.FAILED
+        # If all jobs are stopped, the experiment is stopped
+        if all([j.status is JobStatus.STOPPED for j in jobs]):
+            return ExperimentStatus.STOPPED
         # Default - the experiment status is unknown
         return ExperimentStatus.UNKNOWN
 
     async def _fetch_all_jobs(self) -> List[JobDetails]:
         return await asyncio.get_event_loop().run_in_executor(None, self.job_client.list_jobs)
+
+    async def _stop_job(self, job_id: str):
+        await asyncio.get_event_loop().run_in_executor(None, self.job_client.stop_job, job_id)
+
+    async def _get_experiment_jobs(self, experiment_name: str) -> List[JobDetails]:
+        jobs = await self._fetch_all_jobs()
+        return self._filter_experiment_jobs(jobs, experiment_name)
 
     async def _get_experiment_paths(self, experiment_name: Optional[str] = None) -> List[ExperimentPath]:
         experiment_paths = []
@@ -103,8 +120,7 @@ class ExperimentService:
             If the experiment is not in a terminal state, or any error occurs during deletion
         """
         # Check if all jobs are in a terminal state
-        all_jobs = await self._fetch_all_jobs()
-        experiment_jobs = self._filter_experiment_jobs(all_jobs, experiment_name)
+        experiment_jobs = await self._get_experiment_jobs(experiment_name)
         for j in experiment_jobs:
             if j.status is JobStatus.RUNNING:
                 raise InternalError("job {} is still running, stop experiment first".format(j.job_id))
@@ -114,7 +130,7 @@ class ExperimentService:
         experiment_paths = await self._get_experiment_paths(experiment_name)
         if len(experiment_paths) == 0:
             raise NotFoundError("experiment {} does not exist".format(experiment_name))
-        logger.info("Deleting experiment data...")
+        logger.info("deleting experiment data...")
         delete_data_coros = []
         for path in experiment_paths:
             delete_data_coros.append(self.storage_client.delete(path.as_path()))
@@ -123,7 +139,7 @@ class ExperimentService:
         except FileNotFoundError as e:
             logger.debug("trying to delete non-existing file: ", e)
         # Delete Jobs
-        logger.info("Deleting experiment jobs...")
+        logger.info("deleting experiment jobs...")
         delete_job_coros = []
         for j in experiment_jobs:
             coro = asyncio.get_event_loop().run_in_executor(None, self.job_client.delete_job, j.job_id)
@@ -131,7 +147,48 @@ class ExperimentService:
         await asyncio.gather(*delete_job_coros)
 
     async def stop(self, experiment_name: str):
-        pass
+        """Stop the experiment and all its Jobs
+
+        Stop the experiment with the specified name and all its Jobs on the Ray cluster.
+        The experiment can only be stopped if it is in a state that can be stopped (running or pending).
+
+        Stopping an experiment will not delete any data.
+        After stopping, the experiment cannot be resumed.
+
+        Parameters
+        ----------
+        experiment_name: str
+            Name of the experiment to stop
+
+        Raises
+        -------
+        NotFoundError
+            If the experiment does not exist
+        ValueError
+            If the experiment is not in a state that can be stopped
+        InternalError
+            If any error occurs during stopping
+        """
+        # Check if the experiment exists
+        paths = await self._get_experiment_paths(experiment_name)
+        if len(paths) == 0:
+            raise NotFoundError("experiment {} does not exist".format(experiment_name))
+        # Check if experiment can be stopped
+        experiment_jobs = await self._get_experiment_jobs(experiment_name)
+        if len(experiment_jobs) == 0:
+            raise ValueError("no jobs found for experiment {}".format(experiment_name))
+        status = self._get_experiment_status(experiment_jobs)
+        if self.__can_stop_experiment(status) is False:
+            raise ValueError("cannot stop {} experiment".format(status.value))
+        # Stop experiment jobs
+        logger.info("stopping experiment jobs...")
+        coros = []
+        for j in experiment_jobs:
+            coros.append(self._stop_job(j.job_id))
+        try:
+            await asyncio.gather(*coros)
+        except RuntimeError as e:
+            raise InternalError("error stopping experiment jobs: {}".format(e))
 
     async def list(self) -> List[ExperimentSummary]:
         """List all experiments
@@ -164,7 +221,9 @@ class ExperimentService:
         return summaries
 
     async def get(self, experiment_name: str) -> Optional[ExperimentDetails]:
-        """
+        """Get the details of the specified experiment
+
+        Get all the information of the specified experiment.
 
         Parameters
         ----------
@@ -191,15 +250,14 @@ class ExperimentService:
             name=experiment_path.experiment_name,
             created_at=experiment_path.experiment_creation_time,
         )
-        jobs = await self._fetch_all_jobs()
-        experiment_jobs = self._filter_experiment_jobs(jobs, summary.name)
+        experiment_jobs = await self._get_experiment_jobs(experiment_name)
         summary.status = self._get_experiment_status(experiment_jobs)
         # Fetch experiment result
         result = None
         if summary.status is ExperimentStatus.SUCCEEDED:
             result = await self._fetch_result(experiment_path)
             if result is None:
-                logger.warn(f"Experiment {experiment_name} is succeeded, but results are missing")
+                logger.warn(f"experiment {experiment_name} is succeeded, but results are missing")
         # Init Experiment details
         job_summaries = []
         for job in experiment_jobs:

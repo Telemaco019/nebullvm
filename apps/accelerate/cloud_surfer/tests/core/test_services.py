@@ -100,6 +100,13 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
     def test_get_experiment_status__empty_list(self):
         self.assertEqual(ExperimentStatus.UNKNOWN, ExperimentService._get_experiment_status([]))
 
+    def test_get_experiment_status__stopped(self):
+        jobs = self._get_job_details(
+            JobStatus.STOPPED,
+            JobStatus.STOPPED,
+        )
+        self.assertEqual(ExperimentStatus.STOPPED, ExperimentService._get_experiment_status(jobs))
+
     def test_get_experiment_status__running(self):
         # If any job is running, the experiment is running
         jobs = self._get_job_details(
@@ -469,3 +476,96 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         job_client.list_jobs.return_value = jobs
         # Run
         await service.delete(exp_1.name)
+
+    async def test_stop__experiment_not_found(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        storage_client.list.return_value = []
+        with self.assertRaises(NotFoundError):
+            await service.stop("exp-1")
+
+    async def test_stop__experiment_cannot_be_stopped(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at
+            ).as_path(),
+        ]
+        # Setup job client mock
+        jobs = self._get_job_details(
+            JobStatus.STOPPED,
+            JobStatus.STOPPED,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+        job_client.list_jobs.return_value = jobs
+        with self.assertRaises(ValueError):
+            await service.stop("exp-1")
+
+    async def test_stop__experiment_does_not_have_jobs(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at,
+            ).as_path(),
+        ]
+        # Setup job client mock
+        job_client.list_jobs.return_value = []
+        with self.assertRaises(ValueError):
+            await service.stop("exp-1")
+
+    async def test_stop__success(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at,
+            ).as_path(),
+        ]
+        # Setup job client mock
+        jobs = self._get_job_details(
+            JobStatus.STOPPED,
+            JobStatus.RUNNING,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+        job_client.list_jobs.return_value = jobs
+        await service.stop("exp-1")
