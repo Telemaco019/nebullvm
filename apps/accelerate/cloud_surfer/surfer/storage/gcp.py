@@ -46,7 +46,7 @@ class GCSBucketClient(StorageClient):
 
     async def _upload_file(self, source_file_path: Path, dest_path: Path):
         final_dest_path = dest_path / source_file_path.name
-        logger.debug(f'\nUploading "{source_file_path}" to "{final_dest_path}"')
+        logger.debug(f'\nuploading "{source_file_path}" to "{final_dest_path}"')
         blob = self.bucket.blob(final_dest_path.as_posix())
         await self._async_upload_blob_from_filename(blob, source_file_path.as_posix())
 
@@ -73,7 +73,7 @@ class GCSBucketClient(StorageClient):
 
     async def upload_content(self, content: str, dest: Path):
         blob = self.bucket.blob(dest.as_posix())
-        logger.debug(f"Uploading content to {dest}")
+        logger.debug(f"uploading content to {dest}")
         await self._async_upload_from_from_string(blob, content)
 
     async def list(self, prefix: Optional[str] = None) -> List[Path]:
