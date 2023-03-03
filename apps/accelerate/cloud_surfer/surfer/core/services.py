@@ -120,8 +120,8 @@ class ExperimentService:
             delete_data_coros.append(self.storage_client.delete(path.as_path()))
         try:
             await asyncio.gather(*delete_data_coros)
-        except FileNotFoundError:
-            pass
+        except FileNotFoundError as e:
+            logger.debug("trying to delete non-existing file: ", e)
         # Delete Jobs
         logger.info("Deleting experiment jobs...")
         delete_job_coros = []

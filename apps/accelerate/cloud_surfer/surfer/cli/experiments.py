@@ -46,7 +46,7 @@ async def _list_experiments():
     for e in experiments:
         table.add_row(
             e.name,
-            e.status,
+            str(e.status),
             util.format_datetime_ui(e.created_at),
         )
     print(table)

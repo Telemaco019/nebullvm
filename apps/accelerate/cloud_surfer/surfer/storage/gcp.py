@@ -97,14 +97,33 @@ class GCSBucketClient(StorageClient):
         return await asyncio.get_running_loop().run_in_executor(None, _download_blob)
 
     async def delete(self, path: Path):
-        def _delete_blob():
-            blob: Blob = self.bucket.get_blob(path.as_posix())
-            try:
-                blob.delete()
-            except exceptions.NotFound:
-                raise FileNotFoundError("blob {} does not exist in bucket {}".format(
-                    path.as_posix(),
-                    self.bucket.name,
-                ))
+        def __raise_not_found():
+            raise FileNotFoundError("blob {} does not exist in bucket {}".format(
+                path.as_posix(),
+                self.bucket.name,
+            ))
 
-        return await asyncio.get_running_loop().run_in_executor(None, _delete_blob)
+        def _delete_blob(b: Blob):
+            try:
+                b.delete()
+            except exceptions.NotFound:
+                __raise_not_found()
+
+        def _expand_path() -> List[Blob]:
+            return self.gcs_client.list_blobs(
+                bucket_or_name=self.bucket,
+                prefix=path.as_posix(),
+            )
+
+        async def _delete_blob_async(b: Blob):
+            await asyncio.get_running_loop().run_in_executor(None, _delete_blob, b)
+
+        # Expand path (which might be a dir) to blobs
+        blobs = await asyncio.get_running_loop().run_in_executor(None, _expand_path)
+        if len(blobs) == 0:
+            __raise_not_found()
+        # Delete blobs
+        coros = []
+        for blob in blobs:
+            coros.append(_delete_blob_async(blob))
+        await asyncio.gather(*coros)
