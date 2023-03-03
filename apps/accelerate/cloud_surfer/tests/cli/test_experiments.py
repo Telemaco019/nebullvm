@@ -196,6 +196,19 @@ class TestExperimentCli(unittest.TestCase):
         result = runner.invoke(app, ["stop", "test"], input="y")
         self.assertEqual(1, result.exit_code)
 
+    def test_stop_experiment__value_error(
+        self,
+        _,
+        factory,
+        *__,
+    ):
+        service_mock = AsyncMock()
+        service_mock.stop.side_effect = ValueError
+        factory.return_value = service_mock
+        # Run command
+        result = runner.invoke(app, ["stop", "test"], input="y")
+        self.assertEqual(1, result.exit_code)
+
     def test_stop_experiment__success(
         self,
         _,
