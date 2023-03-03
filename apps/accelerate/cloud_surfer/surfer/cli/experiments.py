@@ -77,7 +77,7 @@ async def _stop_experiment(name: str):
     except NotFoundError:
         logger.error(f"Experiment {name} not found")
         raise typer.Exit(1)
-    except InternalError as e:
+    except (InternalError, ValueError) as e:
         logger.error(f"Failed to stop experiment {name}: {e}")
         raise typer.Exit(1)
     logger.info(f"Experiment {name} stopped")
