@@ -51,23 +51,23 @@ def _new_aws_storage_config():
     help="Init Cloud Surfer configuration",
 )
 def init(
-        cluster_file: Path = typer.Argument(
-            ...,
-            metavar="cluster-file",
-            help="Path to the Ray cluster YAML config file",
-            exists=True,
-            dir_okay=False,
-        ),
-        storage_provider: StorageProvider = typer.Option(
-            ...,
-            metavar="storage-provider",
-            help="The cloud storage provider used for storing experiment data and optimized models",
-        ),
-        ray_address: str = typer.Option(
-            constants.DEFAULT_RAY_ADDRESS,
-            metavar="ray-address",
-            help="Address of the head node of the Ray cluster",
-        ),
+    cluster_file: Path = typer.Argument(
+        ...,
+        metavar="cluster-file",
+        help="Path to the Ray cluster YAML config file",
+        exists=True,
+        dir_okay=False,
+    ),
+    storage_provider: StorageProvider = typer.Option(
+        ...,
+        metavar="storage-provider",
+        help="The cloud storage provider used for storing experiment data and optimized models",
+    ),
+    ray_address: str = typer.Option(
+        constants.DEFAULT_RAY_ADDRESS,
+        metavar="ray-address",
+        help="Address of the head node of the Ray cluster",
+    ),
 ):
     # Init storage config
     storage_config = None

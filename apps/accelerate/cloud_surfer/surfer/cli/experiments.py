@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import typer
 from rich import print
@@ -56,16 +57,40 @@ async def _list_experiments():
     name="list",
     help="List all the experiments"
 )
-def list_experiments():
+def list_experiments(
+    debug: bool = typer.Option(
+        False,
+        help="Enable debug mode",
+    ),
+):
+    util.configure_debug_mode(debug)
     asyncio.run(_list_experiments())
+
+
+async def _submit_experiment(experiment_config: Path):
+    pass
 
 
 @app.command(
     name="submit",
     help="Submit a new model optimization experiment",
 )
-def submit_experiment():
-    pass
+def submit_experiment(
+    experiment_config: Path = typer.Argument(
+        ...,
+        metavar="experiment-config",
+        help="YAML file containing the experiment configuration",
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+    ),
+    debug: bool = typer.Option(
+        False,
+        help="Enable debug mode",
+    ),
+):
+    util.configure_debug_mode(debug)
+    asyncio.run(_submit_experiment(experiment_config))
 
 
 async def _stop_experiment(name: str):
@@ -92,8 +117,13 @@ def stop_experiment(
         ...,
         metavar="name",
         help="The name of the experiment to stop",
-    )
+    ),
+    debug: bool = typer.Option(
+        False,
+        help="Enable debug mode",
+    ),
 ):
+    util.configure_debug_mode(debug)
     typer.confirm(f"Are you sure you want to stop experiment {name}?", abort=True)
     asyncio.run(_stop_experiment(name))
 
@@ -142,8 +172,13 @@ def describe_experiment(
         ...,
         metavar="name",
         help="The name of the experiment to describe",
-    )
+    ),
+    debug: bool = typer.Option(
+        False,
+        help="Enable debug mode",
+    ),
 ):
+    util.configure_debug_mode(debug)
     asyncio.run(_describe_experiment(name))
 
 
@@ -171,7 +206,12 @@ def delete_experiment(
         ...,
         metavar="name",
         help="The name of the experiment to delete",
-    )
+    ),
+    debug: bool = typer.Option(
+        False,
+        help="Enable debug mode",
+    ),
 ):
+    util.configure_debug_mode(debug)
     typer.confirm(f"Are you sure you want to delete experiment {name}?", abort=True)
     asyncio.run(_delete_experiment(name))
