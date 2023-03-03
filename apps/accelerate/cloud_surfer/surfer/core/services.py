@@ -186,7 +186,7 @@ class ExperimentService:
         if len(paths) == 0:
             return None
         if len(paths) > 1:
-            logger.warn(f"Found multiple entries for experiment {experiment_name} - using first")
+            logger.warn(f"Found multiple entries for experiment {experiment_name}: using first")
         experiment_path = paths[0]
         # Fetch jobs and update summary status
         summary = ExperimentSummary(

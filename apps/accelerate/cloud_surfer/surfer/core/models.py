@@ -9,10 +9,10 @@ from surfer.core.schemas import ExperimentConfig, ExperimentResult
 
 
 class ExperimentStatus(str, Enum):
-    PENDING = "pending", "⚠️"
-    RUNNING = "running", "▶️"
-    SUCCEEDED = "completed", "✅"
-    FAILED = "failed", "❌"
+    PENDING = "pending", ":warning:"
+    RUNNING = "running", ":play_button:"
+    SUCCEEDED = "completed", ":v:"
+    FAILED = "failed", ":x:"
     UNKNOWN = "unknown", "[?]"
 
     def __new__(cls, *values):

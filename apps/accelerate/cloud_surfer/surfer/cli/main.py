@@ -14,7 +14,7 @@ app = typer.Typer(no_args_is_help=True)
 app.add_typer(
     experiment_app,
     no_args_is_help=True,
-    name="experiments",
+    name="experiment",
     help="Manage model optimization experiments",
 )
 
