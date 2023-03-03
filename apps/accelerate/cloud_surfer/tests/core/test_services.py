@@ -9,7 +9,7 @@ from ray.job_submission import JobDetails
 from ray.job_submission import JobStatus, JobType
 
 from surfer.core import constants
-from surfer.core.exceptions import InternalError
+from surfer.core.exceptions import InternalError, NotFoundError
 from surfer.core.models import ExperimentStatus, ExperimentSummary, ExperimentPath
 from surfer.core.schemas import SurferConfig
 from surfer.core.services import SurferConfigManager, ExperimentService
@@ -348,3 +348,124 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         # Run
         with self.assertRaises(InternalError):
             await service.get(exp_1.name)
+
+    async def test_delete___job_is_running(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at
+            ).as_path(),
+        ]
+        storage_client.get.return_value = None
+        # Setup job client mock
+        jobs = self._get_job_details(
+            JobStatus.SUCCEEDED,
+            JobStatus.RUNNING,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+        job_client.list_jobs.return_value = jobs
+        # Run
+        with self.assertRaises(InternalError):
+            await service.delete(exp_1.name)
+
+    async def test_delete___job_is_pending(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at
+            ).as_path(),
+        ]
+        storage_client.get.return_value = None
+        # Setup job client mock
+        jobs = self._get_job_details(
+            JobStatus.SUCCEEDED,
+            JobStatus.PENDING,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+        job_client.list_jobs.return_value = jobs
+        # Run
+        with self.assertRaises(InternalError):
+            await service.delete(exp_1.name)
+
+    async def test_delete___experiment_not_found(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = []
+        # Setup job client mock
+        jobs = self._get_job_details(
+            JobStatus.SUCCEEDED,
+            JobStatus.STOPPED,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+        job_client.list_jobs.return_value = jobs
+        # Run
+        with self.assertRaises(NotFoundError):
+            await service.delete(exp_1.name)
+
+    async def test_delete___experiment_single_blob_not_found_should_be_ignored(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client
+        )
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name="exp-1",
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at
+            ).as_path(),
+        ]
+        storage_client.delete.side_effect = FileNotFoundError
+        # Setup job client mock
+        jobs = self._get_job_details(
+            JobStatus.SUCCEEDED,
+            JobStatus.STOPPED,
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
+            }
+        )
+        job_client.list_jobs.return_value = jobs
+        # Run
+        await service.delete(exp_1.name)

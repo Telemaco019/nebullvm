@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest import mock
 from unittest.mock import patch, MagicMock
 
+from google.cloud import exceptions as gcp_exceptions
 from google.cloud import storage
 
 from surfer.storage import gcp
@@ -50,3 +51,34 @@ class TestGCSBucketClient(unittest.IsolatedAsyncioTestCase):
         client = gcp.GCSBucketClient(MagicMock())
         res = await client.get(Path("valid"))
         self.assertIsNotNone(res)
+
+    @patch.object(storage.Bucket, "list_blobs", return_value=[])
+    async def test_delete__path_not_found(self, *_):
+        client = gcp.GCSBucketClient(MagicMock())
+        with self.assertRaises(FileNotFoundError):
+            await client.delete(Path("invalid"))
+
+    async def test_delete__dir(self, *_):
+        client = gcp.GCSBucketClient(MagicMock())
+        dir_blobs = [
+            MagicMock(),
+            MagicMock(),
+            MagicMock(),
+        ]
+        client.gcs_client.list_blobs.return_value = dir_blobs
+        await client.delete(Path("dir"))
+        for blob_mock in dir_blobs:
+            blob_mock.delete.assert_called_once()
+
+    async def test_delete__blob_not_found(self, *_):
+        client = gcp.GCSBucketClient(MagicMock())
+        not_found_blob = MagicMock()
+        not_found_blob.delete.side_effect = gcp_exceptions.NotFound("Not found")
+        dir_blobs = [
+            MagicMock(),
+            not_found_blob,
+            MagicMock(),
+        ]
+        client.gcs_client.list_blobs.return_value = dir_blobs
+        with self.assertRaises(FileNotFoundError):
+            await client.delete(Path("dir"))
