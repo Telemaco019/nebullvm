@@ -1,7 +1,12 @@
+import asyncio
 import inspect
-import pathlib
+import shutil
+from contextlib import asynccontextmanager
 from datetime import datetime
+from functools import partial
 from importlib.util import spec_from_file_location, module_from_spec
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import ModuleType
 from typing import Generic, Type, List, TypeVar
 
@@ -29,7 +34,7 @@ class RandomGenerator:
         )
 
 
-def load_module(module_path: pathlib.Path) -> ModuleType:
+def load_module(module_path: Path) -> ModuleType:
     if module_path.exists() is False:
         raise ValueError(f"could not find module {module_path}")
     spec_mod = spec_from_file_location("imported_module", module_path)
@@ -59,14 +64,14 @@ class ClassLoader(Generic[_T]):
     def _matches_searched_class(self, cls: Type):
         return inspect.isclass(cls) and self._cls in cls.__bases__
 
-    def _load_classes(self, module_path: pathlib.Path) -> List[Type[_T]]:
+    def _load_classes(self, module_path: Path) -> List[Type[_T]]:
         loaded = load_module(module_path)
         searched_class_tuples = inspect.getmembers(
             loaded, predicate=self._matches_searched_class
         )
         return [t[1] for t in searched_class_tuples]
 
-    def load_from_module(self, module_path: pathlib.Path) -> Type[_T]:
+    def load_from_module(self, module_path: Path) -> Type[_T]:
         """Load the searched class from the provided module
 
         Return the searched class loaded from the local
@@ -100,3 +105,48 @@ class ClassLoader(Generic[_T]):
                 )
             )
         return loaded_classes[0]
+
+
+@asynccontextmanager
+async def tmp_dir_clone(*sources: Path) -> Path:
+    """Clone the provided paths in a temporary directory and yield it
+
+    Sources path can reference either directories or files.
+    In case of directories, the whole directory and its content are cloned.
+
+    Upon exiting the context, the tmp directory and everything contained
+    in it are removed.
+
+    Example:
+    >>> async with tmp_dir_clone(Path("/my-dir"), Path("file.txt")) as tmp:
+    ...     print(tmp.as_posix())
+
+    Parameters
+    ----------
+    sources : Path
+        The paths to clone.
+
+    Yields
+    -------
+    Path
+        The path to the temporary directory.
+    """
+    with TemporaryDirectory() as tmp_dir:
+        tmp_dir_path = Path(tmp_dir)
+        coros = []
+        for source in sources:
+            dst = tmp_dir_path
+            if source.is_dir():
+                dst = dst / source.name
+            copy_fn = partial(
+                shutil.copytree,
+                src=source,
+                dst=dst,
+                dirs_exist_ok=True,
+            )
+            c = asyncio.get_event_loop().run_in_executor(
+                None, copy_fn
+            )
+            coros.append(c)
+        await asyncio.gather(*coros)
+        yield tmp_dir_path
