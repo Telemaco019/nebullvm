@@ -1,6 +1,7 @@
+import abc
 import asyncio
 import json
-from typing import List, Optional
+from typing import List, Optional, Iterable, Dict
 
 import yaml
 from pydantic.error_wrappers import ValidationError
@@ -20,6 +21,30 @@ from surfer.core.models import (
 from surfer.core.schemas import SurferConfig, ExperimentResult
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
+
+
+class ModelLoader(abc.ABC):
+    @abc.abstractmethod
+    def load_model(self, *args, **kwargs) -> any:
+        pass
+
+
+class DataLoader(abc.ABC):
+    @abc.abstractmethod
+    def load_data(self, *args, **kwargs) -> Iterable:
+        pass
+
+
+class ModelEvaluator(abc.ABC):
+    @abc.abstractmethod
+    def evaluate_model(self, model, *args, **kwargs) -> Dict[str, any]:
+        pass
+
+
+class DefaultModelEvaluator(ModelEvaluator):
+
+    def evaluate_model(self, model, *args, **kwargs) -> Dict[str, any]:
+        pass
 
 
 class ExperimentService:
@@ -95,6 +120,7 @@ class ExperimentService:
             raise InternalError(f"failed to parse experiment result: {e}")
 
     async def submit(self, req: SubmitExperimentRequest):
+        # data_loader_module = util.load_module(req.config.data_loader_module)
         pass
 
     async def delete(self, experiment_name: str):
