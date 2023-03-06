@@ -92,7 +92,7 @@ async def _submit_experiment(name: str, config_path: Path):
     )
     try:
         await experiment_service.submit(req)
-    except InternalError as e:
+    except (InternalError, ValueError) as e:
         logger.error(f"Failed to submit experiment: {e}")
         raise typer.Exit(1)
 
