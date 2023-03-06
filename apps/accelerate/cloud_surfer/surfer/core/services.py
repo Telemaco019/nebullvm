@@ -1,14 +1,16 @@
-import abc
 import asyncio
 import json
+import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import List, Optional, Iterable, Dict
+from typing import List, Optional
 
 import yaml
 from pydantic.error_wrappers import ValidationError
 from ray.job_submission import JobDetails, JobStatus
 from ray.job_submission import JobSubmissionClient
 
+import surfer
 from surfer.core import constants
 from surfer.core.exceptions import InternalError, NotFoundError
 from surfer.core.models import (
@@ -19,32 +21,29 @@ from surfer.core.models import (
     ExperimentPath,
     JobSummary,
 )
-from surfer.core.schemas import SurferConfig, ExperimentResult
+from surfer.core.schemas import (
+    SurferConfig,
+    ExperimentResult,
+    ExperimentConfig,
+)
+from surfer.core.util import tmp_dir_clone, copy_files
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
 
 
-class ModelLoader(abc.ABC):
-    @abc.abstractmethod
-    def load_model(self, *args, **kwargs) -> any:
-        pass
-
-
-class DataLoader(abc.ABC):
-    @abc.abstractmethod
-    def load_data(self, *args, **kwargs) -> Iterable:
-        pass
-
-
-class ModelEvaluator(abc.ABC):
-    @abc.abstractmethod
-    def evaluate_model(self, model, *args, **kwargs) -> Dict[str, any]:
-        pass
-
-
-class DefaultModelEvaluator(ModelEvaluator):
-    def evaluate_model(self, model, *args, **kwargs) -> Dict[str, any]:
-        pass
+@asynccontextmanager
+async def tmp_job_dir(config: ExperimentConfig) -> Path:
+    async with tmp_dir_clone(Path(surfer.__file__).parent) as tmp:
+        # Prepare job dir
+        modules = [
+            config.model_loader_module,
+            config.data_loader_module,
+        ]
+        if config.model_evaluator_module is not None:
+            modules.append(config.model_evaluator_module)
+        await copy_files(*modules, dst=tmp)
+        # Yield dir
+        yield tmp
 
 
 class ExperimentService:
@@ -52,9 +51,11 @@ class ExperimentService:
         self,
         storage_client: StorageClient,
         job_client: JobSubmissionClient,
+        surfer_config: SurferConfig,
     ):
         self.storage_client = storage_client
         self.job_client = job_client
+        self.surfer_config = surfer_config
 
     @staticmethod
     def __can_stop_experiment(status: ExperimentStatus) -> bool:
@@ -62,6 +63,25 @@ class ExperimentService:
             ExperimentStatus.RUNNING.value,
             ExperimentStatus.PENDING.value,
         ]
+
+    @staticmethod
+    def __get_run_cmd(
+        req: SubmitExperimentRequest,
+        storage_config_path: Path,
+    ) -> str:
+        from surfer.runner.cli import RunCommandBuilder
+
+        builder = (
+            RunCommandBuilder()
+            .with_experiment_name(req.name)
+            .with_model_loader(req.config.model_loader_module)
+            .with_data_loader(req.config.data_loader_module)
+            .with_storage_config(storage_config_path)
+        )
+        if logger.level == logging.DEBUG:
+            builder.with_debug()
+
+        return builder.get_command()
 
     @staticmethod
     def _filter_experiment_jobs(
@@ -72,7 +92,7 @@ class ExperimentService:
             j
             for j in jobs
             if experiment_name
-            == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
+               == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
         ]
 
     @staticmethod
@@ -148,16 +168,51 @@ class ExperimentService:
             raise InternalError(f"failed to parse experiment result: {e}")
 
     async def submit(self, req: SubmitExperimentRequest):
+        """
 
-        self.job_client.submit_job(
-            entrypoint="python3 . --help",
-            runtime_env={
-                "working_dir": "surfer/runner_2",
-            },
-            metadata={
-                constants.JOB_METADATA_EXPERIMENT_NAME: req.name,
-            },
-        )
+        Parameters
+        ----------
+        req
+
+        Raises
+        ------
+        InternalError
+        ValueError
+
+        Returns
+        -------
+
+        """
+        if await self.get(req.name) is not None:
+            raise ValueError(f"experiment {req.name} already exists")
+        async with tmp_job_dir(req.config) as tmp:
+            # Generate storage config file
+            storage_config_path = tmp / "storage.yaml"
+            with open(storage_config_path, "w+") as f:
+                yaml.dump(self.surfer_config.storage.dict(), f)
+            # Build run command
+            entrypoint = self.__get_run_cmd(
+                req, storage_config_path.relative_to(tmp)
+            )
+            # Submit Job
+            working_dir = tmp.as_posix()
+            logger.debug(
+                "submitting Ray job",
+                {
+                    "entrypoint": entrypoint,
+                    "working_dir": working_dir,
+                },
+            )
+            job_id = self.job_client.submit_job(
+                entrypoint=entrypoint,
+                runtime_env={
+                    "working_dir": working_dir,
+                },
+                metadata={
+                    constants.JOB_METADATA_EXPERIMENT_NAME: req.name,
+                },
+            )
+            logger.debug("job ID", job_id)
 
     async def delete(self, experiment_name: str):
         """Delete the experiment and all its data
@@ -327,11 +382,14 @@ class ExperimentService:
             Experiment details if found, None otherwise
         """
         # Get experiment path
+        logger.debug("fetching experiment paths on storage")
         paths = await self._get_experiment_paths(experiment_name)
         if len(paths) == 0:
+            logger.debug("no experiment data found")
             return None
         experiment_path = paths[0]
         # Fetch jobs and update summary status
+        logger.debug("fetching experiment Ray jobs")
         summary = ExperimentSummary(
             name=experiment_path.experiment_name,
             created_at=experiment_path.experiment_creation_time,
@@ -371,6 +429,7 @@ class Factory:
         return ExperimentService(
             storage_client=storage_client,
             job_client=job_client,
+            surfer_config=config,
         )
 
 

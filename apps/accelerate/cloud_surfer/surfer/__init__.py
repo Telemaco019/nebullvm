@@ -1,5 +1,5 @@
-from surfer.core.services import (  # noqa F401
-    ModelLoader,
+from surfer.runner.models import (  # noqa: F401
     DataLoader,
+    ModelLoader,
     ModelEvaluator,
 )

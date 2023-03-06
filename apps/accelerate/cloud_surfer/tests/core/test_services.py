@@ -183,7 +183,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup mocks
         storage_client.list.return_value = []
@@ -197,7 +199,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup mocks
         exp_1 = ExperimentSummary(
@@ -230,7 +234,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup mocks
         exp_1 = ExperimentSummary(
@@ -255,7 +261,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -304,7 +312,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         storage_client.list.return_value = []
         self.assertIsNone(await service.get("not-found"))
@@ -316,7 +326,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -354,7 +366,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -388,7 +402,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -417,7 +433,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -448,7 +466,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -479,7 +499,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -506,7 +528,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -536,7 +560,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         storage_client.list.return_value = []
         with self.assertRaises(NotFoundError):
@@ -546,7 +572,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -575,7 +603,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -597,7 +627,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client, job_client=job_client
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(

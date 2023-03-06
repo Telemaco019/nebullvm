@@ -6,6 +6,7 @@ import yaml
 from pydantic.error_wrappers import ValidationError
 from rich import print
 from rich import progress
+from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 
@@ -95,7 +96,13 @@ async def _submit_experiment(name: str, config_path: Path):
         name=name,
     )
     try:
+        logger.info("Submitting experiment...")
         await experiment_service.submit(req)
+        logger.info("Experiment submitted successfully :tada:")
+        logger.info("\nYou can check the status of the experiment with:")
+        print(Panel(
+            f"> [green] surfer experiment describe {req.name}[/green]"
+        ))
     except (InternalError, ValueError) as e:
         logger.error(f"Failed to submit experiment: {e}")
         raise typer.Exit(1)
@@ -239,7 +246,7 @@ async def _delete_experiment(name: str):
 @app.command(
     name="delete",
     help="Delete an experiment. "
-    "If the experiment is running, it will be stopped and deleted.",
+         "If the experiment is running, it will be stopped and deleted.",
 )
 def delete_experiment(
     name: str = typer.Argument(
