@@ -144,9 +144,22 @@ async def tmp_dir_clone(*sources: Path) -> Path:
                 dst=dst,
                 dirs_exist_ok=True,
             )
-            c = asyncio.get_event_loop().run_in_executor(
-                None, copy_fn
-            )
+            c = asyncio.get_event_loop().run_in_executor(None, copy_fn)
             coros.append(c)
         await asyncio.gather(*coros)
         yield tmp_dir_path
+
+
+async def copy_files(*sources: Path, dst: Path):
+    if not dst.is_dir():
+        raise ValueError(f"destination {dst} must be a directory")
+    coros = []
+    for s in sources:
+        copy_fn = partial(
+            shutil.copy2,
+            src=s,
+            dst=dst,
+        )
+        c = asyncio.get_event_loop().run_in_executor(None, copy_fn)
+        coros.append(c)
+    await asyncio.gather(*coros)

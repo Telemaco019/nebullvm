@@ -4,8 +4,12 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 from surfer import ModelLoader
-from surfer.core.util import RandomGenerator, load_module, ClassLoader, \
-    tmp_dir_clone
+from surfer.core.util import (
+    RandomGenerator,
+    load_module,
+    ClassLoader,
+    tmp_dir_clone,
+)
 
 
 def _get_assets_path() -> Path:
