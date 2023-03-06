@@ -15,7 +15,7 @@ surfer = "surfer.cli.main:main"
 [tool.poetry.dependencies]
 python = "^3.8"
 typer = "^0.7.0"
-ray = { extras = ["default"], version = "^2.3.0" }
+ray = {extras = ["default"], version = "^2.3.0"}
 speedster = "^0.2.1"
 rich = "^13.3.1"
 pyyaml = "^6.0"

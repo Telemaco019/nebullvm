@@ -20,16 +20,25 @@ class StorageClient(abc.ABC):
         raise ValueError(f"unknown storage provider: {config.provider}")
 
     @abc.abstractmethod
-    async def upload(self, source: Path, dest: Path, exclude_glob: Optional[str] = None):
+    async def upload(
+        self,
+        source: Path,
+        dest: Path,
+        exclude_glob: Optional[str] = None,
+    ):
         """
-        Upload the file or directory specified by source path to the specified destination.
+        Upload the file or directory specified by source path
+        to the specified destination.
 
-        If source is a directory, then all the files included in it (and in its subdirectories) are uploaded.
-        Since GCS Buckets have a flat filesystem, the hierarchy of the directory is reflected into
-        filenames.
+        If source is a directory, then all the files included in it
+        (and in its subdirectories) are uploaded.
 
-        If destination is empty, the source is uploaded to the root of the target Bucket,
-        otherwise "dest" is used as prefix for the uploaded file names.
+        Since GCS Buckets have a flat filesystem, the hierarchy of
+        the directory is reflected into filenames.
+
+        If destination is empty, the source is uploaded to the root
+        of the target Bucket, otherwise "dest" is used as prefix for
+        the uploaded file names.
         """
         pass
 
@@ -47,13 +56,20 @@ class StorageClient(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def upload_many(self, sources: List[Path], dest: Path, exclude_glob: Optional[str] = None):
+    async def upload_many(
+        self,
+        sources: List[Path],
+        dest: Path,
+        exclude_glob: Optional[str] = None,
+    ):
         """Upload one or more files/directories concurrently.
 
-        If destination is empty, the source is uploaded to the root of the target Bucket,
-        otherwise "dest" is used as prefix for the uploaded file names.
+        If destination is empty, the source is uploaded to the
+        root of the target Bucket, otherwise "dest" is used as
+        prefix for the uploaded file names.
 
-        There can be multiple upload_many(...) coroutines running concurrently at the same time.
+        There can be multiple upload_many(...) coroutines running
+        concurrently at the same time.
         """
         pass
 
@@ -64,7 +80,8 @@ class StorageClient(abc.ABC):
         Parameters
         ----------
         prefix: Optional[str]
-            The prefix used to filter the returned files. If provided, only files whose name starts with the
+            The prefix used to filter the returned files.
+            If provided, only files whose name starts with the
             prefix are returned.
 
         Returns

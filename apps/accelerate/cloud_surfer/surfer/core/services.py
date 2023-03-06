@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import json
+from pathlib import Path
 from typing import List, Optional, Iterable, Dict
 
 import yaml
@@ -48,7 +49,11 @@ class DefaultModelEvaluator(ModelEvaluator):
 
 
 class ExperimentService:
-    def __init__(self, storage_client: StorageClient, job_client: JobSubmissionClient):
+    def __init__(
+        self,
+        storage_client: StorageClient,
+        job_client: JobSubmissionClient,
+    ):
         self.storage_client = storage_client
         self.job_client = job_client
 
@@ -60,8 +65,16 @@ class ExperimentService:
         ]
 
     @staticmethod
-    def _filter_experiment_jobs(jobs: List[JobDetails], experiment_name: str) -> List[JobDetails]:
-        return [j for j in jobs if experiment_name == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)]
+    def _filter_experiment_jobs(
+        jobs: List[JobDetails],
+        experiment_name: str,
+    ) -> List[JobDetails]:
+        return [
+            j for j in jobs
+            if experiment_name == j.metadata.get(
+                constants.JOB_METADATA_EXPERIMENT_NAME, None
+            )
+        ]
 
     @staticmethod
     def _get_experiment_status(jobs: List[JobDetails]) -> ExperimentStatus:
@@ -86,16 +99,26 @@ class ExperimentService:
         return ExperimentStatus.UNKNOWN
 
     async def _fetch_all_jobs(self) -> List[JobDetails]:
-        return await asyncio.get_event_loop().run_in_executor(None, self.job_client.list_jobs)
+        return await asyncio.get_event_loop().run_in_executor(
+            None, self.job_client.list_jobs,
+        )
 
     async def _stop_job(self, job_id: str):
-        await asyncio.get_event_loop().run_in_executor(None, self.job_client.stop_job, job_id)
+        await asyncio.get_event_loop().run_in_executor(
+            None, self.job_client.stop_job, job_id,
+        )
 
-    async def _get_experiment_jobs(self, experiment_name: str) -> List[JobDetails]:
+    async def _get_experiment_jobs(
+        self,
+        experiment_name: str,
+    ) -> List[JobDetails]:
         jobs = await self._fetch_all_jobs()
         return self._filter_experiment_jobs(jobs, experiment_name)
 
-    async def _get_experiment_paths(self, experiment_name: Optional[str] = None) -> List[ExperimentPath]:
+    async def _get_experiment_paths(
+        self,
+        experiment_name: Optional[str] = None,
+    ) -> List[ExperimentPath]:
         experiment_paths = []
         prefix = f"{constants.EXPERIMENTS_STORAGE_PREFIX}/"
         if experiment_name is not None:
@@ -110,7 +133,10 @@ class ExperimentService:
                 pass
         return experiment_paths
 
-    async def _fetch_result(self, path: ExperimentPath) -> Optional[ExperimentResult]:
+    async def _fetch_result(
+        self,
+        path: ExperimentPath,
+    ) -> Optional[ExperimentResult]:
         try:
             raw_data = await self.storage_client.get(path.as_path())
             if raw_data is None:
@@ -120,8 +146,16 @@ class ExperimentService:
             raise InternalError(f"failed to parse experiment result: {e}")
 
     async def submit(self, req: SubmitExperimentRequest):
-        # data_loader_module = util.load_module(req.config.data_loader_module)
-        pass
+        from surfer import runner
+        self.job_client.submit_job(
+            entrypoint="python3 . --help",
+            runtime_env={
+                "working_dir": Path(runner.__file__).parent.as_posix(),
+            },
+            metadata={
+                constants.JOB_METADATA_EXPERIMENT_NAME: req.name,
+            },
+        )
 
     async def delete(self, experiment_name: str):
         """Delete the experiment and all its data
@@ -131,7 +165,8 @@ class ExperimentService:
         * optimized models
         * jobs on the Ray cluster
 
-        The experiment can only be deleted if all its jobs are in a terminal state (succeeded or failed).
+        The experiment can only be deleted if all its jobs are in
+        a terminal state (succeeded or failed).
 
         Parameters
         ----------
@@ -143,23 +178,35 @@ class ExperimentService:
         NotFoundError
             If the experiment does not exist
         InternalError
-            If the experiment is not in a terminal state, or any error occurs during deletion
+            If the experiment is not in a terminal state,
+            or any error occurs during deletion
         """
         # Check if all jobs are in a terminal state
         experiment_jobs = await self._get_experiment_jobs(experiment_name)
         for j in experiment_jobs:
             if j.status is JobStatus.RUNNING:
-                raise InternalError("job {} is still running, stop experiment first".format(j.job_id))
+                raise InternalError(
+                    "job {} is still running, stop experiment first".format(
+                        j.job_id,
+                    )
+                )
             if j.status is JobStatus.PENDING:
-                raise InternalError("job {} is still pending, stop experiment first".format(j.job_id))
+                raise InternalError(
+                    "job {} is still pending, stop experiment first".format(
+                        j.job_id
+                    )
+                )
         # Delete experiment data
         experiment_paths = await self._get_experiment_paths(experiment_name)
         if len(experiment_paths) == 0:
-            raise NotFoundError("experiment {} does not exist".format(experiment_name))
+            raise NotFoundError(
+                "experiment {} does not exist".format(experiment_name),
+            )
         logger.info("deleting experiment data...")
         delete_data_coros = []
         for path in experiment_paths:
-            delete_data_coros.append(self.storage_client.delete(path.as_path()))
+            delete_data_coros.append(
+                self.storage_client.delete(path.as_path()))
         try:
             await asyncio.gather(*delete_data_coros)
         except FileNotFoundError as e:
@@ -168,15 +215,20 @@ class ExperimentService:
         logger.info("deleting experiment jobs...")
         delete_job_coros = []
         for j in experiment_jobs:
-            coro = asyncio.get_event_loop().run_in_executor(None, self.job_client.delete_job, j.job_id)
+            coro = asyncio.get_event_loop().run_in_executor(
+                None, self.job_client.delete_job, j.job_id
+            )
             delete_job_coros.append(coro)
         await asyncio.gather(*delete_job_coros)
 
     async def stop(self, experiment_name: str):
         """Stop the experiment and all its Jobs
 
-        Stop the experiment with the specified name and all its Jobs on the Ray cluster.
-        The experiment can only be stopped if it is in a state that can be stopped (running or pending).
+        Stop the experiment with the specified name and all its Jobs
+        on the Ray cluster.
+
+        The experiment can only be stopped if it is in a state that
+        can be stopped (running or pending).
 
         Stopping an experiment will not delete any data.
         After stopping, the experiment cannot be resumed.
@@ -198,11 +250,15 @@ class ExperimentService:
         # Check if the experiment exists
         paths = await self._get_experiment_paths(experiment_name)
         if len(paths) == 0:
-            raise NotFoundError("experiment {} does not exist".format(experiment_name))
+            raise NotFoundError(
+                "experiment {} does not exist".format(experiment_name)
+            )
         # Check if experiment can be stopped
         experiment_jobs = await self._get_experiment_jobs(experiment_name)
         if len(experiment_jobs) == 0:
-            raise ValueError("no jobs found for experiment {}".format(experiment_name))
+            raise ValueError(
+                "no jobs found for experiment {}".format(experiment_name)
+            )
         status = self._get_experiment_status(experiment_jobs)
         if self.__can_stop_experiment(status) is False:
             raise ValueError("cannot stop {} experiment".format(status.value))
@@ -225,7 +281,8 @@ class ExperimentService:
         Returns
         -------
         List[ExperimentSummary]
-            Summary containing essential information of each available experiment
+            Summary containing essential information of
+            each available experiment
         """
         paths = await self._get_experiment_paths()
         # No experiment data is found, we are done
@@ -283,7 +340,10 @@ class ExperimentService:
         if summary.status is ExperimentStatus.SUCCEEDED:
             result = await self._fetch_result(experiment_path)
             if result is None:
-                logger.warn(f"experiment {experiment_name} is succeeded, but results are missing")
+                logger.warn(
+                    f"experiment {experiment_name} is succeeded, "
+                    "but results are missing"
+                )
         # Init Experiment details
         job_summaries = []
         for job in experiment_jobs:
@@ -305,7 +365,10 @@ class Factory:
     def new_experiment_service(config: SurferConfig) -> ExperimentService:
         storage_client = StorageClient.from_config(config.storage)
         job_client = JobSubmissionClient(address=config.ray_address)
-        return ExperimentService(storage_client=storage_client, job_client=job_client)
+        return ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client,
+        )
 
 
 class SurferConfigManager:
@@ -330,14 +393,16 @@ class SurferConfigManager:
         Returns
         -------
         bool
-            True if the Cloud Surfer configuration file exists, False otherwise
+            True if the Cloud Surfer configuration file exists,
+            False otherwise
         """
         return self.config_file_path.exists()
 
     def save_config(self, config: SurferConfig):
         """Save to file the Cloud Surfer configuration
 
-        If the Cloud Surfer configuration file already exists, it will be overwritten.
+        If the Cloud Surfer configuration file already exists,
+        it will be overwritten.
 
         Parameters
         ----------
@@ -361,7 +426,8 @@ class SurferConfigManager:
         Returns
         -------
         Optional[SurferConfig]
-            The Cloud Surfer configuration if Cloud Surfer has been already initialized, None otherwise
+            The Cloud Surfer configuration if Cloud Surfer has been
+            already initialized, None otherwise
         """
         if not self.config_exists():
             return None
@@ -370,4 +436,9 @@ class SurferConfigManager:
                 config_dict = yaml.safe_load(f.read())
                 return SurferConfig.parse_obj(config_dict)
         except Exception as e:
-            raise InternalError(f"error parsing CloudSurfer config at {self.config_file_path}: {e}")
+            raise InternalError(
+                "error parsing CloudSurfer config at {}: {}".format(
+                    self.config_file_path,
+                    e,
+                )
+            )

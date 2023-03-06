@@ -25,7 +25,10 @@ config_manager = SurferConfigManager()
 def _must_load_config() -> SurferConfig:
     config = config_manager.load_config()
     if config is None:
-        logger.error("Cloud Surfer is not initialized. Please run `surfer init` first.")
+        logger.error(
+            "Cloud Surfer is not initialized. "
+            "Please run `surfer init` first."
+        )
         raise typer.Exit(1)
     return config
 
@@ -73,7 +76,11 @@ def list_experiments(
 
 def _load_experiments_config(path: Path) -> ExperimentConfig:
     try:
-        with progress.open(path, "r", description=f"Loading experiment config...") as f:
+        with progress.open(
+            path,
+            "r",
+            description=f"Loading experiment config...",
+        ) as f:
             content = yaml.safe_load(f.read())
             return ExperimentConfig.parse_obj(content)
     except ValidationError as e:
@@ -155,7 +162,8 @@ def stop_experiment(
     ),
 ):
     util.configure_debug_mode(debug)
-    typer.confirm(f"Are you sure you want to stop experiment {name}?", abort=True)
+    typer.confirm(f"Are you sure you want to stop experiment {name}?",
+                  abort=True)
     asyncio.run(_stop_experiment(name))
 
 
@@ -230,7 +238,8 @@ async def _delete_experiment(name: str):
 
 @app.command(
     name="delete",
-    help="Delete an experiment. If the experiment is running, it will be stopped and deleted."
+    help="Delete an experiment. "
+         "If the experiment is running, it will be stopped and deleted."
 )
 def delete_experiment(
     name: str = typer.Argument(
@@ -244,5 +253,6 @@ def delete_experiment(
     ),
 ):
     util.configure_debug_mode(debug)
-    typer.confirm(f"Are you sure you want to delete experiment {name}?", abort=True)
+    typer.confirm(f"Are you sure you want to delete experiment {name}?",
+                  abort=True)
     asyncio.run(_delete_experiment(name))

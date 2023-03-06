@@ -12,12 +12,19 @@ from surfer.log import logger
 
 
 class RandomGenerator:
-    def __init__(self, random_words_generator: RandomWords = RandomWords(), separator="-"):
+    def __init__(
+        self,
+        random_words_generator: RandomWords = RandomWords(),
+        separator="-",
+    ):
         self.__random_words_generator = random_words_generator
         self.separator = separator
 
     def random_mnemonic(self, n_words=3):
-        return self.separator.join([self.__random_words_generator.get_random_word() for _ in range(n_words)])
+        return self.separator.join([
+            self.__random_words_generator.get_random_word()
+            for _ in range(n_words)
+        ])
 
 
 def load_module(module_path: pathlib.Path) -> ModuleType:
@@ -42,8 +49,8 @@ class ClassLoader(Generic[_T]):
         Parameters
         ----------
         cls : _T
-            The searched class. The ClassLoader will load classes of this type, or any class that
-            extends it.
+            The searched class. The ClassLoader will load classes
+            of this type, or any class that extends it.
         """
         self._cls = cls
 
@@ -86,6 +93,6 @@ class ClassLoader(Generic[_T]):
             logger.warn("multiple {} classes found in {}, using {}".format(
                 self._cls.__name__,
                 module_path,
-                loaded_classes[0]
+                loaded_classes[0],
             ))
         return loaded_classes[0]

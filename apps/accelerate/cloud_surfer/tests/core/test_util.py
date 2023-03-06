@@ -23,7 +23,9 @@ class TestRandomGenerator(unittest.TestCase):
     def test_random_mnemonic__n_words(self):
         n_words = 2
         mnemonic = self.generator.random_mnemonic(n_words=n_words)
-        self.assertEqual(n_words, len(mnemonic.split(self.generator.separator)))
+        self.assertEqual(
+            n_words, len(mnemonic.split(self.generator.separator))
+        )
 
 
 class TestLoadModule(unittest.TestCase):

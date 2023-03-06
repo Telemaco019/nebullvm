@@ -302,7 +302,10 @@ class TestExperimentCli(unittest.TestCase):
 
     def test_submit_experiment__config_path_does_not_exist(self, *_):
         # Run command
-        result = runner.invoke(app, ["submit", "/tmp/invalid.yaml", "--name", "test"])
+        result = runner.invoke(
+            app,
+            ["submit", "/tmp/invalid.yaml", "--name", "test"],
+        )
         self.assertEqual(2, result.exit_code)
 
     def test_submit_experiment__config_path_is_dir(self, *_):
@@ -321,7 +324,10 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         with test_utils.tmp_experiment_config_file() as tmp_file:
-            result = runner.invoke(app, ["submit", tmp_file.as_posix(), "--name", "test"])
+            result = runner.invoke(
+                app,
+                ["submit", tmp_file.as_posix(), "--name", "test"],
+            )
         self.assertEqual(0, result.exit_code)
 
     def test_submit_experiment__internal_error(
@@ -335,7 +341,10 @@ class TestExperimentCli(unittest.TestCase):
         service_mock.submit.side_effect = exceptions.InternalError
         # Run command
         with test_utils.tmp_experiment_config_file() as tmp_file:
-            result = runner.invoke(app, ["submit", tmp_file.as_posix(), "--name", "test"])
+            result = runner.invoke(
+                app,
+                ["submit", tmp_file.as_posix(), "--name", "test"],
+            )
         self.assertEqual(1, result.exit_code)
 
     def test_submit_experiment__config_deserialization_error(self, *_):
@@ -343,5 +352,8 @@ class TestExperimentCli(unittest.TestCase):
             tmp_file = Path(d, "config.yaml")
             with open(tmp_file, "w") as f:
                 f.write("invalid: config")
-            result = runner.invoke(app, ["submit", tmp_file.as_posix(), "--name", "test"])
+            result = runner.invoke(
+                app,
+                ["submit", tmp_file.as_posix(), "--name", "test"],
+            )
         self.assertEqual(1, result.exit_code)

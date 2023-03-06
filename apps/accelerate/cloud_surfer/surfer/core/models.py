@@ -51,7 +51,10 @@ class ExperimentPath:
         """
         relative_path = path.relative_to(constants.EXPERIMENTS_STORAGE_PREFIX)
         experiment_name = relative_path.parts[0]
-        experiment_creation_time = datetime.strptime(relative_path.parts[1], constants.INTERNAL_DATETIME_FORMAT)
+        experiment_creation_time = datetime.strptime(
+            relative_path.parts[1],
+            constants.INTERNAL_DATETIME_FORMAT,
+        )
         return cls(
             experiment_name=experiment_name,
             experiment_creation_time=experiment_creation_time,
@@ -61,7 +64,9 @@ class ExperimentPath:
         return Path(
             constants.EXPERIMENTS_STORAGE_PREFIX,
             self.experiment_name,
-            self.experiment_creation_time.strftime(constants.INTERNAL_DATETIME_FORMAT),
+            self.experiment_creation_time.strftime(
+                constants.INTERNAL_DATETIME_FORMAT,
+            ),
         )
 
 
