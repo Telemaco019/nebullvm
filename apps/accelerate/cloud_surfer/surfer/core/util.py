@@ -21,10 +21,12 @@ class RandomGenerator:
         self.separator = separator
 
     def random_mnemonic(self, n_words=3):
-        return self.separator.join([
-            self.__random_words_generator.get_random_word()
-            for _ in range(n_words)
-        ])
+        return self.separator.join(
+            [
+                self.__random_words_generator.get_random_word()
+                for _ in range(n_words)
+            ]
+        )
 
 
 def load_module(module_path: pathlib.Path) -> ModuleType:
@@ -90,9 +92,11 @@ class ClassLoader(Generic[_T]):
             )
             raise ValueError(msg)
         if len(loaded_classes) > 1:
-            logger.warn("multiple {} classes found in {}, using {}".format(
-                self._cls.__name__,
-                module_path,
-                loaded_classes[0],
-            ))
+            logger.warn(
+                "multiple {} classes found in {}, using {}".format(
+                    self._cls.__name__,
+                    module_path,
+                    loaded_classes[0],
+                )
+            )
         return loaded_classes[0]

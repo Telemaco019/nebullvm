@@ -93,7 +93,7 @@ class TestExperimentCli(unittest.TestCase):
                 name="test",
                 created_at=datetime.datetime.now(),
                 status=ExperimentStatus.RUNNING,
-            )
+            ),
         ]
         factory.return_value = service_mock
         # Run command

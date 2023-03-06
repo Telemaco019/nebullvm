@@ -24,9 +24,7 @@ class TestExperimentPath(unittest.TestCase):
             experiment_creation_time=creation_date,
         ).as_path()
         experiment_path = models.ExperimentPath.from_path(path)
-        self.assertEqual(
-            experiment_name, experiment_path.experiment_name
-        )
+        self.assertEqual(experiment_name, experiment_path.experiment_name)
         self.assertEqual(
             creation_date, experiment_path.experiment_creation_time
         )

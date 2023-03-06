@@ -83,7 +83,7 @@ class TestConfigManager(unittest.TestCase):
                 project="my-project",
                 bucket="my-bucket",
             ),
-            AWSStorageConfig()
+            AWSStorageConfig(),
         ]
         # For each storage config, test whether it gets serialized/deserialized correctly # noqa: E501
         for c in storage_configs:
@@ -183,8 +183,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup mocks
         storage_client.list.return_value = []
@@ -198,8 +197,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup mocks
         exp_1 = ExperimentSummary(
@@ -213,11 +211,11 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client.list.return_value = [
             ExperimentPath(
                 experiment_name=exp_1.name,
-                experiment_creation_time=exp_1.created_at
+                experiment_creation_time=exp_1.created_at,
             ).as_path(),
             ExperimentPath(
                 experiment_name=exp_2.name,
-                experiment_creation_time=exp_2.created_at
+                experiment_creation_time=exp_2.created_at,
             ).as_path(),
         ]
         # Run
@@ -232,8 +230,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup mocks
         exp_1 = ExperimentSummary(
@@ -245,7 +242,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
                 experiment_name=exp_1.name,
                 experiment_creation_time=exp_1.created_at,
             ).as_path(),
-            Path("foo/bar")
+            Path("foo/bar"),
         ]
         # Run
         experiments = await service.list()
@@ -258,8 +255,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -285,12 +281,12 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             *self._get_job_details(
                 JobStatus.RUNNING,
                 JobStatus.SUCCEEDED,
-                metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name}
+                metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name},
             ),
             *self._get_job_details(
                 JobStatus.SUCCEEDED,
                 JobStatus.FAILED,
-                metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_2.name}
+                metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_2.name},
             ),
         ]
         # Run
@@ -308,21 +304,19 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         storage_client.list.return_value = []
         self.assertIsNone(await service.get("not-found"))
         job_client.list_jobs.assert_not_called()
 
     async def test_get__experiment_not_succeeded_should_not_include_results(
-        self
+        self,
     ):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -348,7 +342,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.RUNNING,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
 
         details = await service.get(exp_1.name)
@@ -360,8 +354,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -381,7 +374,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.SUCCEEDED,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
         job_client.list_jobs.return_value = jobs
 
@@ -395,8 +388,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -415,7 +407,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.SUCCEEDED,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
         # Run
         with self.assertRaises(InternalError):
@@ -425,8 +417,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -436,7 +427,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client.list.return_value = [
             ExperimentPath(
                 experiment_name=exp_1.name,
-                experiment_creation_time=exp_1.created_at
+                experiment_creation_time=exp_1.created_at,
             ).as_path(),
         ]
         storage_client.get.return_value = None
@@ -446,7 +437,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.RUNNING,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
         job_client.list_jobs.return_value = jobs
         # Run
@@ -457,8 +448,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -468,7 +458,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client.list.return_value = [
             ExperimentPath(
                 experiment_name=exp_1.name,
-                experiment_creation_time=exp_1.created_at
+                experiment_creation_time=exp_1.created_at,
             ).as_path(),
         ]
         storage_client.get.return_value = None
@@ -478,7 +468,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.PENDING,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
         job_client.list_jobs.return_value = jobs
         # Run
@@ -489,8 +479,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -504,7 +493,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.STOPPED,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
         job_client.list_jobs.return_value = jobs
         # Run
@@ -517,8 +506,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -528,7 +516,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client.list.return_value = [
             ExperimentPath(
                 experiment_name=exp_1.name,
-                experiment_creation_time=exp_1.created_at
+                experiment_creation_time=exp_1.created_at,
             ).as_path(),
         ]
         storage_client.delete.side_effect = FileNotFoundError
@@ -538,7 +526,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.STOPPED,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
         job_client.list_jobs.return_value = jobs
         # Run
@@ -548,8 +536,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         storage_client.list.return_value = []
         with self.assertRaises(NotFoundError):
@@ -559,8 +546,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -570,7 +556,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client.list.return_value = [
             ExperimentPath(
                 experiment_name=exp_1.name,
-                experiment_creation_time=exp_1.created_at
+                experiment_creation_time=exp_1.created_at,
             ).as_path(),
         ]
         # Setup job client mock
@@ -579,7 +565,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.STOPPED,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
         job_client.list_jobs.return_value = jobs
         with self.assertRaises(ValueError):
@@ -589,8 +575,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -612,8 +597,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client
+            storage_client=storage_client, job_client=job_client
         )
         # Setup storage client mock
         exp_1 = ExperimentSummary(
@@ -632,7 +616,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.RUNNING,
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: exp_1.name,
-            }
+            },
         )
         job_client.list_jobs.return_value = jobs
         await service.stop("exp-1")

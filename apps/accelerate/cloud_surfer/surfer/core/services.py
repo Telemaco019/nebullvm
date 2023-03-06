@@ -43,7 +43,6 @@ class ModelEvaluator(abc.ABC):
 
 
 class DefaultModelEvaluator(ModelEvaluator):
-
     def evaluate_model(self, model, *args, **kwargs) -> Dict[str, any]:
         pass
 
@@ -70,10 +69,10 @@ class ExperimentService:
         experiment_name: str,
     ) -> List[JobDetails]:
         return [
-            j for j in jobs
-            if experiment_name == j.metadata.get(
-                constants.JOB_METADATA_EXPERIMENT_NAME, None
-            )
+            j
+            for j in jobs
+            if experiment_name
+            == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
         ]
 
     @staticmethod
@@ -100,12 +99,15 @@ class ExperimentService:
 
     async def _fetch_all_jobs(self) -> List[JobDetails]:
         return await asyncio.get_event_loop().run_in_executor(
-            None, self.job_client.list_jobs,
+            None,
+            self.job_client.list_jobs,
         )
 
     async def _stop_job(self, job_id: str):
         await asyncio.get_event_loop().run_in_executor(
-            None, self.job_client.stop_job, job_id,
+            None,
+            self.job_client.stop_job,
+            job_id,
         )
 
     async def _get_experiment_jobs(
@@ -147,6 +149,7 @@ class ExperimentService:
 
     async def submit(self, req: SubmitExperimentRequest):
         from surfer import runner
+
         self.job_client.submit_job(
             entrypoint="python3 . --help",
             runtime_env={
@@ -206,7 +209,8 @@ class ExperimentService:
         delete_data_coros = []
         for path in experiment_paths:
             delete_data_coros.append(
-                self.storage_client.delete(path.as_path()))
+                self.storage_client.delete(path.as_path())
+            )
         try:
             await asyncio.gather(*delete_data_coros)
         except FileNotFoundError as e:

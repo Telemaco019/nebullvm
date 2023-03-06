@@ -14,5 +14,3 @@ class StorageConfig(BaseModel):
         use_enum_values = True
 
     provider: StorageProvider
-
-

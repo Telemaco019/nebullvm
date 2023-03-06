@@ -75,4 +75,3 @@ class TestExperimentConfig(unittest.TestCase):
             deserialized_yaml = yaml.safe_load(yaml.dump(config.dict()))
             deserialized_config = ExperimentConfig(**deserialized_yaml)
             self.assertEqual(config.dict(), deserialized_config.dict())
-

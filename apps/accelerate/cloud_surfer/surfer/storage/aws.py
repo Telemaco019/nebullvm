@@ -10,7 +10,6 @@ class AWSStorageConfig(StorageConfig):
 
 
 class S3Client(StorageClient):
-
     def __init__(self, config: AWSStorageConfig):
         raise NotImplementedError("AWS storage is not supported yet")
 
