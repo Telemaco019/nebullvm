@@ -10,7 +10,11 @@ from ray.job_submission import JobStatus, JobType
 
 from surfer.core import constants
 from surfer.core.exceptions import InternalError, NotFoundError
-from surfer.core.models import ExperimentStatus, ExperimentSummary, ExperimentPath
+from surfer.core.models import (
+    ExperimentStatus,
+    ExperimentSummary,
+    ExperimentPath,
+)
 from surfer.core.schemas import SurferConfig
 from surfer.core.services import SurferConfigManager, ExperimentService
 from surfer.storage.aws import AWSStorageConfig
@@ -57,7 +61,9 @@ class TestConfigManager(unittest.TestCase):
             f.write("")
         config = SurferConfig(
             cluster_file=cluster_file_path,
-            storage=AzureStorageConfig(sas_url="https://myaccount.blob.core.windows.net/pictures"),
+            storage=AzureStorageConfig(
+                sas_url="https://myaccount.blob.core.windows.net/pictures"
+            ),
         )
         manager.save_config(config)
         self.assertEqual(config.json(), manager.load_config().json())
@@ -79,7 +85,7 @@ class TestConfigManager(unittest.TestCase):
             ),
             AWSStorageConfig()
         ]
-        # For each storage config, test whether it gets serialized/deserialized correctly
+        # For each storage config, test whether it gets serialized/deserialized correctly # noqa: E501
         for c in storage_configs:
             surfer_config = SurferConfig(
                 cluster_file=cluster_file_path,
@@ -92,20 +98,37 @@ class TestConfigManager(unittest.TestCase):
 
 class TestExperimentService(unittest.IsolatedAsyncioTestCase):
     @staticmethod
-    def _get_job_details(*statuses: JobStatus, metadata: Dict = None) -> List[JobDetails]:
+    def _get_job_details(
+        *statuses: JobStatus,
+        metadata: Dict = None,
+    ) -> List[JobDetails]:
         if metadata is None:
             metadata = {}
-        return [JobDetails(type=JobType.SUBMISSION, entrypoint="", status=s, metadata=metadata) for s in statuses]
+        return [
+            JobDetails(
+                type=JobType.SUBMISSION,
+                entrypoint="",
+                status=s,
+                metadata=metadata,
+            )
+            for s in statuses
+        ]
 
     def test_get_experiment_status__empty_list(self):
-        self.assertEqual(ExperimentStatus.UNKNOWN, ExperimentService._get_experiment_status([]))
+        self.assertEqual(
+            ExperimentStatus.UNKNOWN,
+            ExperimentService._get_experiment_status([]),
+        )
 
     def test_get_experiment_status__stopped(self):
         jobs = self._get_job_details(
             JobStatus.STOPPED,
             JobStatus.STOPPED,
         )
-        self.assertEqual(ExperimentStatus.STOPPED, ExperimentService._get_experiment_status(jobs))
+        self.assertEqual(
+            ExperimentStatus.STOPPED,
+            ExperimentService._get_experiment_status(jobs),
+        )
 
     def test_get_experiment_status__running(self):
         # If any job is running, the experiment is running
@@ -114,7 +137,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.FAILED,
             JobStatus.PENDING,
         )
-        self.assertEqual(ExperimentStatus.RUNNING, ExperimentService._get_experiment_status(jobs))
+        self.assertEqual(
+            ExperimentStatus.RUNNING,
+            ExperimentService._get_experiment_status(jobs),
+        )
 
     def test_get_experiment_status__failed(self):
         # No jobs are running, no jobs pending, at least one job failed
@@ -123,7 +149,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.FAILED,
             JobStatus.FAILED,
         )
-        self.assertEqual(ExperimentStatus.FAILED, ExperimentService._get_experiment_status(jobs))
+        self.assertEqual(
+            ExperimentStatus.FAILED,
+            ExperimentService._get_experiment_status(jobs),
+        )
 
     def test_get_experiment_status__succeeded(self):
         # All jobs succeeded
@@ -132,7 +161,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.SUCCEEDED,
             JobStatus.SUCCEEDED,
         )
-        self.assertEqual(ExperimentStatus.SUCCEEDED, ExperimentService._get_experiment_status(jobs))
+        self.assertEqual(
+            ExperimentStatus.SUCCEEDED,
+            ExperimentService._get_experiment_status(jobs),
+        )
 
     def test_get_experiment_status__pending(self):
         # No jobs are running, at least one job is pending
@@ -141,7 +173,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             JobStatus.PENDING,
             JobStatus.FAILED,
         )
-        self.assertEqual(ExperimentStatus.PENDING, ExperimentService._get_experiment_status(jobs))
+        self.assertEqual(
+            ExperimentStatus.PENDING,
+            ExperimentService._get_experiment_status(jobs),
+        )
 
     async def test_list__no_experiments(self):
         # Init
@@ -176,8 +211,14 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
         storage_client.list.return_value = [
-            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
-            ExperimentPath(experiment_name=exp_2.name, experiment_creation_time=exp_2.created_at).as_path(),
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at
+            ).as_path(),
+            ExperimentPath(
+                experiment_name=exp_2.name,
+                experiment_creation_time=exp_2.created_at
+            ).as_path(),
         ]
         # Run
         experiments = await service.list()
@@ -200,12 +241,17 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
         storage_client.list.return_value = [
-            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at,
+            ).as_path(),
             Path("foo/bar")
         ]
         # Run
         experiments = await service.list()
-        self.assertEqual(1, len(experiments))  # invalid paths should be ignored
+        self.assertEqual(
+            1, len(experiments)  # invalid paths should be ignored
+        )
 
     async def test_list__jobs_should_update_status(self):
         # Init
@@ -225,8 +271,14 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
         storage_client.list.return_value = [
-            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
-            ExperimentPath(experiment_name=exp_2.name, experiment_creation_time=exp_2.created_at).as_path(),
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at,
+            ).as_path(),
+            ExperimentPath(
+                experiment_name=exp_2.name,
+                experiment_creation_time=exp_2.created_at,
+            ).as_path(),
         ]
         # Setup job client mock
         job_client.list_jobs.return_value = [
@@ -241,7 +293,6 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
                 metadata={constants.JOB_METADATA_EXPERIMENT_NAME: exp_2.name}
             ),
         ]
-
         # Run
         experiments = await service.list()
         self.assertEqual(2, len(experiments))
@@ -264,7 +315,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(await service.get("not-found"))
         job_client.list_jobs.assert_not_called()
 
-    async def test_get__experiment_not_succeeded_should_not_include_results(self):
+    async def test_get__experiment_not_succeeded_should_not_include_results(
+        self
+    ):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(
@@ -281,8 +334,14 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
         storage_client.list.return_value = [
-            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
-            ExperimentPath(experiment_name=exp_2.name, experiment_creation_time=exp_2.created_at).as_path(),
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at,
+            ).as_path(),
+            ExperimentPath(
+                experiment_name=exp_2.name,
+                experiment_creation_time=exp_2.created_at,
+            ).as_path(),
         ]
         # Setup job client mock
         job_client.list_jobs.return_value = self._get_job_details(
@@ -310,7 +369,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
         storage_client.list.return_value = [
-            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at,
+            ).as_path(),
         ]
         storage_client.get.return_value = None
         # Setup job client mock
@@ -342,7 +404,10 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             created_at=datetime(2021, 1, 1, 0, 0, 0),
         )
         storage_client.list.return_value = [
-            ExperimentPath(experiment_name=exp_1.name, experiment_creation_time=exp_1.created_at).as_path(),
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at,
+            ).as_path(),
         ]
         storage_client.get.return_value = "invalid"
         # Setup job client mock
@@ -446,7 +511,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(NotFoundError):
             await service.delete(exp_1.name)
 
-    async def test_delete___experiment_single_blob_not_found_should_be_ignored(self):
+    async def test_delete___experiment_single_blob_not_found_should_be_ignored(
+        self,
+    ):
         storage_client = AsyncMock()
         job_client = MagicMock()
         service = ExperimentService(

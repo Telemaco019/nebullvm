@@ -38,7 +38,10 @@ class TestGCSBucketClient(unittest.IsolatedAsyncioTestCase):
         filter_str = "filter"
         results = await client.list(filter_str)
         self.assertEqual(0, len(results))
-        client.gcs_client.list_blobs.assert_called_with(bucket_or_name=mock.ANY, prefix=filter_str)
+        client.gcs_client.list_blobs.assert_called_with(
+            bucket_or_name=mock.ANY,
+            prefix=filter_str,
+        )
 
     @patch.object(storage.Bucket, "get_blob", return_value=None)
     async def test_get__not_found(self, *_):
@@ -73,7 +76,9 @@ class TestGCSBucketClient(unittest.IsolatedAsyncioTestCase):
     async def test_delete__blob_not_found(self, *_):
         client = gcp.GCSBucketClient(MagicMock())
         not_found_blob = MagicMock()
-        not_found_blob.delete.side_effect = gcp_exceptions.NotFound("Not found")
+        not_found_blob.delete.side_effect = gcp_exceptions.NotFound(
+            "Not found"
+        )
         dir_blobs = [
             MagicMock(),
             not_found_blob,
