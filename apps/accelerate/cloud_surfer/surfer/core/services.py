@@ -148,12 +148,11 @@ class ExperimentService:
             raise InternalError(f"failed to parse experiment result: {e}")
 
     async def submit(self, req: SubmitExperimentRequest):
-        from surfer import runner
 
         self.job_client.submit_job(
             entrypoint="python3 . --help",
             runtime_env={
-                "working_dir": Path(runner.__file__).parent.as_posix(),
+                "working_dir": "surfer/runner_2",
             },
             metadata={
                 constants.JOB_METADATA_EXPERIMENT_NAME: req.name,
