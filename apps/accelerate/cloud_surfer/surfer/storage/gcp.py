@@ -18,7 +18,6 @@ class GCPStorageConfig(StorageConfig):
 
 
 class GCSBucketClient(StorageClient):
-
     def __init__(self, config: GCPStorageConfig):
         self.gcs_client = storage.Client(project=config.project)
         self.bucket = storage.Bucket(self.gcs_client, config.bucket)
@@ -132,7 +131,8 @@ class GCSBucketClient(StorageClient):
                 return f.read()
 
         return await asyncio.get_running_loop().run_in_executor(
-            None, _download_blob,
+            None,
+            _download_blob,
         )
 
     async def delete(self, path: Path):
@@ -141,7 +141,8 @@ class GCSBucketClient(StorageClient):
                 "blob {} does not exist in bucket {}".format(
                     path.as_posix(),
                     self.bucket.name,
-                ))
+                )
+            )
 
         def _delete_blob(b: Blob):
             try:

@@ -19,11 +19,15 @@ class Logger:
 
     def warn(self, *objs: any, **kwargs):
         if self.level <= logging.WARNING:
-            self.__console.print("\[warning]", *objs, style="yellow", **kwargs)
+            self.__console.print(
+                "\[warning]", *objs, style="yellow", **kwargs  # noqa W605
+            )
 
     def debug(self, *objs: any, **kwargs):
         if self.level <= logging.DEBUG:
-            self.__console.print("\[debug]", *objs, style="cyan", **kwargs)  # noqa
+            self.__console.print(
+                "\[debug]", *objs, style="cyan", **kwargs  # noqa W605
+            )
 
     def error(self, *objs: any, **kwargs):
         self.__console.print(*objs, style="red", **kwargs)

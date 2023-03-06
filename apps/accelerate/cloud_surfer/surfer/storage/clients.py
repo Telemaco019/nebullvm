@@ -10,12 +10,15 @@ class StorageClient(abc.ABC):
     def from_config(config):
         if config.provider == StorageProvider.GCP.value:
             from surfer.storage import gcp
+
             return gcp.GCSBucketClient(config)
         if config.provider == StorageProvider.AWS.value:
             from surfer.storage import aws
+
             return aws.S3Client(config)
         if config.provider == StorageProvider.AZURE.value:
             from surfer.storage import azure
+
             return azure.BlobStorageClient(config)
         raise ValueError(f"unknown storage provider: {config.provider}")
 

@@ -18,9 +18,11 @@ class SignedURL:
         if not url.startswith("https://"):
             raise ValueError("Signed URL must start with https://")
         parse_result = urlparse(url)
-        error_msg = f"{url} is not a valid Storage Container SAS URL. " \
-                    "Please refer to https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview " \
-                    "for more information",
+        error_msg = (
+            f"{url} is not a valid Storage Container SAS URL. "
+            "Please refer to https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview "
+            "for more information",
+        )
         if not parse_result.hostname.endswith("blob.core.windows.net"):
             raise ValueError(error_msg)
 
@@ -45,7 +47,6 @@ class AzureStorageConfig(StorageConfig):
 
 
 class BlobStorageClient(StorageClient):
-
     def __init__(self, config: AzureStorageConfig):
         self.config = config
 

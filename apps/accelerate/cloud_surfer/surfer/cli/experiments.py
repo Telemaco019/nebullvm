@@ -60,10 +60,7 @@ async def _list_experiments():
     print(table)
 
 
-@app.command(
-    name="list",
-    help="List all the experiments"
-)
+@app.command(name="list", help="List all the experiments")
 def list_experiments(
     debug: bool = typer.Option(
         False,
@@ -79,12 +76,12 @@ def _load_experiments_config(path: Path) -> ExperimentConfig:
         with progress.open(
             path,
             "r",
-            description=f"Loading experiment config...",
+            description="Loading experiment config...",
         ) as f:
             content = yaml.safe_load(f.read())
             return ExperimentConfig.parse_obj(content)
     except ValidationError as e:
-        logger.error(f"Error parsing experiment config", e)
+        logger.error("Error parsing experiment config", e)
         raise typer.Exit(1)
 
 
@@ -138,12 +135,12 @@ async def _stop_experiment(name: str):
     try:
         await experiment_service.stop(name)
     except NotFoundError:
-        logger.error(f"Experiment not found")
+        logger.error("Experiment not found")
         raise typer.Exit(1)
     except (InternalError, ValueError) as e:
         logger.error(f"Failed to stop experiment: {e}")
         raise typer.Exit(1)
-    logger.info(f"Experiment stopped")
+    logger.info("Experiment stopped")
 
 
 @app.command(
@@ -162,8 +159,9 @@ def stop_experiment(
     ),
 ):
     util.configure_debug_mode(debug)
-    typer.confirm(f"Are you sure you want to stop experiment {name}?",
-                  abort=True)
+    typer.confirm(
+        f"Are you sure you want to stop experiment {name}?", abort=True
+    )
     asyncio.run(_stop_experiment(name))
 
 
@@ -182,8 +180,10 @@ async def _describe_experiment(name: str):
     # Render summary
     print(Rule("Summary"))
     print("[bold]Experiment name[/bold]: {}".format(experiment.name))
-    print("[bold]Created at[/bold]: {}".format(
-        util.format_datetime_ui(experiment.created_at))
+    print(
+        "[bold]Created at[/bold]: {}".format(
+            util.format_datetime_ui(experiment.created_at)
+        )
     )
     print("[bold]Status[/bold]: {}".format(experiment.status))
     # List jobs
@@ -228,18 +228,18 @@ async def _delete_experiment(name: str):
     try:
         await experiment_service.delete(name)
     except NotFoundError:
-        logger.error(f"Experiment not found")
+        logger.error("Experiment not found")
         raise typer.Exit(1)
     except InternalError as e:
         logger.error(f"Failed to delete experiment: {e}")
         raise typer.Exit(1)
-    logger.info(f"Experiment deleted")
+    logger.info("Experiment deleted")
 
 
 @app.command(
     name="delete",
     help="Delete an experiment. "
-         "If the experiment is running, it will be stopped and deleted."
+    "If the experiment is running, it will be stopped and deleted.",
 )
 def delete_experiment(
     name: str = typer.Argument(
@@ -253,6 +253,7 @@ def delete_experiment(
     ),
 ):
     util.configure_debug_mode(debug)
-    typer.confirm(f"Are you sure you want to delete experiment {name}?",
-                  abort=True)
+    typer.confirm(
+        f"Are you sure you want to delete experiment {name}?", abort=True
+    )
     asyncio.run(_delete_experiment(name))

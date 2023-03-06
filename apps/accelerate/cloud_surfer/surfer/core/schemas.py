@@ -23,6 +23,7 @@ class SurferConfig(BaseModel):
     ray_address: str
         Address of the head node of the Ray cluster
     """
+
     cluster_file: FilePath = Field()
     storage: Union[AzureStorageConfig, GCPStorageConfig, AWSStorageConfig]
     ray_address: AnyUrl = constants.DEFAULT_RAY_ADDRESS

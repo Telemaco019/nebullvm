@@ -22,6 +22,7 @@ app.add_typer(
 def _new_azure_storage_config() -> StorageConfig:
     try:
         from surfer.storage import azure
+
         sas_url = azure.URLPrompt.ask(
             "Please enter a Storage Container SAS URL",
         )
@@ -29,31 +30,33 @@ def _new_azure_storage_config() -> StorageConfig:
     except ImportError as e:
         raise ImportError(
             f'{e} - Please install "surfer[azure]" '
-            'to use Azure as storage provider'
+            "to use Azure as storage provider"
         )
 
 
 def _new_gcp_storage_config() -> StorageConfig:
     try:
         from surfer.storage import gcp
+
         bucket = Prompt.ask("Insert bucket name")
         project = Prompt.ask("Insert project name")
         return gcp.GCPStorageConfig(bucket=bucket, project=project)
     except ImportError as e:
         raise ImportError(
             f'{e} - Please install "surfer[gcp]" '
-            'to use GCP as storage provider'
+            "to use GCP as storage provider"
         )
 
 
 def _new_aws_storage_config():
     try:
-        from surfer.storage import aws
+        from surfer.storage import aws  # noqa W605
+
         raise NotImplementedError("AWS storage is not yet implemented")
     except ImportError as e:
         raise ImportError(
             f'{e} - Please install "surfer[aws]" '
-            'to use AWS as storage provider'
+            "to use AWS as storage provider"
         )
 
 
@@ -73,7 +76,7 @@ def init(
         ...,
         metavar="storage-provider",
         help="The cloud storage provider used "
-             "for storing experiment data and optimized models",
+        "for storing experiment data and optimized models",
     ),
     ray_address: str = typer.Option(
         constants.DEFAULT_RAY_ADDRESS,
