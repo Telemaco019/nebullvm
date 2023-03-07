@@ -7,27 +7,19 @@ from pathlib import Path
 from typing import TypeVar
 
 import aiofiles
-from random_word import RandomWords
+from mnemonic import Mnemonic
 
 from surfer.core import constants
 
 
 class RandomGenerator:
-    def __init__(
-        self,
-        random_words_generator: RandomWords = RandomWords(),
-        separator="-",
-    ):
-        self.__random_words_generator = random_words_generator
+    def __init__(self, separator="-"):
+        self.__generator = Mnemonic(language="English")
         self.separator = separator
 
-    def random_mnemonic(self, n_words=3):
-        return self.separator.join(
-            [
-                self.__random_words_generator.get_random_word()
-                for _ in range(n_words)
-            ]
-        )
+    def random_mnemonic(self, n_words=3) -> str:
+        words = self.__generator.generate(strength=128).split(" ")[:n_words]
+        return self.separator.join(words)
 
 
 def format_datetime(dt: datetime) -> str:
