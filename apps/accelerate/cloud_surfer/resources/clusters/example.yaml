@@ -38,7 +38,7 @@ provider:
   location: westeurope
   resource_group: rg-ray
   # set subscription id otherwise the default from az cli will be used
-  subscription_id: eb83146c-b587-4e78-8455-dc83af309e2c
+  #subscription_id: <subscription-id>
   # set unique subnet mask or a random mask will be used
   # subnet_mask: 10.0.0.0/16
   # set unique id for resources in this cluster

@@ -6,6 +6,7 @@ from typer import Typer
 
 import surfer.log
 from surfer import runner
+from surfer.core.schemas import SurferConfig
 
 app = Typer(no_args_is_help=True)
 
@@ -41,7 +42,7 @@ def run(
         file_okay=True,
         dir_okay=False,
     ),
-    storage_config_path: Path = typer.Option(
+    surfer_config_path: Path = typer.Option(
         ...,
         exists=True,
         file_okay=True,
@@ -53,6 +54,7 @@ def run(
     ),
 ):
     surfer.log.configure_debug_mode(debug)
+    surfer_config = SurferConfig.parse_file(surfer_config_path)
 
 
 class RunCommandBuilder:
@@ -87,8 +89,8 @@ class RunCommandBuilder:
         self.__command += f" --experiment-name {experiment_name}"
         return self
 
-    def with_storage_config(self, path: Path) -> "RunCommandBuilder":
-        self.__command += f" --storage-config-path {path}"
+    def with_surfer_config(self, path: Path) -> "RunCommandBuilder":
+        self.__command += f" --surfer-config-path {path}"
         return self
 
     def with_debug(self) -> "RunCommandBuilder":
