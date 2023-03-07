@@ -10,6 +10,7 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 
+import surfer.log
 from surfer.cli import util
 from surfer.core import services
 from surfer.core.exceptions import NotFoundError, InternalError
@@ -68,7 +69,7 @@ def list_experiments(
         help="Enable debug mode",
     ),
 ):
-    util.configure_debug_mode(debug)
+    surfer.log.configure_debug_mode(debug)
     asyncio.run(_list_experiments())
 
 
@@ -131,7 +132,7 @@ def submit_experiment(
         help="Enable debug mode",
     ),
 ):
-    util.configure_debug_mode(debug)
+    surfer.log.configure_debug_mode(debug)
     asyncio.run(_submit_experiment(name, experiment_config))
 
 
@@ -165,7 +166,7 @@ def stop_experiment(
         help="Enable debug mode",
     ),
 ):
-    util.configure_debug_mode(debug)
+    surfer.log.configure_debug_mode(debug)
     typer.confirm(
         f"Are you sure you want to stop experiment {name}?", abort=True
     )
@@ -226,7 +227,7 @@ def describe_experiment(
         help="Enable debug mode",
     ),
 ):
-    util.configure_debug_mode(debug)
+    surfer.log.configure_debug_mode(debug)
     asyncio.run(_describe_experiment(name))
 
 
@@ -261,7 +262,7 @@ def delete_experiment(
         help="Enable debug mode",
     ),
 ):
-    util.configure_debug_mode(debug)
+    surfer.log.configure_debug_mode(debug)
     typer.confirm(
         f"Are you sure you want to delete experiment {name}?", abort=True
     )

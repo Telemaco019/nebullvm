@@ -4,6 +4,7 @@ from typing import Optional
 import typer
 from typer import Typer
 
+import surfer.log
 from surfer import runner
 
 app = Typer(no_args_is_help=True)
@@ -13,7 +14,7 @@ app = Typer(no_args_is_help=True)
 def doc():
     """
     CLI for running surfer experiments. This CLI is not meant to be
-    used by end users, but rather by CloudSurfer itself.
+    used by end users, but rather by Ray Jobs submitted by CloudSurfer.
     """
 
 
@@ -51,7 +52,7 @@ def run(
         help="Enable debug mode",
     ),
 ):
-    pass
+    surfer.log.configure_debug_mode(debug)
 
 
 class RunCommandBuilder:

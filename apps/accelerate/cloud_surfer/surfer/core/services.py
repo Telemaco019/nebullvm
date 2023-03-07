@@ -179,20 +179,21 @@ class ExperimentService:
             raise InternalError(f"failed to parse experiment result: {e}")
 
     async def submit(self, req: SubmitExperimentRequest):
-        """
+        """Submit a new experiment.
+
+        Submit a new experiment for execution.
 
         Parameters
         ----------
-        req
+        req : SubmitExperimentRequest
+            The configuration of the experiment to submit.
 
         Raises
         ------
         InternalError
+            If any internal error occurs during experiment submission.
         ValueError
-
-        Returns
-        -------
-
+            If an experiment with the same name already exists.
         """
         if await self.get(req.name) is not None:
             raise ValueError(f"experiment {req.name} already exists")

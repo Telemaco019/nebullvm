@@ -34,3 +34,9 @@ class Logger:
 
 
 logger = Logger()
+
+
+def configure_debug_mode(debug: bool):
+    if debug is True:
+        logger.level = logging.DEBUG
+        logger.debug("debug mode enabled")
