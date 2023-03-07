@@ -72,6 +72,6 @@ class TestExperimentConfig(unittest.TestCase):
                 model_loader_module=tmp_file_path,
                 model_evaluator_module=tmp_file_path,
             )
-            deserialized_yaml = yaml.safe_load(yaml.dump(config.dict()))
+            deserialized_yaml = yaml.safe_load(yaml.safe_dump(config.dict()))
             deserialized_config = ExperimentConfig(**deserialized_yaml)
             self.assertEqual(config.dict(), deserialized_config.dict())

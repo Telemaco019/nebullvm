@@ -44,6 +44,13 @@ class SurferConfig(BaseModel):
                 raise yaml.YAMLError(f"{v} is not a valid YAML: {e}")
         return v
 
+    def dict(self, *args, **kwargs):
+        res = super().dict(*args, **kwargs)
+        for k, v in res.items():
+            if isinstance(v, Path):
+                res[k] = v.resolve().as_posix()
+        return res
+
 
 class ExperimentConfig(BaseModel):
     description: Optional[str]
