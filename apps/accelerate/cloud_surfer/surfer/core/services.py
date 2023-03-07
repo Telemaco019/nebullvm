@@ -2,17 +2,14 @@ import asyncio
 import datetime
 import json
 import logging
-from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Optional
 
-import aiofiles
 import yaml
 from pydantic.error_wrappers import ValidationError
 from ray.job_submission import JobDetails, JobStatus
 from ray.job_submission import JobSubmissionClient
 
-import surfer
 from surfer.core import constants
 from surfer.core.exceptions import InternalError, NotFoundError
 from surfer.core.models import (
@@ -21,52 +18,16 @@ from surfer.core.models import (
     ExperimentDetails,
     ExperimentStatus,
     ExperimentPath,
-    JobSummary, JobWorkingDir,
+    JobSummary,
+    JobWorkingDir,
+    job_working_dir,
 )
 from surfer.core.schemas import (
     SurferConfig,
     ExperimentResult,
-    ExperimentConfig,
 )
-from surfer.core.util import tmp_dir_clone, copy_files
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
-
-
-@asynccontextmanager
-async def job_working_dir(
-    surfer_config: SurferConfig,
-    experiment_config: ExperimentConfig,
-) -> JobWorkingDir:
-    # Clone config for preventing side effects
-    surfer_config = surfer_config.copy()
-    async with tmp_dir_clone(Path(surfer.__file__).parent) as tmp:
-        # Copy experiment req modules
-        modules = [
-            experiment_config.model_loader_module,
-            experiment_config.data_loader_module,
-        ]
-        if experiment_config.model_evaluator_module is not None:
-            modules.append(experiment_config.model_evaluator_module)
-        await copy_files(*modules, dst=tmp)
-        # Generate surfer config file
-        surfer_config_path = tmp / constants.SURFER_CONFIG_FILE_NAME
-        await copy_files(surfer_config.cluster_file, dst=tmp)
-        surfer_config.cluster_file = tmp / surfer_config.cluster_file.name
-        async with aiofiles.open(surfer_config_path, "w+") as f:
-            yaml.safe_dump(surfer_config.dict(), f)
-        # Create working dir object
-        working_dir = JobWorkingDir(
-            path=tmp,
-            surfer_config_path=surfer_config_path,
-            model_loader_path=tmp / experiment_config.model_loader_module.name,
-            data_loader_path=tmp / experiment_config.data_loader_module.name,
-        )
-        if experiment_config.model_evaluator_module is not None:
-            working_dir.model_evaluator_path = (
-                tmp / experiment_config.model_evaluator_module.name
-            )
-        yield working_dir
 
 
 class ExperimentService:
