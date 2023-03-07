@@ -3,9 +3,8 @@ import inspect
 from importlib.util import spec_from_file_location, module_from_spec
 from pathlib import Path
 from types import ModuleType
-from typing import List, Generic, Type
+from typing import List, Generic, Type, TypeVar
 
-from surfer.core.util import _T
 from surfer.log import logger
 
 
@@ -34,6 +33,9 @@ def get_requirements() -> List[str]:
     # TODO
 
     return requirements
+
+
+_T = TypeVar("_T")
 
 
 class ClassLoader(Generic[_T]):
