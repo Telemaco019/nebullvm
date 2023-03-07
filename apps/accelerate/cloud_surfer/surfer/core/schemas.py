@@ -48,6 +48,8 @@ class SurferConfig(BaseModel):
         for k, v in res.items():
             if isinstance(v, Path):
                 res[k] = v.resolve().as_posix()
+            if isinstance(v, AnyUrl):
+                res[k] = str(v)
         return res
 
 
