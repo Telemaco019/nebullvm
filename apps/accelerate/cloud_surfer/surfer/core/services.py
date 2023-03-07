@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -157,10 +158,14 @@ class ExperimentService:
 
     async def _fetch_result(
         self,
-        path: ExperimentPath,
+        experiment_path: ExperimentPath,
     ) -> Optional[ExperimentResult]:
         try:
-            raw_data = await self.storage_client.get(path.as_path())
+            path = Path(
+                experiment_path.as_path(),
+                constants.EXPERIMENT_RESULTS_FILE_NAME,
+            )
+            raw_data = await self.storage_client.get(path)
             if raw_data is None:
                 return None
             return ExperimentResult.parse_raw(raw_data)
@@ -185,6 +190,15 @@ class ExperimentService:
         """
         if await self.get(req.name) is not None:
             raise ValueError(f"experiment {req.name} already exists")
+        # Create experiment entry in cloud storage for tracking it
+        experiment_path = ExperimentPath(
+            experiment_name=req.name,
+            experiment_creation_time=datetime.datetime.now(),
+        )
+        await self.storage_client.upload_content(
+            "", experiment_path.as_path()
+        )
+        # Submit Ray job
         async with tmp_job_dir(req.config) as tmp:
             # Generate storage config file
             storage_config_path = tmp / "storage.yaml"
@@ -408,9 +422,10 @@ class ExperimentService:
         # Init Experiment details
         job_summaries = []
         for job in experiment_jobs:
+            print(job)
             job_summary = JobSummary(
                 status=job.status,
-                job_id=job.job_id,
+                job_id=job.submission_id,
                 additional_info=job.message,
             )
             job_summaries.append(job_summary)

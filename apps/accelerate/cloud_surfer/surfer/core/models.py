@@ -11,7 +11,7 @@ from surfer.core.schemas import ExperimentConfig, ExperimentResult
 class ExperimentStatus(str, Enum):
     PENDING = "pending", ":warning:"
     RUNNING = "running", ":play_button:"
-    SUCCEEDED = "completed", ":v:"
+    SUCCEEDED = "completed", ":white_check_mark:"
     STOPPED = "stopped", ":stop_button:"
     FAILED = "failed", ":x:"
     UNKNOWN = "unknown", "[?]"

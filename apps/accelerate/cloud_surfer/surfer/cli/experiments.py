@@ -101,7 +101,7 @@ async def _submit_experiment(name: str, config_path: Path):
         logger.info("Experiment submitted successfully :tada:")
         logger.info("\nYou can check the status of the experiment with:")
         print(Panel(
-            f"> [green] surfer experiment describe {req.name}[/green]"
+            f"> [green]surfer experiment describe {req.name}[/green]"
         ))
     except (InternalError, ValueError) as e:
         logger.error(f"Failed to submit experiment: {e}")
@@ -207,6 +207,8 @@ async def _describe_experiment(name: str):
         print(jobs_table)
     # Show results
     print(Rule("Results"))
+    if experiment.result is None:
+        print("No results available")
 
 
 @app.command(
