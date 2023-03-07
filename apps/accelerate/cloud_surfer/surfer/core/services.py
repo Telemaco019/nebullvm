@@ -20,7 +20,7 @@ from surfer.core.models import (
     ExperimentDetails,
     ExperimentStatus,
     ExperimentPath,
-    JobSummary,
+    JobSummary, JobWorkingDir,
 )
 from surfer.core.schemas import (
     SurferConfig,
@@ -33,18 +33,35 @@ from surfer.storage.clients import StorageClient
 
 
 @asynccontextmanager
-async def tmp_job_dir(config: ExperimentConfig) -> Path:
+async def job_working_dir(
+    surfer_config: SurferConfig,
+    experiment_config: ExperimentConfig,
+) -> JobWorkingDir:
     async with tmp_dir_clone(Path(surfer.__file__).parent) as tmp:
         # Prepare job dir
         modules = [
-            config.model_loader_module,
-            config.data_loader_module,
+            experiment_config.model_loader_module,
+            experiment_config.data_loader_module,
         ]
-        if config.model_evaluator_module is not None:
-            modules.append(config.model_evaluator_module)
+        if experiment_config.model_evaluator_module is not None:
+            modules.append(experiment_config.model_evaluator_module)
         await copy_files(*modules, dst=tmp)
-        # Yield dir
-        yield tmp
+        # Generate surfer config file
+        surfer_config_path = tmp / constants.SURFER_CONFIG_FILE_NAME
+        with open(surfer_config_path, "w+") as f:
+            yaml.safe_dump(surfer_config.dict(), f)
+        # Create working dir object
+        working_dir = JobWorkingDir(
+            path=tmp,
+            surfer_config_path=surfer_config_path,
+            model_loader_path=tmp / experiment_config.model_loader_module.name,
+            data_loader_path=tmp / experiment_config.data_loader_module.name,
+        )
+        if experiment_config.model_evaluator_module is not None:
+            working_dir.model_evaluator_path = (
+                tmp / experiment_config.model_evaluator_module.name
+            )
+        yield working_dir
 
 
 class ExperimentService:
@@ -68,16 +85,16 @@ class ExperimentService:
     @staticmethod
     def __get_run_cmd(
         req: SubmitExperimentRequest,
-        surfer_config_path: Path,
+        workdir: JobWorkingDir,
     ) -> str:
         from surfer.runner.cli import RunCommandBuilder
 
         builder = (
             RunCommandBuilder()
             .with_experiment_name(req.name)
-            .with_model_loader(req.config.model_loader_module)
-            .with_data_loader(req.config.data_loader_module)
-            .with_surfer_config(surfer_config_path)
+            .with_model_loader(workdir.model_loader_path)
+            .with_data_loader(workdir.data_loader_path)
+            .with_surfer_config(workdir.surfer_config_path)
         )
         if logger.level == logging.DEBUG:
             builder.with_debug()
@@ -206,28 +223,21 @@ class ExperimentService:
             "", experiment_path.as_path()
         )
         # Submit Ray job
-        async with tmp_job_dir(req.config) as tmp:
-            # Generate surfer config file
-            surfer_config_path = tmp / "surfer.yaml"
-            with open(surfer_config_path, "w+") as f:
-                yaml.safe_dump(self.surfer_config.dict(), f)
+        async with job_working_dir(self.surfer_config, req.config) as workdir:
             # Build run command
-            entrypoint = self.__get_run_cmd(
-                req, surfer_config_path.relative_to(tmp)
-            )
+            entrypoint = self.__get_run_cmd(req, workdir)
             # Submit Job
-            working_dir = tmp.as_posix()
             logger.debug(
                 "submitting Ray job",
                 {
                     "entrypoint": entrypoint,
-                    "working_dir": working_dir,
+                    "working_dir": workdir.path.as_posix(),
                 },
             )
             job_id = self.job_client.submit_job(
                 entrypoint=entrypoint,
                 runtime_env={
-                    "working_dir": working_dir,
+                    "working_dir": workdir.path.as_posix(),
                     "pip": self.__get_runner_requirements(),
                 },
                 metadata={
