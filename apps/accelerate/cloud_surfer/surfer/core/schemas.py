@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional, List, Union
 
 import yaml
-from pydantic import BaseModel, FilePath, Field, AnyUrl, validator
+from pydantic import BaseModel, FilePath, AnyUrl, validator
 
 from surfer.core import constants
 from surfer.storage.aws import AWSStorageConfig
@@ -24,7 +24,7 @@ class SurferConfig(BaseModel):
         Address of the head node of the Ray cluster
     """
 
-    cluster_file: FilePath = Field()
+    cluster_file: FilePath
     storage: Union[AzureStorageConfig, GCPStorageConfig, AWSStorageConfig]
     ray_address: AnyUrl = constants.DEFAULT_RAY_ADDRESS
 

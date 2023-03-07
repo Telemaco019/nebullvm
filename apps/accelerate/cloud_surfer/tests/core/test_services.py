@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, NamedTemporaryFile
 from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
@@ -13,9 +13,9 @@ from surfer.core.exceptions import InternalError, NotFoundError
 from surfer.core.models import (
     ExperimentStatus,
     ExperimentSummary,
-    ExperimentPath,
+    ExperimentPath, SubmitExperimentRequest,
 )
-from surfer.core.schemas import SurferConfig
+from surfer.core.schemas import SurferConfig, ExperimentConfig
 from surfer.core.services import SurferConfigManager, ExperimentService
 from surfer.storage.aws import AWSStorageConfig
 from surfer.storage.azure import AzureStorageConfig
@@ -652,3 +652,62 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         )
         job_client.list_jobs.return_value = jobs
         await service.stop("exp-1")
+
+    async def test_submit__experiment_already_exist(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=MagicMock(),
+        )
+        exp_name = "exp-1"
+        # Setup storage client mock
+        exp_1 = ExperimentSummary(
+            name=exp_name,
+            created_at=datetime(2021, 1, 1, 0, 0, 0),
+        )
+        storage_client.list.return_value = [
+            ExperimentPath(
+                experiment_name=exp_1.name,
+                experiment_creation_time=exp_1.created_at,
+            ).as_path(),
+        ]
+        # Run
+        req = SubmitExperimentRequest(
+            config=MagicMock(),
+            name=exp_name,
+        )
+        with self.assertRaises(ValueError):
+            await service.submit(req)
+
+    async def test_submit_experiment__success(self):
+        storage_client = AsyncMock()
+        job_client = MagicMock()
+        with NamedTemporaryFile() as tmp:
+            service = ExperimentService(
+                storage_client=storage_client,
+                job_client=job_client,
+                surfer_config=SurferConfig(
+                    cluster_file=Path(tmp.name),
+                    storage=MockedStorageConfig(),
+                )
+            )
+        # Setup storage client mock
+        storage_client.list.return_value = []
+        # Run
+        with TemporaryDirectory() as tmp:
+            model_loader = Path(tmp, "model_loader.py")
+            model_loader.touch()
+            data_loader = Path(tmp, "data_loader.py")
+            data_loader.touch()
+            req = SubmitExperimentRequest(
+                config=ExperimentConfig(
+                    data_loader_module=data_loader,
+                    model_loader_module=model_loader,
+                ),
+                name="exp-1",
+            )
+            await service.submit(req)
+        # Asserts
+        storage_client.upload_content.assert_called_once()
