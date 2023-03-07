@@ -13,7 +13,7 @@ packages = [{ include = "surfer" }]
 surfer = "surfer.cli.main:main"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.7, <3.10"
 typer = "^0.7.0"
 ray = {extras = ["default"], version = "^2.3.0"}
 speedster = "^0.2.1"
