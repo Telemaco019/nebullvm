@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from typing import TypeVar
 
 import aiofiles
 from mnemonic import Mnemonic
@@ -24,9 +23,6 @@ class RandomGenerator:
 
 def format_datetime(dt: datetime) -> str:
     return dt.strftime(constants.INTERNAL_DATETIME_FORMAT)
-
-
-_T = TypeVar("_T")
 
 
 @asynccontextmanager
