@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Optional
 
+import aiofiles
 import yaml
 from pydantic.error_wrappers import ValidationError
 from ray.job_submission import JobDetails, JobStatus
@@ -52,7 +53,7 @@ async def job_working_dir(
         surfer_config_path = tmp / constants.SURFER_CONFIG_FILE_NAME
         await copy_files(surfer_config.cluster_file, dst=tmp)
         surfer_config.cluster_file = tmp / surfer_config.cluster_file.name
-        with open(surfer_config_path, "w+") as f:
+        async with aiofiles.open(surfer_config_path, "w+") as f:
             yaml.safe_dump(surfer_config.dict(), f)
         # Create working dir object
         working_dir = JobWorkingDir(

@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import TypeVar
 
+import aiofiles
 from random_word import RandomWords
 
 from surfer.core import constants
@@ -61,7 +61,7 @@ async def tmp_dir_clone(*sources: Path) -> Path:
     Path
         The path to the temporary directory.
     """
-    with TemporaryDirectory() as tmp_dir:
+    async with aiofiles.tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir_path = Path(tmp_dir)
         coros = []
         for source in sources:
