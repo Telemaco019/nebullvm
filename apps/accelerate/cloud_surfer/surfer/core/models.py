@@ -17,10 +17,10 @@ from surfer.core.util import tmp_dir_clone, copy_files
 
 class ExperimentStatus(str, Enum):
     PENDING = "pending", ":warning:"
-    RUNNING = "running", ":play_button:"
+    RUNNING = "running", ":green_circle:"
     SUCCEEDED = "completed", ":white_check_mark:"
     STOPPED = "stopped", ":stop_button:"
-    FAILED = "failed", ":x:"
+    FAILED = "failed", ":cross_mark:"
     UNKNOWN = "unknown", "[?]"
 
     def __new__(cls, *values):
