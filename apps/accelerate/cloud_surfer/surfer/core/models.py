@@ -33,6 +33,23 @@ class SubmitExperimentRequest:
 
 
 @dataclass
+class JobWorkingDir:
+    """Working directory of a Ray Job."""
+    path: Path
+    surfer_config_path: Path
+    model_loader_path: Path
+    data_loader_path: Path
+    model_evaluator_path: Optional[Path] = None
+
+    def __post_init__(self):
+        assert self.model_loader_path.is_relative_to(self.path)
+        assert self.data_loader_path.is_relative_to(self.path)
+        assert self.surfer_config_path.is_relative_to(self.path)
+        if self.model_evaluator_path is not None:
+            assert self.model_evaluator_path.is_relative_to(self.path)
+
+
+@dataclass
 class ExperimentPath:
     """Path pointing to an experiment data stored on a cloud storage."""
 
