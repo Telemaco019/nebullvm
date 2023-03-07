@@ -30,7 +30,6 @@ class SurferConfig(BaseModel):
 
     class Config:
         extra = "forbid"
-        frozen = True
         json_encoders = {
             Path: lambda v: v.resolve().as_posix(),
         }
