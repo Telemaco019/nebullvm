@@ -68,7 +68,7 @@ class ExperimentService:
     @staticmethod
     def __get_run_cmd(
         req: SubmitExperimentRequest,
-        storage_config_path: Path,
+        surfer_config_path: Path,
     ) -> str:
         from surfer.runner.cli import RunCommandBuilder
 
@@ -77,7 +77,7 @@ class ExperimentService:
             .with_experiment_name(req.name)
             .with_model_loader(req.config.model_loader_module)
             .with_data_loader(req.config.data_loader_module)
-            .with_storage_config(storage_config_path)
+            .with_surfer_config(surfer_config_path)
         )
         if logger.level == logging.DEBUG:
             builder.with_debug()
@@ -207,13 +207,13 @@ class ExperimentService:
         )
         # Submit Ray job
         async with tmp_job_dir(req.config) as tmp:
-            # Generate storage config file
-            storage_config_path = tmp / "storage.yaml"
-            with open(storage_config_path, "w+") as f:
-                yaml.dump(self.surfer_config.storage.dict(), f)
+            # Generate surfer config file
+            surfer_config_path = tmp / "surfer.yaml"
+            with open(surfer_config_path, "w+") as f:
+                yaml.safe_dump(self.surfer_config.dict(), f)
             # Build run command
             entrypoint = self.__get_run_cmd(
-                req, storage_config_path.relative_to(tmp)
+                req, surfer_config_path.relative_to(tmp)
             )
             # Submit Job
             working_dir = tmp.as_posix()
