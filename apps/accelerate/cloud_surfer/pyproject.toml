@@ -31,6 +31,12 @@ coverage = "^7.2.1"
 [tool.poetry.group.gcp.dependencies]
 google-cloud-storage = "^2.7.0"
 
+
+[tool.poetry.group.azure.dependencies]
+azure-core = "^1.26.3"
+azure-identity = "^1.12.0"
+azure-cli = "^2.46.0"
+
 [tool.pytest.ini_options]
 addopts = [
   "--strict-config",
