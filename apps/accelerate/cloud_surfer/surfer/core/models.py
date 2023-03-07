@@ -10,8 +10,11 @@ import yaml
 
 import surfer
 from surfer.core import constants
-from surfer.core.schemas import ExperimentConfig, ExperimentResult, \
-    SurferConfig
+from surfer.core.schemas import (
+    ExperimentConfig,
+    ExperimentResult,
+    SurferConfig,
+)
 from surfer.core.util import tmp_dir_clone, copy_files
 
 
@@ -136,9 +139,10 @@ async def job_working_dir(
         if experiment_config.model_evaluator_module is not None:
             modules.append(experiment_config.model_evaluator_module)
         await copy_files(*modules, dst=tmp)
+        # Copy surfer cluster file
+        await copy_files(surfer_config.cluster_file, dst=tmp)
         # Generate surfer config file
         surfer_config_path = tmp / constants.SURFER_CONFIG_FILE_NAME
-        await copy_files(surfer_config.cluster_file, dst=tmp)
         surfer_config.cluster_file = tmp / surfer_config.cluster_file.name
         async with aiofiles.open(surfer_config_path, "w+") as f:
             content = yaml.safe_dump(surfer_config.dict())
