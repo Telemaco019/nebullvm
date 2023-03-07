@@ -288,7 +288,7 @@ class ExperimentService:
         delete_job_coros = []
         for j in experiment_jobs:
             coro = asyncio.get_event_loop().run_in_executor(
-                None, self.job_client.delete_job, j.job_id
+                None, self.job_client.delete_job, j.submission_id
             )
             delete_job_coros.append(coro)
         await asyncio.gather(*delete_job_coros)

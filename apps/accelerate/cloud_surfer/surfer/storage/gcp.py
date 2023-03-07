@@ -151,10 +151,10 @@ class GCSBucketClient(StorageClient):
                 __raise_not_found()
 
         def _expand_path() -> List[Blob]:
-            return self.gcs_client.list_blobs(
+            return [b for b in self.gcs_client.list_blobs(
                 bucket_or_name=self.bucket,
                 prefix=path.as_posix(),
-            )
+            )]
 
         async def _delete_blob_async(b: Blob):
             await asyncio.get_running_loop().run_in_executor(
