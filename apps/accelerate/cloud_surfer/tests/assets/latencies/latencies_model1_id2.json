@@ -1,0 +1,68 @@
+{
+  "model_id": "1",
+  "latency_dict": {
+    "original_torch": {
+      "noopt": 0.005848908424377441
+    },
+    "pytorch_torchscript": {
+      "no_compression_noopt": 0.003598451614379883,
+      "no_compression_DYNAMIC_2": -1.0,
+      "no_compression_HALF_2": 0.0048978328704833984,
+      "no_compression_STATIC_2": -1.0,
+      "sparseml_noopt": 0.003686666488647461,
+      "sparseml_DYNAMIC_0.005741226673126265": -1.0,
+      "sparseml_HALF_0.005741226673126265": Infinity,
+      "sparseml_STATIC_0.005741226673126265": -1.0
+    },
+    "pytorch_deepsparse": {
+      "no_compression_noopt": 0.011163473129272461,
+      "no_compression_DYNAMIC_2": Infinity,
+      "no_compression_HALF_2": Infinity,
+      "no_compression_STATIC_2": Infinity,
+      "sparseml_noopt": 0.009331703186035156,
+      "sparseml_DYNAMIC_0.005741226673126265": Infinity,
+      "sparseml_HALF_0.005741226673126265": Infinity,
+      "sparseml_STATIC_0.005741226673126265": Infinity
+    },
+    "pytorch_tensor RT": {
+      "no_compression_noopt": 0.0007717609405517578,
+      "no_compression_DYNAMIC_2": Infinity,
+      "no_compression_HALF_2": 0.00037980079650878906,
+      "no_compression_STATIC_2": 0.0003147125244140625,
+      "sparseml_noopt": 0.0007646083831787109,
+      "sparseml_DYNAMIC_0.005741226673126265": Infinity,
+      "sparseml_HALF_0.005741226673126265": Infinity,
+      "sparseml_STATIC_0.005741226673126265": Infinity
+    },
+    "onnx_onnxruntime": {
+      "no_compression_noopt": 0.002380847930908203,
+      "no_compression_DYNAMIC_2": 0.022106409072875977,
+      "no_compression_HALF_2": 0.002397775650024414,
+      "no_compression_STATIC_2": 0.033722639083862305
+    },
+    "onnx_tensor RT": {
+      "no_compression_noopt": 0.011068582534790039,
+      "no_compression_DYNAMIC_2": Infinity,
+      "no_compression_HALF_2": 0.005269050598144531,
+      "no_compression_STATIC_2": 0.001043558120727539
+    },
+    "onnx_openvino": {
+      "no_compression_noopt": 0.005936145782470703,
+      "no_compression_DYNAMIC_2": Infinity,
+      "no_compression_HALF_2": 0.005975484848022461,
+      "no_compression_STATIC_2": 0.0018918514251708984
+    }
+  },
+  "hardware_setup": {
+    "cpu": "Intel(R) Xeon(R) Silver 4310 CPU @ 2.10GHz",
+    "operative_system": "Linux",
+    "ram": "134.77 GB",
+    "gpu": "NVIDIA GeForce RTX 3090 Ti"
+  },
+  "model_metadata": {
+    "model_name": "ResNet",
+    "model_size": "102.23 MB",
+    "framework": "torch"
+  },
+  "nebullvm_version": "0.4.3"
+}
