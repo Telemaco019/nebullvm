@@ -74,36 +74,32 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
             surfer_config,
             experiment_config,
         ) as workdir:
-            self.assertTrue(workdir.surfer_config_path.exists())
-
-            self.assertTrue(workdir.data_loader_path.exists())
-            self.assertNotEqual(data_loader_path, workdir.data_loader_path)
-            self.assertTrue(workdir.data_loader_path.relative_to(workdir.path))
-
-            self.assertTrue(workdir.model_loader_path.exists())
-            self.assertNotEqual(model_loader_path, workdir.model_loader_path)
             self.assertTrue(
-                workdir.model_loader_path.relative_to(workdir.path)
+                (workdir.base / workdir.surfer_config_path).exists()
             )
 
-            self.assertTrue(workdir.model_evaluator_path.exists())
+            self.assertTrue(
+                (workdir.base / workdir.data_loader_path).exists()
+            )
+            self.assertNotEqual(data_loader_path, workdir.data_loader_path)
+
+            self.assertTrue(
+                (workdir.base / workdir.model_loader_path).exists()
+            )
+            self.assertNotEqual(model_loader_path, workdir.model_loader_path)
+
+            self.assertTrue(
+                (workdir.base / workdir.model_evaluator_path).exists()
+            )
             self.assertNotEqual(
                 model_evaluator_path, workdir.model_evaluator_path
             )
-            self.assertTrue(
-                workdir.model_evaluator_path.relative_to(workdir.path)
-            )
 
             # Check cluster file has been copied
-            with open(workdir.surfer_config_path) as f:
+            with open(workdir.base / workdir.surfer_config_path) as f:
                 obj = yaml.safe_load(f.read())
                 loaded = models.SurferConfig.parse_obj(obj)
                 self.assertTrue(loaded.cluster_file.exists())
-                self.assertTrue(
-                    loaded.cluster_file.resolve().relative_to(
-                        workdir.path.resolve()
-                    )
-                )
                 self.assertNotEqual(
                     loaded.cluster_file, cluster_file_path
                 )

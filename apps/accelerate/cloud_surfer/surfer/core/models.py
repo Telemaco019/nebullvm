@@ -113,18 +113,11 @@ class ExperimentDetails:
 @dataclass
 class JobWorkingDir:
     """Working directory of a Ray Job."""
-    path: Path
+    base: Path
     surfer_config_path: Path
     model_loader_path: Path
     data_loader_path: Path
     model_evaluator_path: Optional[Path] = None
-
-    def __post_init__(self):
-        assert self.model_loader_path.is_relative_to(self.path)
-        assert self.data_loader_path.is_relative_to(self.path)
-        assert self.surfer_config_path.is_relative_to(self.path)
-        if self.model_evaluator_path is not None:
-            assert self.model_evaluator_path.is_relative_to(self.path)
 
 
 @asynccontextmanager
@@ -152,13 +145,11 @@ async def job_working_dir(
             await f.write(content)
         # Create working dir object
         working_dir = JobWorkingDir(
-            path=tmp,
-            surfer_config_path=surfer_config_path,
-            model_loader_path=tmp / experiment_config.model_loader_module.name,
-            data_loader_path=tmp / experiment_config.data_loader_module.name,
+            base=tmp,
+            surfer_config_path=Path(surfer_config_path.name),
+            model_loader_path=Path(experiment_config.model_loader_module.name),
+            data_loader_path=Path(experiment_config.data_loader_module.name),
         )
         if experiment_config.model_evaluator_module is not None:
-            working_dir.model_evaluator_path = (
-                tmp / experiment_config.model_evaluator_module.name
-            )
+            working_dir.model_evaluator_path = experiment_config.model_evaluator_module.name
         yield working_dir
