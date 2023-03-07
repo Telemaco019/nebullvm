@@ -197,13 +197,13 @@ class ExperimentService:
                 "submitting Ray job",
                 {
                     "entrypoint": entrypoint,
-                    "working_dir": workdir.path.as_posix(),
+                    "working_dir": workdir.base.as_posix(),
                 },
             )
             job_id = self.job_client.submit_job(
                 entrypoint=entrypoint,
                 runtime_env={
-                    "working_dir": workdir.path.as_posix(),
+                    "working_dir": workdir.base.as_posix(),
                     "pip": self.__get_runner_requirements(),
                 },
                 metadata={
