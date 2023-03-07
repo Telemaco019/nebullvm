@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryDirectory, NamedTemporaryFile
+from tempfile import TemporaryDirectory, mkstemp
 from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
@@ -113,6 +113,13 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             )
             for s in statuses
         ]
+
+    def setUp(self) -> None:
+        self.paths_to_cleanup = []
+
+    def tearDown(self) -> None:
+        for p in self.paths_to_cleanup:
+            p.unlink()
 
     def test_get_experiment_status__empty_list(self):
         self.assertEqual(
@@ -684,27 +691,32 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
     async def test_submit_experiment__success(self):
         storage_client = AsyncMock()
         job_client = MagicMock()
-        with NamedTemporaryFile() as tmp:
-            service = ExperimentService(
-                storage_client=storage_client,
-                job_client=job_client,
-                surfer_config=SurferConfig(
-                    cluster_file=Path(tmp.name),
-                    storage=MockedStorageConfig(),
-                )
+        _, name = mkstemp()
+        cluster_file_path = Path(name)
+        self.paths_to_cleanup.append(cluster_file_path)
+        service = ExperimentService(
+            storage_client=storage_client,
+            job_client=job_client,
+            surfer_config=SurferConfig(
+                cluster_file=Path(cluster_file_path),
+                storage=MockedStorageConfig(),
             )
+        )
         # Setup storage client mock
         storage_client.list.return_value = []
         # Run
-        with TemporaryDirectory() as tmp:
-            model_loader = Path(tmp, "model_loader.py")
+        with TemporaryDirectory() as cluster_file_path:
+            model_loader = Path(cluster_file_path, "model_loader.py")
             model_loader.touch()
-            data_loader = Path(tmp, "data_loader.py")
+            data_loader = Path(cluster_file_path, "data_loader.py")
             data_loader.touch()
+            model_evaluator = Path(cluster_file_path, "model_evaluator.py")
+            model_evaluator.touch()
             req = SubmitExperimentRequest(
                 config=ExperimentConfig(
                     data_loader_module=data_loader,
                     model_loader_module=model_loader,
+                    model_evaluator_module=model_evaluator,
                 ),
                 name="exp-1",
             )

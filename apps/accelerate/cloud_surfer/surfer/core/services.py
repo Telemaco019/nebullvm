@@ -37,8 +37,10 @@ async def job_working_dir(
     surfer_config: SurferConfig,
     experiment_config: ExperimentConfig,
 ) -> JobWorkingDir:
+    # Clone config for preventing side effects
+    surfer_config = surfer_config.copy()
     async with tmp_dir_clone(Path(surfer.__file__).parent) as tmp:
-        # Prepare job dir
+        # Copy experiment req modules
         modules = [
             experiment_config.model_loader_module,
             experiment_config.data_loader_module,
@@ -48,6 +50,8 @@ async def job_working_dir(
         await copy_files(*modules, dst=tmp)
         # Generate surfer config file
         surfer_config_path = tmp / constants.SURFER_CONFIG_FILE_NAME
+        await copy_files(surfer_config.cluster_file, dst=tmp)
+        surfer_config.cluster_file = tmp / surfer_config.cluster_file.name
         with open(surfer_config_path, "w+") as f:
             yaml.safe_dump(surfer_config.dict(), f)
         # Create working dir object
