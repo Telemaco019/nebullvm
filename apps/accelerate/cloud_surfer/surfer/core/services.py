@@ -85,6 +85,12 @@ class ExperimentService:
         return builder.get_command()
 
     @staticmethod
+    def __get_runner_requirements():
+        from surfer import runner
+
+        return runner.get_requirements()
+
+    @staticmethod
     def _filter_experiment_jobs(
         jobs: List[JobDetails],
         experiment_name: str,
@@ -221,6 +227,7 @@ class ExperimentService:
                 entrypoint=entrypoint,
                 runtime_env={
                     "working_dir": working_dir,
+                    "pip": self.__get_runner_requirements(),
                 },
                 metadata={
                     constants.JOB_METADATA_EXPERIMENT_NAME: req.name,
@@ -422,7 +429,6 @@ class ExperimentService:
         # Init Experiment details
         job_summaries = []
         for job in experiment_jobs:
-            print(job)
             job_summary = JobSummary(
                 status=job.status,
                 job_id=job.submission_id,
