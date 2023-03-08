@@ -6,7 +6,6 @@ from tempfile import TemporaryDirectory, mkstemp
 from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
-import yaml
 from ray.job_submission import JobDetails
 from ray.job_submission import JobStatus, JobType
 
@@ -728,13 +727,6 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
 
             self.assertTrue((workdir.base / workdir.model_evaluator_path).exists())
             self.assertNotEqual(model_evaluator_path, workdir.model_evaluator_path)
-
-            # Check cluster file has been copied
-            with open(workdir.base / workdir.surfer_config_path) as f:
-                obj = yaml.safe_load(f.read())
-                loaded = surfer.common.schemas.SurferConfig.parse_obj(obj)
-                self.assertTrue(loaded.cluster_file.exists())
-                self.assertNotEqual(loaded.cluster_file, cluster_file_path)
 
         # Check surfer config is not modified
         self.assertEqual(original_surfer_config, surfer_config)

@@ -11,7 +11,7 @@ def must_load_config() -> SurferConfig:
     config = config_manager.load_config()
     if config is None:
         logger.error(
-            "Cloud Surfer is not initialized. " "Please run `surfer init` first."
+            "Cloud Surfer is not initialized. Please run `surfer init` first.",
         )
         raise typer.Exit(1)
     return config

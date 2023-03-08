@@ -3,11 +3,12 @@ from functools import cached_property, partial
 from pathlib import Path
 from typing import Optional, List
 
+from ray import remote
 from speedster.api.functions import optimize_model
 
 from surfer import ModelLoader, DataLoader, ModelEvaluator
 from surfer.common.schemas import SpeedsterResult
-from surfer.core.clusters import RayCluster
+from surfer.core.clusters import RayCluster, Accelerator
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
 from surfer.utilities.python_utils import ClassLoader
@@ -19,6 +20,7 @@ class RunConfig:
     data_loader: Path
     metric_drop_threshold: float
     ignored_compilers: List[str]
+    ignored_accelerators: List[Accelerator]
     model_evaluator: Optional[Path] = None
 
 
@@ -68,7 +70,7 @@ class SpeedsterOptimizer:
         return None
 
 
-class OrchestrationService:
+class RayOrchestrator:
     def __init__(
         self,
         cluster: RayCluster,
@@ -78,4 +80,23 @@ class OrchestrationService:
         self.storage_client = storage_client
 
     def run_experiment(self, experiment: str, config: RunConfig):
-        pass
+        actors = []
+        # Add actors on accelerators
+        for accelerator in self.cluster.get_available_accelerators():
+            if accelerator in config.ignored_accelerators:
+                continue
+            actor = remote(
+                num_cpus=1,
+                num_gpus=1,
+                accelerator_type=accelerator.value,
+            )(SpeedsterOptimizer)
+            actors.append(actor)
+        # Add actors on CPU
+        actor = remote(num_cpus=1)(SpeedsterOptimizer)
+        actors.append(actor)
+        # Init actors
+        logger.info("initializing actors")
+        for actor in actors:
+            logger.debug("initializing actor", actor)
+            remote.append(actor.remote(config))
+        # Run optimizations
