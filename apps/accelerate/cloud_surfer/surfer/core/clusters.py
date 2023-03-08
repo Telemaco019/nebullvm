@@ -40,8 +40,11 @@ class RayCluster:
         return accelerators
 
 
-def get_available_accelerators(config: SurferConfig) -> List[Accelerator]:
-    with open(config.cluster_file, "r") as f:
+def get_ray_cluster(surfer_config: SurferConfig) -> RayCluster:
+    with open(surfer_config.cluster_file, "r") as f:
         cluster_config = yaml.safe_load(f.read())
-        cluster = RayCluster(cluster_config)
-        return cluster.get_available_accelerators()
+        return RayCluster(cluster_config)
+
+
+def get_available_accelerators(config: SurferConfig) -> List[Accelerator]:
+    return get_ray_cluster(config).get_available_accelerators()

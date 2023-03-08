@@ -5,6 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
+from importlib.metadata import version
 from pathlib import Path
 from typing import List, Optional
 
@@ -151,7 +152,7 @@ async def job_working_dir(
         await copy_files(surfer_config.cluster_file, dst=tmp)
         # Generate surfer config file
         surfer_config_path = tmp / constants.SURFER_CONFIG_FILE_NAME
-        surfer_config.cluster_file = tmp / surfer_config.cluster_file.name
+        surfer_config.cluster_file = surfer_config.cluster_file.name
         async with aiofiles.open(surfer_config_path, "w+") as f:
             content = yaml.safe_dump(surfer_config.dict())
             await f.write(content)
@@ -552,17 +553,20 @@ def new_experiment_service(config: SurferConfig) -> ExperimentService:
 
 @functools.cache
 def _get_job_requirements() -> List[str]:
-    import typer
+    def __with_version(req: List[str]) -> List[str]:
+        for r in req:
+            yield f"{r}=={version(r)}"
 
-    requirements = [
-        f"typer=={typer.__version__}",
+    dependencies = [
+        "typer",
+        "speedster",
     ]
 
     # Add GCP storage dependency
     try:
         from surfer.storage import gcp
 
-        requirements.append(f"google-cloud-storage=={gcp.storage.__version__}")
+        dependencies.append(f"google-cloud-storage")
     except ImportError:
         pass
 
@@ -572,4 +576,5 @@ def _get_job_requirements() -> List[str]:
     # Add AWS storage dependency
     # TODO
 
+    requirements = list(__with_version(dependencies))
     return requirements

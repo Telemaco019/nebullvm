@@ -1,13 +1,14 @@
-import sys
 from pathlib import Path
 from typing import Optional
 
-import ray
 import typer
+import yaml
 from typer import Typer
 
 import surfer.log
+from surfer.cli.commands import cmd_run as cmd
 from surfer.common.schemas import SurferConfig
+from surfer.core.orchestrators import RunConfig
 
 app = Typer(no_args_is_help=True)
 
@@ -20,28 +21,18 @@ def doc():
     """
 
 
-@ray.remote(num_gpus=1)
-def read_path(p: Path):
-    print("Python version is ", sys.version)
-    # Run nvidia-smi and print output
-    print(ray.get_gpu_ids())
-    print(f"Path is {p.as_posix()}")
-    with open(p) as f:
-        print("content is ", f.read())
-
-
 @app.command(name="run", help="test")
 def run(
     experiment_name: str = typer.Option(
         ...,
     ),
-    data_loader_path: str = typer.Option(
+    data_loader_path: Path = typer.Option(
         ...,
         exists=True,
         file_okay=True,
         dir_okay=False,
     ),
-    model_loader_path: str = typer.Option(
+    model_loader_path: Path = typer.Option(
         ...,
         exists=True,
         file_okay=True,
@@ -65,9 +56,18 @@ def run(
     ),
 ):
     surfer.log.configure_debug_mode(debug)
-    surfer_config = SurferConfig.parse_file(surfer_config_path)
-    res = read_path.remote(surfer_config_path)
-    ray.get(res)
+    with open(surfer_config_path) as f:
+        config_dict = yaml.safe_load(f.read())
+        surfer_config = SurferConfig.parse_obj(config_dict)
+    run_config = RunConfig(
+        model_loader=model_loader_path,
+        data_loader=data_loader_path,
+        metric_drop_threshold=1e-3,  # TODO
+        ignored_compilers=[],
+        ignored_accelerators=[],
+        model_evaluator=model_evaluator_path,
+    )
+    cmd.run(surfer_config, run_config, experiment_name)
 
 
 class RunCommandBuilder:
