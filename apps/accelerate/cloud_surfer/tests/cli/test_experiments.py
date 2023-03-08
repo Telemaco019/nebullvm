@@ -7,13 +7,17 @@ from unittest.mock import patch, AsyncMock
 import typer
 from typer.testing import CliRunner
 
-from surfer.cli.commands.cmd_experiments import _must_load_config
+from surfer.cli.commands.common import must_load_config
 from surfer.cli.experiments import app
 from surfer.common import exceptions
 from surfer.common.schemas import SurferConfig
 from surfer.core.config import SurferConfigManager
-from surfer.core.experiments import ExperimentStatus, ExperimentSummary, \
-    JobSummary, ExperimentDetails
+from surfer.core.experiments import (
+    ExperimentStatus,
+    ExperimentSummary,
+    JobSummary,
+    ExperimentDetails,
+)
 from tests import test_utils
 from tests.test_utils import MockedStorageConfig
 
@@ -25,7 +29,7 @@ class TestMustLoadConfig(unittest.TestCase):
     def test_config_not_found(self, load_config_mock):
         load_config_mock.return_value = None
         with self.assertRaises(typer.Exit):
-            _must_load_config()
+            must_load_config()
 
     @patch.object(SurferConfigManager, "load_config")
     def test_config_found(self, load_config_mock):
@@ -37,7 +41,7 @@ class TestMustLoadConfig(unittest.TestCase):
                 ray_address="https://localhost:8265",
             )
             load_config_mock.return_value = config
-            self.assertEqual(config, _must_load_config())
+            self.assertEqual(config, must_load_config())
 
 
 @patch("surfer.core.experiments.new_experiment_service")

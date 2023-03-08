@@ -10,34 +10,21 @@ from rich.table import Table
 
 import surfer.core.experiments
 import surfer.utilities.datetime_utils
+from surfer.cli.commands.common import must_load_config
 from surfer.common.exceptions import NotFoundError, InternalError
-from surfer.common.schemas import SurferConfig, ExperimentConfig
-from surfer.core.config import SurferConfigManager
+from surfer.common.schemas import ExperimentConfig
 from surfer.core.experiments import SubmitExperimentRequest
 from surfer.log import logger
 
-config_manager = SurferConfigManager()
-
-
-def _must_load_config() -> SurferConfig:
-    config = config_manager.load_config()
-    if config is None:
-        logger.error(
-            "Cloud Surfer is not initialized. "
-            "Please run `surfer init` first."
-        )
-        raise typer.Exit(1)
-    return config
-
 
 def _new_experiment_service() -> surfer.core.experiments.ExperimentService:
-    config = _must_load_config()
+    config = must_load_config()
     return surfer.core.experiments.new_experiment_service(config)
 
 
 async def list_experiments():
     # Init services
-    config = _must_load_config()
+    config = must_load_config()
     experiment_service = surfer.core.experiments.new_experiment_service(config)
 
     # List experiments
