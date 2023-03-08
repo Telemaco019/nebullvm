@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 import yaml
 
 from surfer.common.schemas import ExperimentConfig
+from surfer.storage.models import StorageConfig, StorageProvider
 
 
 @contextmanager
@@ -19,3 +20,7 @@ def tmp_experiment_config_file() -> Path:
             )
             f.write(yaml.dump(config.dict()))
         yield tmp_file
+
+
+class MockedStorageConfig(StorageConfig):
+    provider = StorageProvider.AZURE

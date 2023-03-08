@@ -6,7 +6,7 @@ import yaml
 from pydantic.error_wrappers import ValidationError
 
 from surfer.common.schemas import SurferConfig, ExperimentConfig
-from tests.core.test_services import MockedStorageConfig
+from tests.test_utils import MockedStorageConfig
 
 
 class TestSurferConfig(unittest.TestCase):

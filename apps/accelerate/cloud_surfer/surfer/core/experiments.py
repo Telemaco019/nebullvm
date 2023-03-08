@@ -1,31 +1,171 @@
 import asyncio
 import datetime
-import json
 import logging
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import List, Optional
 
+import aiofiles
 import yaml
-from pydantic.error_wrappers import ValidationError
-from ray.job_submission import JobDetails, JobStatus
-from ray.job_submission import JobSubmissionClient
+from pydantic import ValidationError
+from ray.dashboard.modules.job.common import JobStatus
+from ray.dashboard.modules.job.pydantic_models import JobDetails
+from ray.dashboard.modules.job.sdk import JobSubmissionClient
 
+import surfer
 from surfer.cli.runner import RunCommandBuilder
-from surfer.common import constants
+from surfer.common import constants, schemas
 from surfer.common.exceptions import InternalError, NotFoundError
 from surfer.common.schemas import SurferConfig, ExperimentResult
-from surfer.core.models import (
-    SubmitExperimentRequest,
-    ExperimentSummary,
-    ExperimentDetails,
-    ExperimentStatus,
-    ExperimentPath,
-    JobSummary,
-    JobWorkingDir,
-    job_working_dir,
-)
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
+from surfer.utilities.file_utils import tmp_dir_clone, copy_files
+
+
+class ExperimentStatus(str, Enum):
+    PENDING = "pending", ":warning:"
+    RUNNING = "running", ":green_circle:"
+    SUCCEEDED = "completed", ":white_check_mark:"
+    STOPPED = "stopped", ":stop_button:"
+    FAILED = "failed", ":cross_mark:"
+    UNKNOWN = "unknown", "[?]"
+
+    def __new__(cls, *values):
+        obj = super().__new__(cls)
+        obj._value_ = values[0]
+        obj.icon = values[1]
+        return obj
+
+    def __str__(self):
+        return "{} {}".format(self.value, self.icon)
+
+
+@dataclass
+class SubmitExperimentRequest:
+    config: schemas.ExperimentConfig
+    name: str
+
+
+@dataclass
+class ExperimentPath:
+    """Path pointing to an experiment data stored on a cloud storage."""
+
+    experiment_name: str
+    experiment_creation_time: datetime
+
+    @classmethod
+    def from_path(cls, path: Path) -> "ExperimentPath":
+        """
+        The path is expected to have the following format:
+        <EXPERIMENTS_STORAGE_PREFIX>/<experiment_name>/<DATETIME_FORMAT>
+
+        Raises
+        ------
+            ValueError: If the format of the Path is not valid.
+        """
+        relative_path = path.relative_to(constants.EXPERIMENTS_STORAGE_PREFIX)
+        experiment_name = relative_path.parts[0]
+        experiment_creation_time = datetime.datetime.strptime(
+            relative_path.parts[1],
+            constants.INTERNAL_DATETIME_FORMAT,
+        )
+        return cls(
+            experiment_name=experiment_name,
+            experiment_creation_time=experiment_creation_time,
+        )
+
+    def as_path(self) -> Path:
+        return Path(
+            constants.EXPERIMENTS_STORAGE_PREFIX,
+            self.experiment_name,
+            self.experiment_creation_time.strftime(
+                constants.INTERNAL_DATETIME_FORMAT,
+            ),
+        )
+
+
+@dataclass
+class ExperimentSummary:
+    name: str
+    created_at: datetime
+    status: ExperimentStatus = ExperimentStatus.UNKNOWN
+
+
+@dataclass
+class JobSummary:
+    status: str
+    job_id: str
+    additional_info: Optional[str] = None
+
+
+@dataclass
+class ExperimentDetails:
+    summary: ExperimentSummary
+    jobs: List[JobSummary]
+    result: Optional[schemas.ExperimentResult]
+
+    @property
+    def name(self):
+        return self.summary.name
+
+    @property
+    def created_at(self):
+        return self.summary.created_at
+
+    @property
+    def status(self):
+        return self.summary.status
+
+
+@dataclass
+class JobWorkingDir:
+    """Working directory of a Ray Job."""
+
+    base: Path
+    surfer_config_path: Path
+    model_loader_path: Path
+    data_loader_path: Path
+    model_evaluator_path: Optional[Path] = None
+
+
+@asynccontextmanager
+async def job_working_dir(
+    surfer_config: schemas.SurferConfig,
+    experiment_config: schemas.ExperimentConfig,
+) -> JobWorkingDir:
+    # Clone config for preventing side effects
+    surfer_config = surfer_config.copy()
+    async with tmp_dir_clone(Path(surfer.__file__).parent) as tmp:
+        # Copy experiment req modules
+        modules = [
+            experiment_config.model_loader_module,
+            experiment_config.data_loader_module,
+        ]
+        if experiment_config.model_evaluator_module is not None:
+            modules.append(experiment_config.model_evaluator_module)
+        await copy_files(*modules, dst=tmp)
+        # Copy surfer cluster file
+        await copy_files(surfer_config.cluster_file, dst=tmp)
+        # Generate surfer config file
+        surfer_config_path = tmp / constants.SURFER_CONFIG_FILE_NAME
+        surfer_config.cluster_file = tmp / surfer_config.cluster_file.name
+        async with aiofiles.open(surfer_config_path, "w+") as f:
+            content = yaml.safe_dump(surfer_config.dict())
+            await f.write(content)
+        # Create working dir object
+        working_dir = JobWorkingDir(
+            base=tmp,
+            surfer_config_path=Path(surfer_config_path.name),
+            model_loader_path=Path(experiment_config.model_loader_module.name),
+            data_loader_path=Path(experiment_config.data_loader_module.name),
+        )
+        if experiment_config.model_evaluator_module is not None:
+            working_dir.model_evaluator_path = (
+                experiment_config.model_evaluator_module.name
+            )  # noqa E501
+        yield working_dir
 
 
 class ExperimentService:
@@ -79,7 +219,7 @@ class ExperimentService:
             j
             for j in jobs
             if experiment_name
-            == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
+               == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
         ]
 
     @staticmethod
@@ -422,76 +562,3 @@ def new_experiment_service(config: SurferConfig) -> ExperimentService:
         job_client=job_client,
         surfer_config=config,
     )
-
-
-class SurferConfigManager:
-    def __init__(
-        self,
-        base_path=constants.SURFER_CONFIG_BASE_DIR_PATH,
-        config_file_name=constants.SURFER_CONFIG_FILE_NAME,
-    ):
-        """
-        Parameters
-        ----------
-        base_path: Path
-            The base path to the directory containing Cloud Surfer files
-        config_file_name: str
-            The name of the Cloud Surfer configuration file
-        """
-        self.config_file_path = base_path / config_file_name
-
-    def config_exists(self) -> bool:
-        """Check if the Cloud Surfer configuration file exists
-
-        Returns
-        -------
-        bool
-            True if the Cloud Surfer configuration file exists,
-            False otherwise
-        """
-        return self.config_file_path.exists()
-
-    def save_config(self, config: SurferConfig):
-        """Save to file the Cloud Surfer configuration
-
-        If the Cloud Surfer configuration file already exists,
-        it will be overwritten.
-
-        Parameters
-        ----------
-        config: SurferConfig
-            The Cloud Surfer configuration to save
-        """
-        # Create config file
-        self.config_file_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.config_file_path, "w") as f:
-            config_dict = json.loads(config.json())
-            f.write(yaml.dump(config_dict))
-
-    def load_config(self) -> Optional[SurferConfig]:
-        """Load the Cloud Surfer configuration
-
-        Raises
-        ------
-        InternalError
-            If the Cloud Surfer file is found but failed to parse
-
-        Returns
-        -------
-        Optional[SurferConfig]
-            The Cloud Surfer configuration if Cloud Surfer has been
-            already initialized, None otherwise
-        """
-        if not self.config_exists():
-            return None
-        try:
-            with open(self.config_file_path) as f:
-                config_dict = yaml.safe_load(f.read())
-                return SurferConfig.parse_obj(config_dict)
-        except Exception as e:
-            raise InternalError(
-                "error parsing CloudSurfer config at {}: {}".format(
-                    self.config_file_path,
-                    e,
-                )
-            )
