@@ -1,11 +1,18 @@
 import unittest
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, NamedTemporaryFile
+from unittest.mock import patch
 
 import yaml
 from pydantic.error_wrappers import ValidationError
 
 from surfer.common.schemas import SurferConfig, ExperimentConfig
+from surfer.storage import (
+    StorageProvider,
+    AzureStorageConfig,
+    GCPStorageConfig,
+    AWSStorageConfig,
+)
 from tests.test_utils import MockedStorageConfig
 
 
@@ -48,6 +55,56 @@ class TestSurferConfig(unittest.TestCase):
             cluster_file=valid_yaml_path,
             storage=MockedStorageConfig(),
         )
+
+    @patch(
+        "surfer.storage.enabled_providers",
+        [StorageProvider.GCP, StorageProvider.AWS],
+    )
+    def test_azure_provider_not_enabled(self):
+        with NamedTemporaryFile() as f:
+            f.write(b"")
+            surfer_config = SurferConfig(
+                cluster_file=Path(f.name),
+                storage=AzureStorageConfig(
+                    sas_url="",
+                ),
+            )
+            obj = surfer_config.dict()
+            with self.assertRaises(ValueError):
+                SurferConfig.parse_obj(obj)
+
+    @patch(
+        "surfer.storage.enabled_providers",
+        [StorageProvider.AZURE, StorageProvider.AWS],
+    )
+    def test_gcp_provider_not_enabled(self):
+        with NamedTemporaryFile() as f:
+            f.write(b"")
+            surfer_config = SurferConfig(
+                cluster_file=Path(f.name),
+                storage=GCPStorageConfig(
+                    project="",
+                    bucket="",
+                ),
+            )
+            obj = surfer_config.dict()
+            with self.assertRaises(ValueError):
+                SurferConfig.parse_obj(obj)
+
+    @patch(
+        "surfer.storage.enabled_providers",
+        [StorageProvider.AZURE, StorageProvider.GCP],
+    )
+    def test_aws_provider_not_enabled(self):
+        with NamedTemporaryFile() as f:
+            f.write(b"")
+            surfer_config = SurferConfig(
+                cluster_file=Path(f.name),
+                storage=AWSStorageConfig(),
+            )
+            obj = surfer_config.dict()
+            with self.assertRaises(ValueError):
+                SurferConfig.parse_obj(obj)
 
 
 class TestExperimentConfig(unittest.TestCase):

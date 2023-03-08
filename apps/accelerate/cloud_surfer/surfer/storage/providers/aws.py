@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from surfer.storage.clients import StorageClient
 from surfer.storage.models import StorageConfig, StorageProvider
@@ -7,6 +7,9 @@ from surfer.storage.models import StorageConfig, StorageProvider
 
 class AWSStorageConfig(StorageConfig):
     provider = StorageProvider.AWS
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
 
 
 class S3Client(StorageClient):
