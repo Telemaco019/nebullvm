@@ -3,6 +3,7 @@ from pathlib import Path
 import typer
 import yaml
 from pydantic.error_wrappers import ValidationError
+from rich import print
 from rich import progress
 from rich.panel import Panel
 from rich.rule import Rule
