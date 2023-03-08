@@ -80,7 +80,7 @@ class SurferConfig(BaseModel):
                     f"storage provider {provider.value} not installed. "
                     f"Please install surfer[azure] to use it."
                 )
-            from surfer.storage import AzureStorageConfig
+            from surfer.storage.providers.azure import AzureStorageConfig
 
             return AzureStorageConfig.parse_obj(storage_config_dict)
 
@@ -90,7 +90,7 @@ class SurferConfig(BaseModel):
                     f"storage provider {provider.value} not installed. "
                     f"Please install surfer[aws] to use it."
                 )
-            from surfer.storage import AWSStorageConfig
+            from surfer.storage.providers.aws import AWSStorageConfig
 
             return AWSStorageConfig.parse_obj(storage_config_dict)
 
@@ -100,7 +100,7 @@ class SurferConfig(BaseModel):
                     f"storage provider {provider.value} not installed. "
                     f"Please install surfer[gcp] to use it."
                 )
-            from surfer.storage import GCPStorageConfig
+            from surfer.storage.providers.gcp import GCPStorageConfig
 
             return GCPStorageConfig.parse_obj(storage_config_dict)
 
