@@ -17,5 +17,3 @@ class RandomGenerator:
 
 def format_datetime(dt: datetime) -> str:
     return dt.strftime(constants.INTERNAL_DATETIME_FORMAT)
-
-

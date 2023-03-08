@@ -20,7 +20,7 @@ class SignedURL:
         parse_result = urlparse(url)
         error_msg = (
             f"{url} is not a valid Storage Container SAS URL. "
-            "Please refer to https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview "
+            "Please refer to https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview "  # noqa E501
             "for more information",
         )
         if not parse_result.hostname.endswith("blob.core.windows.net"):

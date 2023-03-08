@@ -79,7 +79,7 @@ class ExperimentService:
             j
             for j in jobs
             if experiment_name
-               == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
+            == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
         ]
 
     @staticmethod
@@ -182,9 +182,7 @@ class ExperimentService:
             experiment_name=req.name,
             experiment_creation_time=datetime.datetime.now(),
         )
-        await self.storage_client.upload_content(
-            "", experiment_path.as_path()
-        )
+        await self.storage_client.upload_content("", experiment_path.as_path())
         # Submit Ray job
         async with job_working_dir(self.surfer_config, req.config) as workdir:
             # Build run command

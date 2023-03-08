@@ -85,9 +85,7 @@ async def submit_experiment(name: str, config_path: Path):
         await experiment_service.submit(req)
         logger.info("Experiment submitted successfully :tada:")
         logger.info("\nYou can check the status of the experiment with:")
-        print(Panel(
-            f"> [green]surfer experiment describe {req.name}[/green]"
-        ))
+        print(Panel(f"> [green]surfer experiment describe {req.name}[/green]"))
     except (InternalError, ValueError) as e:
         logger.error(f"Failed to submit experiment: {e}")
         raise typer.Exit(1)

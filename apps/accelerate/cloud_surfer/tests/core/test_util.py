@@ -22,5 +22,3 @@ class TestRandomGenerator(unittest.TestCase):
         self.assertEqual(
             n_words, len(mnemonic.split(self.generator.separator))
         )
-
-

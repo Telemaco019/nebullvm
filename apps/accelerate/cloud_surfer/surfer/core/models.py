@@ -112,6 +112,7 @@ class ExperimentDetails:
 @dataclass
 class JobWorkingDir:
     """Working directory of a Ray Job."""
+
     base: Path
     surfer_config_path: Path
     model_loader_path: Path
@@ -151,5 +152,7 @@ async def job_working_dir(
             data_loader_path=Path(experiment_config.data_loader_module.name),
         )
         if experiment_config.model_evaluator_module is not None:
-            working_dir.model_evaluator_path = experiment_config.model_evaluator_module.name  # noqa E501
+            working_dir.model_evaluator_path = (
+                experiment_config.model_evaluator_module.name
+            )  # noqa E501
         yield working_dir

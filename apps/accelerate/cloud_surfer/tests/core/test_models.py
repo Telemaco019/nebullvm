@@ -80,9 +80,7 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
                 (workdir.base / workdir.surfer_config_path).exists()
             )
 
-            self.assertTrue(
-                (workdir.base / workdir.data_loader_path).exists()
-            )
+            self.assertTrue((workdir.base / workdir.data_loader_path).exists())
             self.assertNotEqual(data_loader_path, workdir.data_loader_path)
 
             self.assertTrue(
@@ -102,9 +100,7 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
                 obj = yaml.safe_load(f.read())
                 loaded = surfer.common.schemas.SurferConfig.parse_obj(obj)
                 self.assertTrue(loaded.cluster_file.exists())
-                self.assertNotEqual(
-                    loaded.cluster_file, cluster_file_path
-                )
+                self.assertNotEqual(loaded.cluster_file, cluster_file_path)
 
         # Check surfer config is not modified
         self.assertEqual(original_surfer_config, surfer_config)
