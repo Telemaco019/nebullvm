@@ -8,12 +8,12 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 
+import surfer.core.experiments
 from surfer.cli.commands import util
 from surfer.common.exceptions import NotFoundError, InternalError
 from surfer.common.schemas import SurferConfig, ExperimentConfig
-from surfer.core import services
-from surfer.core.models import SubmitExperimentRequest
-from surfer.core.services import SurferConfigManager
+from surfer.core.config import SurferConfigManager
+from surfer.core.experiments import SubmitExperimentRequest
 from surfer.log import logger
 
 config_manager = SurferConfigManager()
@@ -30,15 +30,15 @@ def _must_load_config() -> SurferConfig:
     return config
 
 
-def _new_experiment_service() -> services.ExperimentService:
+def _new_experiment_service() -> surfer.core.experiments.ExperimentService:
     config = _must_load_config()
-    return services.new_experiment_service(config)
+    return surfer.core.experiments.new_experiment_service(config)
 
 
 async def list_experiments():
     # Init services
     config = _must_load_config()
-    experiment_service = services.new_experiment_service(config)
+    experiment_service = surfer.core.experiments.new_experiment_service(config)
 
     # List experiments
     experiments = await experiment_service.list()

@@ -11,15 +11,11 @@ from surfer.cli.commands.cmd_experiments import _must_load_config
 from surfer.cli.experiments import app
 from surfer.common import exceptions
 from surfer.common.schemas import SurferConfig
-from surfer.core.models import (
-    ExperimentDetails,
-    ExperimentSummary,
-    ExperimentStatus,
-    JobSummary,
-)
-from surfer.core.services import SurferConfigManager
+from surfer.core.config import SurferConfigManager
+from surfer.core.experiments import ExperimentStatus, ExperimentSummary, \
+    JobSummary, ExperimentDetails
 from tests import test_utils
-from tests.core.test_services import MockedStorageConfig
+from tests.test_utils import MockedStorageConfig
 
 runner = CliRunner()
 
@@ -44,7 +40,7 @@ class TestMustLoadConfig(unittest.TestCase):
             self.assertEqual(config, _must_load_config())
 
 
-@patch("surfer.core.services.new_experiment_service")
+@patch("surfer.core.experiments.new_experiment_service")
 @patch.object(SurferConfigManager, "load_config")
 class TestExperimentCli(unittest.TestCase):
     def setUp(self) -> None:

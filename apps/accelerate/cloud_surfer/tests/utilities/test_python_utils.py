@@ -3,7 +3,7 @@ from pathlib import Path
 
 from surfer import ModelLoader
 from surfer.runner import util
-from surfer.runner.util import load_module, ClassLoader
+from surfer.utilities.python_utils import ClassLoader, load_module
 from tests import _get_assets_path
 
 

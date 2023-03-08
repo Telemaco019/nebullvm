@@ -1,5 +1,1 @@
-from surfer.runner.models import (  # noqa: F401
-    DataLoader,
-    ModelLoader,
-    ModelEvaluator,
-)
+from surfer.common.models import DataLoader, ModelLoader, ModelEvaluator
