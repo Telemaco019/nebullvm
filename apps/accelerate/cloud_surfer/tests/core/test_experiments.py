@@ -716,9 +716,9 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             model_evaluator.touch()
             req = SubmitExperimentRequest(
                 config=ExperimentConfig(
-                    data_loader_module=data_loader,
-                    model_loader_module=model_loader,
-                    model_evaluator_module=model_evaluator,
+                    data_loader=data_loader,
+                    model_loader=model_loader,
+                    model_evaluator=model_evaluator,
                 ),
                 name="exp-1",
             )
@@ -783,9 +783,9 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
         )
         original_surfer_config = surfer_config.copy()
         experiment_config = surfer.common.schemas.ExperimentConfig(
-            data_loader_module=data_loader_path,
-            model_loader_module=model_loader_path,
-            model_evaluator_module=model_evaluator_path,
+            data_loader=data_loader_path,
+            model_loader=model_loader_path,
+            model_evaluator=model_evaluator_path,
         )
 
         async with surfer.core.experiments.job_working_dir(

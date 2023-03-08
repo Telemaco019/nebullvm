@@ -4,6 +4,7 @@ from pathlib import Path
 # Ray config
 DEFAULT_RAY_ADDRESS = "http://127.0.0.1:8265"
 JOB_METADATA_EXPERIMENT_NAME = "experiment_name"
+CLUSTER_ACCELERATOR_TYPE_PREFIX = "accelerator_type:"
 
 # Surfer config
 SURFER_CONFIG_BASE_DIR_PATH = Path(os.getenv("HOME"), ".config", "surfer")

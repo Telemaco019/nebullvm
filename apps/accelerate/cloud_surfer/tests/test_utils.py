@@ -15,8 +15,8 @@ def tmp_experiment_config_file() -> Path:
         with open(tmp_file, "w") as f:
             config = ExperimentConfig(
                 description="test",
-                data_loader_module=Path(f.name),
-                model_loader_module=Path(f.name),
+                data_loader=Path(f.name),
+                model_loader=Path(f.name),
             )
             f.write(yaml.dump(config.dict()))
         yield tmp_file

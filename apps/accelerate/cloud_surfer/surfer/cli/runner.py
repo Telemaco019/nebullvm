@@ -7,7 +7,6 @@ import typer
 from typer import Typer
 
 import surfer.log
-from surfer import runner
 from surfer.common.schemas import SurferConfig
 
 app = Typer(no_args_is_help=True)
@@ -73,7 +72,7 @@ def run(
 
 class RunCommandBuilder:
     def __init__(self, interpreter="python3"):
-        self.__command = f"{interpreter} -m {runner.__name__} {run.__name__}"
+        self.__command = f"{interpreter} -m {__name__} {run.__name__}"
 
     def with_model_loader(
         self,

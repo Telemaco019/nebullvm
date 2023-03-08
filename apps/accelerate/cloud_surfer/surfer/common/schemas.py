@@ -80,9 +80,9 @@ class SurferConfig(BaseModel):
 
 class ExperimentConfig(BaseModel):
     description: Optional[str]
-    data_loader_module: FilePath
-    model_loader_module: FilePath
-    model_evaluator_module: Optional[FilePath]
+    data_loader: FilePath
+    model_loader: FilePath
+    model_evaluator: Optional[FilePath]
     additional_requirements: List[str] = []
 
     class Config:
