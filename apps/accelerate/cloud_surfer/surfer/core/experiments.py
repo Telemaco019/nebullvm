@@ -322,19 +322,22 @@ class ExperimentService:
         async with job_working_dir(self.surfer_config, req.config) as workdir:
             # Build run command
             entrypoint = self.__get_run_cmd(req, workdir)
+            # Build dependencies
+            requirements = _get_job_requirements()
             # Submit Job
             logger.debug(
                 "submitting Ray job",
                 {
                     "entrypoint": entrypoint,
                     "working_dir": workdir.base.as_posix(),
+                    "pip": requirements,
                 },
             )
             job_id = self.job_client.submit_job(
                 entrypoint=entrypoint,
                 runtime_env={
                     "working_dir": workdir.base.as_posix(),
-                    "pip": _get_job_requirements(),
+                    "pip": requirements,
                 },
                 metadata={
                     constants.JOB_METADATA_EXPERIMENT_NAME: req.name,
@@ -564,7 +567,7 @@ def _get_job_requirements() -> List[str]:
 
     # Add GCP storage dependency
     try:
-        from surfer.storage import gcp
+        from surfer.storage.providers import gcp
 
         dependencies.append(f"google-cloud-storage")
     except ImportError:
