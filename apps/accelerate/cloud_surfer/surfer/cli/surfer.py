@@ -3,7 +3,9 @@ from pathlib import Path
 import typer as typer
 from rich.prompt import Confirm, Prompt
 
+from surfer import storage
 from surfer.cli.experiments import app as experiment_app
+from surfer.common import constants
 from surfer.common.schemas import SurferConfig
 from surfer.core.config import SurferConfigManager
 from surfer.log import logger
@@ -19,44 +21,46 @@ app.add_typer(
 
 
 def _new_azure_storage_config() -> StorageConfig:
-    try:
-        from surfer.storage import azure
+    if StorageProvider.AZURE not in storage.enabled_providers:
+        logger.error(
+            "Azure storage is not enabled. "
+            "Please install surfer[azure] to use Azure as storage provider"
+        )
+        raise typer.Exit(1)
 
-        sas_url = azure.URLPrompt.ask(
-            "Please enter a Storage Container SAS URL",
-        )
-        return azure.AzureStorageConfig(sas_url=sas_url)
-    except ImportError as e:
-        raise ImportError(
-            f'{e} - Please install "surfer[azure]" '
-            "to use Azure as storage provider"
-        )
+    from surfer.storage.providers import azure
+
+    sas_url = azure.URLPrompt.ask(
+        "Please enter a Storage Container SAS URL",
+    )
+    return azure.AzureStorageConfig(sas_url=sas_url)
 
 
 def _new_gcp_storage_config() -> StorageConfig:
-    try:
-        from surfer.storage import gcp
-
-        bucket = Prompt.ask("Insert bucket name")
-        project = Prompt.ask("Insert project name")
-        return gcp.GCPStorageConfig(bucket=bucket, project=project)
-    except ImportError as e:
-        raise ImportError(
-            f'{e} - Please install "surfer[gcp]" '
-            "to use GCP as storage provider"
+    if StorageProvider.GCP not in storage.enabled_providers:
+        logger.error(
+            "GCP storage is not enabled. "
+            "Please install surfer[gcp] to use GCP as storage provider"
         )
+        raise typer.Exit(1)
+
+    from surfer.storage.providers import gcp
+
+    bucket = Prompt.ask("Insert bucket name")
+    project = Prompt.ask("Insert project name")
+    return gcp.GCPStorageConfig(bucket=bucket, project=project)
 
 
 def _new_aws_storage_config():
-    try:
-        from surfer.storage import aws  # noqa W605
-
-        raise NotImplementedError("AWS storage is not yet implemented")
-    except ImportError as e:
-        raise ImportError(
-            f'{e} - Please install "surfer[aws]" '
-            "to use AWS as storage provider"
+    if StorageProvider.AWS not in storage.enabled_providers:
+        logger.error(
+            "AWS storage is not enabled. "
+            "Please install surfer[aws] to use AWS as storage provider"
         )
+        raise typer.Exit(1)
+    from surfer.storage.providers import aws
+
+    return aws.AWSStorageConfig()
 
 
 @app.command(
@@ -97,8 +101,7 @@ def init(
     write_config = True
     if config_manager.config_exists():
         write_config = Confirm.ask(
-            "Found existing CloudSurfer configuration. "
-            "Do you want to overwrite it?",
+            "Found existing CloudSurfer configuration. Do you want to overwrite it?",
             default=False,
             show_choices=True,
         )

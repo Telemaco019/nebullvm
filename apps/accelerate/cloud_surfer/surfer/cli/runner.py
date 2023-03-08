@@ -72,7 +72,9 @@ def run(
 
 class RunCommandBuilder:
     def __init__(self, interpreter="python3"):
-        self.__command = f"{interpreter} -m {__name__} {run.__name__}"
+        from surfer.cli import runner  # noqa W605
+
+        self.__command = f"{interpreter} -m {runner.__name__} {run.__name__}"
 
     def with_model_loader(
         self,

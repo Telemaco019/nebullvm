@@ -15,7 +15,6 @@ import surfer.core
 from surfer.common import constants
 from surfer.common.exceptions import InternalError, NotFoundError
 from surfer.common.schemas import SurferConfig, ExperimentConfig
-from surfer.core.config import SurferConfigManager
 from surfer.core.experiments import (
     ExperimentService,
     ExperimentStatus,
@@ -23,79 +22,8 @@ from surfer.core.experiments import (
     ExperimentPath,
     ExperimentSummary,
 )
-from surfer.storage.providers.aws import AWSStorageConfig
 from surfer.storage.providers.azure import AzureStorageConfig
-from surfer.storage.providers.gcp import GCPStorageConfig
 from tests.test_utils import MockedStorageConfig
-
-
-class TestConfigManager(unittest.TestCase):
-    def setUp(self) -> None:
-        self.tmp_dir = TemporaryDirectory()
-
-    def tearDown(self) -> None:
-        self.tmp_dir.cleanup()
-
-    def test_config_exists__not_exist(self):
-        manager = SurferConfigManager(base_path=Path(self.tmp_dir.name))
-        self.assertFalse(manager.config_exists())
-
-    def test_config_exists__exist(self):
-        manager = SurferConfigManager(base_path=Path(self.tmp_dir.name))
-        manager.config_file_path.touch()
-        self.assertTrue(manager.config_exists())
-
-    def test_load_config__not_exist(self):
-        manager = SurferConfigManager(base_path=Path(self.tmp_dir.name))
-        self.assertIsNone(manager.load_config())
-
-    def test_load_config__invalid_config(self):
-        manager = SurferConfigManager(base_path=Path(self.tmp_dir.name))
-        with open(manager.config_file_path, "w") as f:
-            f.write("foo: bar")
-        with self.assertRaises(Exception):
-            manager.load_config()
-
-    def test_save_config(self):
-        manager = SurferConfigManager(base_path=Path(self.tmp_dir.name))
-        cluster_file_path = Path(self.tmp_dir.name, "cluster.yaml")
-        with open(cluster_file_path, "w") as f:
-            f.write("")
-        config = SurferConfig(
-            cluster_file=cluster_file_path,
-            storage=AzureStorageConfig(
-                sas_url="https://myaccount.blob.core.windows.net/pictures"
-            ),
-        )
-        manager.save_config(config)
-        self.assertEqual(config.json(), manager.load_config().json())
-
-    def test_save_config__storage_serialization(self):
-        # Init config file
-        manager = SurferConfigManager(base_path=Path(self.tmp_dir.name))
-        cluster_file_path = Path(self.tmp_dir.name, "cluster.yaml")
-        with open(cluster_file_path, "w") as f:
-            f.write("")
-        # Available storage configs
-        storage_configs = [
-            AzureStorageConfig(
-                sas_url="https://myaccount.blob.core.windows.net/pictures",
-            ),
-            GCPStorageConfig(
-                project="my-project",
-                bucket="my-bucket",
-            ),
-            AWSStorageConfig(),
-        ]
-        # For each storage config, test whether it gets serialized/deserialized correctly # noqa: E501
-        for c in storage_configs:
-            surfer_config = SurferConfig(
-                cluster_file=cluster_file_path,
-                storage=c,
-            )
-            manager.save_config(surfer_config)
-            loaded_config = manager.load_config()
-            self.assertEqual(c, loaded_config.storage)
 
 
 class TestExperimentService(unittest.IsolatedAsyncioTestCase):
@@ -261,9 +189,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         ]
         # Run
         experiments = await service.list()
-        self.assertEqual(
-            1, len(experiments)  # invalid paths should be ignored
-        )
+        self.assertEqual(1, len(experiments))  # invalid paths should be ignored
 
     async def test_list__jobs_should_update_status(self):
         # Init
@@ -747,9 +673,7 @@ class TestExperimentPath(unittest.TestCase):
         ).as_path()
         experiment_path = surfer.core.experiments.ExperimentPath.from_path(path)
         self.assertEqual(experiment_name, experiment_path.experiment_name)
-        self.assertEqual(
-            creation_date, experiment_path.experiment_creation_time
-        )
+        self.assertEqual(creation_date, experiment_path.experiment_creation_time)
 
 
 class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
@@ -779,7 +703,9 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
 
         surfer_config = surfer.common.schemas.SurferConfig(
             cluster_file=cluster_file_path,
-            storage=MockedStorageConfig(),
+            storage=AzureStorageConfig(
+                sas_url="https://test.blob.core.windows.net",
+            ),
         )
         original_surfer_config = surfer_config.copy()
         experiment_config = surfer.common.schemas.ExperimentConfig(
@@ -792,24 +718,16 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
             surfer_config,
             experiment_config,
         ) as workdir:
-            self.assertTrue(
-                (workdir.base / workdir.surfer_config_path).exists()
-            )
+            self.assertTrue((workdir.base / workdir.surfer_config_path).exists())
 
             self.assertTrue((workdir.base / workdir.data_loader_path).exists())
             self.assertNotEqual(data_loader_path, workdir.data_loader_path)
 
-            self.assertTrue(
-                (workdir.base / workdir.model_loader_path).exists()
-            )
+            self.assertTrue((workdir.base / workdir.model_loader_path).exists())
             self.assertNotEqual(model_loader_path, workdir.model_loader_path)
 
-            self.assertTrue(
-                (workdir.base / workdir.model_evaluator_path).exists()
-            )
-            self.assertNotEqual(
-                model_evaluator_path, workdir.model_evaluator_path
-            )
+            self.assertTrue((workdir.base / workdir.model_evaluator_path).exists())
+            self.assertNotEqual(model_evaluator_path, workdir.model_evaluator_path)
 
             # Check cluster file has been copied
             with open(workdir.base / workdir.surfer_config_path) as f:

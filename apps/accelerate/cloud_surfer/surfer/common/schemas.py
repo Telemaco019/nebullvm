@@ -3,11 +3,12 @@ from typing import Optional, List, Union
 
 import yaml
 from pydantic import BaseModel, FilePath, AnyUrl, validator
+from pydantic.error_wrappers import ValidationError
 
+from nebullvm.config import DEFAULT_METRIC_DROP_THS
+from surfer import storage
 from surfer.common import constants
-from surfer.storage.providers.aws import AWSStorageConfig
-from surfer.storage.providers.azure import AzureStorageConfig
-from surfer.storage.providers.gcp import GCPStorageConfig
+from surfer.storage.models import StorageConfig, StorageProvider
 
 
 class OptimizationResult(BaseModel):
@@ -50,7 +51,7 @@ class SurferConfig(BaseModel):
     """
 
     cluster_file: FilePath
-    storage: Union[AzureStorageConfig, GCPStorageConfig, AWSStorageConfig]
+    storage: StorageConfig
     ray_address: AnyUrl = constants.DEFAULT_RAY_ADDRESS
 
     class Config:
@@ -68,6 +69,50 @@ class SurferConfig(BaseModel):
                 raise yaml.YAMLError(f"{v} is not a valid YAML: {e}")
         return v
 
+    @classmethod
+    def __parse_storage_config(cls, obj) -> StorageConfig:
+        storage_config_dict = obj["storage"]
+        provider = StorageProvider(storage_config_dict["provider"])
+
+        if provider is StorageProvider.AZURE:
+            if provider not in storage.enabled_providers:
+                raise ValueError(
+                    f"storage provider {provider.value} not installed. "
+                    f"Please install surfer[azure] to use it."
+                )
+            from surfer.storage import AzureStorageConfig
+
+            return AzureStorageConfig.parse_obj(storage_config_dict)
+
+        if provider is StorageProvider.AWS:
+            if provider not in storage.enabled_providers:
+                raise ValueError(
+                    f"storage provider {provider.value} not installed. "
+                    f"Please install surfer[aws] to use it."
+                )
+            from surfer.storage import AWSStorageConfig
+
+            return AWSStorageConfig.parse_obj(storage_config_dict)
+
+        if provider is StorageProvider.GCP:
+            if provider not in storage.enabled_providers:
+                raise ValueError(
+                    f"storage provider {provider.value} not installed. "
+                    f"Please install surfer[gcp] to use it."
+                )
+            from surfer.storage import GCPStorageConfig
+
+            return GCPStorageConfig.parse_obj(storage_config_dict)
+
+        raise ValidationError(f"storage provider {provider} is not supported")
+
+    @classmethod
+    def parse_obj(cls, obj) -> "SurferConfig":
+        parsed: Union["SurferConfig", BaseModel] = super().parse_obj(obj)
+        storage_config = cls.__parse_storage_config(obj)
+        parsed.storage = storage_config
+        return parsed
+
     def dict(self, *args, **kwargs):
         res = super().dict(*args, **kwargs)
         for k, v in res.items():
@@ -82,8 +127,11 @@ class ExperimentConfig(BaseModel):
     description: Optional[str]
     data_loader: FilePath
     model_loader: FilePath
-    model_evaluator: Optional[FilePath]
+    model_evaluator: Optional[FilePath] = None
     additional_requirements: List[str] = []
+    metric_drop_threshold: float = DEFAULT_METRIC_DROP_THS
+    ignored_compilers: List[str] = []
+    ignored_accelerators: List[str] = []
 
     class Config:
         extra = "forbid"

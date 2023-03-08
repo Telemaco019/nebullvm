@@ -1,5 +1,5 @@
 import abc
-from typing import Iterable, Dict
+from typing import Iterable, Callable, Any
 
 
 class DataLoader(abc.ABC):
@@ -16,10 +16,5 @@ class ModelLoader(abc.ABC):
 
 class ModelEvaluator(abc.ABC):
     @abc.abstractmethod
-    def evaluate_model(self, model, *args, **kwargs) -> Dict[str, any]:
-        pass
-
-
-class DefaultModelEvaluator(ModelEvaluator):
-    def evaluate_model(self, model, *args, **kwargs) -> Dict[str, any]:
+    def get_precision_metric_fn(self) -> Callable[[Any, Any, Any], float]:
         pass
