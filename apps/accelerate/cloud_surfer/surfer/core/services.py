@@ -10,8 +10,10 @@ from pydantic.error_wrappers import ValidationError
 from ray.job_submission import JobDetails, JobStatus
 from ray.job_submission import JobSubmissionClient
 
-from surfer.core import constants
-from surfer.core.exceptions import InternalError, NotFoundError
+from surfer.cli.runner import RunCommandBuilder
+from surfer.common import constants
+from surfer.common.exceptions import InternalError, NotFoundError
+from surfer.common.schemas import SurferConfig, ExperimentResult
 from surfer.core.models import (
     SubmitExperimentRequest,
     ExperimentSummary,
@@ -21,10 +23,6 @@ from surfer.core.models import (
     JobSummary,
     JobWorkingDir,
     job_working_dir,
-)
-from surfer.core.schemas import (
-    SurferConfig,
-    ExperimentResult,
 )
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
@@ -53,7 +51,6 @@ class ExperimentService:
         req: SubmitExperimentRequest,
         workdir: JobWorkingDir,
     ) -> str:
-        from surfer.runner.cli import RunCommandBuilder
 
         builder = (
             RunCommandBuilder()
@@ -419,16 +416,14 @@ class ExperimentService:
         )
 
 
-class Factory:
-    @staticmethod
-    def new_experiment_service(config: SurferConfig) -> ExperimentService:
-        storage_client = StorageClient.from_config(config.storage)
-        job_client = JobSubmissionClient(address=config.ray_address)
-        return ExperimentService(
-            storage_client=storage_client,
-            job_client=job_client,
-            surfer_config=config,
-        )
+def new_experiment_service(config: SurferConfig) -> ExperimentService:
+    storage_client = StorageClient.from_config(config.storage)
+    job_client = JobSubmissionClient(address=config.ray_address)
+    return ExperimentService(
+        storage_client=storage_client,
+        job_client=job_client,
+        surfer_config=config,
+    )
 
 
 class SurferConfigManager:

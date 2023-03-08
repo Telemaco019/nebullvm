@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from surfer.core import constants
+from surfer.common import constants
 
 
 def format_datetime_ui(date: datetime) -> str:

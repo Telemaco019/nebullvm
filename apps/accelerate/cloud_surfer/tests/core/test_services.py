@@ -8,19 +8,20 @@ from unittest.mock import AsyncMock, MagicMock
 from ray.job_submission import JobDetails
 from ray.job_submission import JobStatus, JobType
 
-from surfer.core import constants
-from surfer.core.exceptions import InternalError, NotFoundError
+from surfer.common import constants
+from surfer.common.exceptions import InternalError, NotFoundError
+from surfer.common.schemas import SurferConfig, ExperimentConfig
 from surfer.core.models import (
     ExperimentStatus,
     ExperimentSummary,
-    ExperimentPath, SubmitExperimentRequest,
+    ExperimentPath,
+    SubmitExperimentRequest,
 )
-from surfer.core.schemas import SurferConfig, ExperimentConfig
 from surfer.core.services import SurferConfigManager, ExperimentService
-from surfer.storage.aws import AWSStorageConfig
-from surfer.storage.azure import AzureStorageConfig
-from surfer.storage.gcp import GCPStorageConfig
 from surfer.storage.models import StorageConfig, StorageProvider
+from surfer.storage.providers.aws import AWSStorageConfig
+from surfer.storage.providers.azure import AzureStorageConfig
+from surfer.storage.providers.gcp import GCPStorageConfig
 
 
 class MockedStorageConfig(StorageConfig):

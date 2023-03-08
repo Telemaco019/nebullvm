@@ -4,10 +4,35 @@ from typing import Optional, List, Union
 import yaml
 from pydantic import BaseModel, FilePath, AnyUrl, validator
 
-from surfer.core import constants
-from surfer.storage.aws import AWSStorageConfig
-from surfer.storage.azure import AzureStorageConfig
-from surfer.storage.gcp import GCPStorageConfig
+from surfer.common import constants
+from surfer.storage.providers.aws import AWSStorageConfig
+from surfer.storage.providers.azure import AzureStorageConfig
+from surfer.storage.providers.gcp import GCPStorageConfig
+
+
+class OptimizationResult(BaseModel):
+    technique: str
+    compiler: str
+    latency_seconds: float
+    model_size_mb: float
+    throughput: float
+    memory_footprint_mb: Optional[float]
+    model: Optional[Path]
+
+
+class HardwareInfo(BaseModel):
+    cpu: str
+    operating_system: str
+    memory: str
+    accelerator: str
+
+
+class SpeedsterResult(BaseModel):
+    optimizations: List[OptimizationResult]
+    best_model_latency: OptimizationResult
+    best_model_memory: OptimizationResult
+    hardware_info: HardwareInfo
+    speedster_version: str
 
 
 class SurferConfig(BaseModel):

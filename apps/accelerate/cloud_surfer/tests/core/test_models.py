@@ -5,7 +5,9 @@ from tempfile import mkstemp
 
 import yaml
 
-from surfer.core import models, constants
+import surfer.common.schemas
+from surfer.common import constants
+from surfer.core import models
 from tests.core.test_services import MockedStorageConfig
 
 
@@ -59,12 +61,12 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
         model_evaluator_path = Path(model_evaluator_file)
         self.paths_to_cleanup.append(model_evaluator_path)
 
-        surfer_config = models.SurferConfig(
+        surfer_config = surfer.common.schemas.SurferConfig(
             cluster_file=cluster_file_path,
             storage=MockedStorageConfig(),
         )
         original_surfer_config = surfer_config.copy()
-        experiment_config = models.ExperimentConfig(
+        experiment_config = surfer.common.schemas.ExperimentConfig(
             data_loader_module=data_loader_path,
             model_loader_module=model_loader_path,
             model_evaluator_module=model_evaluator_path,
@@ -98,7 +100,7 @@ class TestJobWorkingDir(unittest.IsolatedAsyncioTestCase):
             # Check cluster file has been copied
             with open(workdir.base / workdir.surfer_config_path) as f:
                 obj = yaml.safe_load(f.read())
-                loaded = models.SurferConfig.parse_obj(obj)
+                loaded = surfer.common.schemas.SurferConfig.parse_obj(obj)
                 self.assertTrue(loaded.cluster_file.exists())
                 self.assertNotEqual(
                     loaded.cluster_file, cluster_file_path

@@ -1,12 +1,14 @@
+import sys
 from pathlib import Path
 from typing import Optional
 
+import ray
 import typer
 from typer import Typer
 
 import surfer.log
 from surfer import runner
-from surfer.core.schemas import SurferConfig
+from surfer.common.schemas import SurferConfig
 
 app = Typer(no_args_is_help=True)
 
@@ -17,6 +19,16 @@ def doc():
     CLI for running surfer experiments. This CLI is not meant to be
     used by end users, but rather by Ray Jobs submitted by CloudSurfer.
     """
+
+
+@ray.remote(num_gpus=1)
+def read_path(p: Path):
+    print("Python version is ", sys.version)
+    # Run nvidia-smi and print output
+    print(ray.get_gpu_ids())
+    print(f"Path is {p.as_posix()}")
+    with open(p) as f:
+        print("content is ", f.read())
 
 
 @app.command(name="run", help="test")
@@ -55,6 +67,8 @@ def run(
 ):
     surfer.log.configure_debug_mode(debug)
     surfer_config = SurferConfig.parse_file(surfer_config_path)
+    res = read_path.remote(surfer_config_path)
+    ray.get(res)
 
 
 class RunCommandBuilder:
@@ -101,5 +115,5 @@ class RunCommandBuilder:
         return self.__command
 
 
-def main():
+if __name__ == "__main__":
     app()
