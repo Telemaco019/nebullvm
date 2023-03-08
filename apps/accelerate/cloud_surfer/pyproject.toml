@@ -10,7 +10,7 @@ readme = "README.md"
 packages = [{ include = "surfer" }]
 
 [tool.poetry.scripts]
-surfer = "surfer.cli.main:main"
+surfer = "surfer.cli.surfer:main"
 
 [tool.poetry.dependencies]
 python = ">=3.7, <3.10"
