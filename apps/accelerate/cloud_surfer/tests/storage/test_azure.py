@@ -2,7 +2,7 @@ import unittest
 
 from rich.prompt import InvalidResponse
 
-from surfer.storage.azure import SignedURL, URLPrompt
+from surfer.storage.providers.azure import SignedURL, URLPrompt
 
 
 class TestSignedURL(unittest.TestCase):

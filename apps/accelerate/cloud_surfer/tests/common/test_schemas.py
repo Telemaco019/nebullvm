@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import yaml
 from pydantic.error_wrappers import ValidationError
 
-from surfer.core.schemas import SurferConfig, ExperimentConfig
+from surfer.common.schemas import SurferConfig, ExperimentConfig
 from tests.core.test_services import MockedStorageConfig
 
 

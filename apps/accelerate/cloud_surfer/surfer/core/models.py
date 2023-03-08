@@ -9,13 +9,9 @@ import aiofiles
 import yaml
 
 import surfer
-from surfer.core import constants
-from surfer.core.schemas import (
-    ExperimentConfig,
-    ExperimentResult,
-    SurferConfig,
-)
-from surfer.core.util import tmp_dir_clone, copy_files
+from surfer.common import constants
+from surfer.common import schemas
+from surfer.utilities.file_utils import tmp_dir_clone, copy_files
 
 
 class ExperimentStatus(str, Enum):
@@ -38,7 +34,7 @@ class ExperimentStatus(str, Enum):
 
 @dataclass
 class SubmitExperimentRequest:
-    config: ExperimentConfig
+    config: schemas.ExperimentConfig
     name: str
 
 
@@ -98,7 +94,7 @@ class JobSummary:
 class ExperimentDetails:
     summary: ExperimentSummary
     jobs: List[JobSummary]
-    result: Optional[ExperimentResult]
+    result: Optional[schemas.ExperimentResult]
 
     @property
     def name(self):
@@ -125,8 +121,8 @@ class JobWorkingDir:
 
 @asynccontextmanager
 async def job_working_dir(
-    surfer_config: SurferConfig,
-    experiment_config: ExperimentConfig,
+    surfer_config: schemas.SurferConfig,
+    experiment_config: schemas.ExperimentConfig,
 ) -> JobWorkingDir:
     # Clone config for preventing side effects
     surfer_config = surfer_config.copy()
@@ -155,5 +151,5 @@ async def job_working_dir(
             data_loader_path=Path(experiment_config.data_loader_module.name),
         )
         if experiment_config.model_evaluator_module is not None:
-            working_dir.model_evaluator_path = experiment_config.model_evaluator_module.name
+            working_dir.model_evaluator_path = experiment_config.model_evaluator_module.name  # noqa E501
         yield working_dir

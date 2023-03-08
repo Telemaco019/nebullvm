@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 import yaml
 
-from surfer.core.schemas import ExperimentConfig
+from surfer.common.schemas import ExperimentConfig
 
 
 @contextmanager

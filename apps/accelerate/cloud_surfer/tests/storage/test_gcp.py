@@ -6,10 +6,10 @@ from unittest.mock import patch, MagicMock
 from google.cloud import exceptions as gcp_exceptions
 from google.cloud import storage
 
-from surfer.storage import gcp
+from surfer.storage.providers import gcp
 
 
-@patch("surfer.storage.gcp.storage.Client")
+@patch("surfer.storage.providers.gcp.storage.Client")
 class TestGCSBucketClient(unittest.IsolatedAsyncioTestCase):
     async def test_list__empty(self, mocked_gcp_client):
         mocked_gcp_client.list_blobs.return_value = []
