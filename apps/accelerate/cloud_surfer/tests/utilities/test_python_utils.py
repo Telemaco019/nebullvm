@@ -1,14 +1,14 @@
 import unittest
 from pathlib import Path
 
+import surfer.core.experiments
 from surfer import ModelLoader
-from surfer.runner import util
 from surfer.utilities.python_utils import ClassLoader, load_module
 from tests import _get_assets_path
 
 
 def test_get_requirements():
-    requirements = util.get_requirements()
+    requirements = surfer.core.experiments._get_job_requirements()
     assert len(requirements) > 0
 
 

@@ -9,7 +9,7 @@ from rich.rule import Rule
 from rich.table import Table
 
 import surfer.core.experiments
-from surfer.cli.commands import util
+import surfer.utilities.datetime_utils
 from surfer.common.exceptions import NotFoundError, InternalError
 from surfer.common.schemas import SurferConfig, ExperimentConfig
 from surfer.core.config import SurferConfigManager
@@ -52,7 +52,7 @@ async def list_experiments():
         table.add_row(
             e.name,
             str(e.status),
-            util.format_datetime_ui(e.created_at),
+            surfer.utilities.datetime_utils.format_datetime_ui(e.created_at),
         )
     print(table)
 
@@ -123,7 +123,7 @@ async def describe_experiment(name: str):
     print("[bold]Experiment name[/bold]: {}".format(experiment.name))
     print(
         "[bold]Created at[/bold]: {}".format(
-            util.format_datetime_ui(experiment.created_at)
+            surfer.utilities.datetime_utils.format_datetime_ui(experiment.created_at)
         )
     )
     print("[bold]Status[/bold]: {}".format(experiment.status))

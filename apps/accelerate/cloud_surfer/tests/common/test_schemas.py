@@ -68,9 +68,9 @@ class TestExperimentConfig(unittest.TestCase):
                 f.write("")
             config = ExperimentConfig(
                 description="test",
-                data_loader_module=tmp_file_path,
-                model_loader_module=tmp_file_path,
-                model_evaluator_module=tmp_file_path,
+                data_loader=tmp_file_path,
+                model_loader=tmp_file_path,
+                model_evaluator=tmp_file_path,
             )
             deserialized_yaml = yaml.safe_load(yaml.safe_dump(config.dict()))
             deserialized_config = ExperimentConfig(**deserialized_yaml)

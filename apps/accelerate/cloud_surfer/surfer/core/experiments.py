@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import functools
 import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -140,11 +141,11 @@ async def job_working_dir(
     async with tmp_dir_clone(Path(surfer.__file__).parent) as tmp:
         # Copy experiment req modules
         modules = [
-            experiment_config.model_loader_module,
-            experiment_config.data_loader_module,
+            experiment_config.model_loader,
+            experiment_config.data_loader,
         ]
-        if experiment_config.model_evaluator_module is not None:
-            modules.append(experiment_config.model_evaluator_module)
+        if experiment_config.model_evaluator is not None:
+            modules.append(experiment_config.model_evaluator)
         await copy_files(*modules, dst=tmp)
         # Copy surfer cluster file
         await copy_files(surfer_config.cluster_file, dst=tmp)
@@ -158,12 +159,12 @@ async def job_working_dir(
         working_dir = JobWorkingDir(
             base=tmp,
             surfer_config_path=Path(surfer_config_path.name),
-            model_loader_path=Path(experiment_config.model_loader_module.name),
-            data_loader_path=Path(experiment_config.data_loader_module.name),
+            model_loader_path=Path(experiment_config.model_loader.name),
+            data_loader_path=Path(experiment_config.data_loader.name),
         )
-        if experiment_config.model_evaluator_module is not None:
+        if experiment_config.model_evaluator is not None:
             working_dir.model_evaluator_path = (
-                experiment_config.model_evaluator_module.name
+                experiment_config.model_evaluator.name
             )  # noqa E501
         yield working_dir
 
@@ -191,7 +192,6 @@ class ExperimentService:
         req: SubmitExperimentRequest,
         workdir: JobWorkingDir,
     ) -> str:
-
         builder = (
             RunCommandBuilder()
             .with_experiment_name(req.name)
@@ -205,12 +205,6 @@ class ExperimentService:
         return builder.get_command()
 
     @staticmethod
-    def __get_runner_requirements():
-        from surfer import runner
-
-        return runner.get_requirements()
-
-    @staticmethod
     def _filter_experiment_jobs(
         jobs: List[JobDetails],
         experiment_name: str,
@@ -219,7 +213,7 @@ class ExperimentService:
             j
             for j in jobs
             if experiment_name
-               == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
+            == j.metadata.get(constants.JOB_METADATA_EXPERIMENT_NAME, None)
         ]
 
     @staticmethod
@@ -339,7 +333,7 @@ class ExperimentService:
                 entrypoint=entrypoint,
                 runtime_env={
                     "working_dir": workdir.base.as_posix(),
-                    "pip": self.__get_runner_requirements(),
+                    "pip": _get_job_requirements(),
                 },
                 metadata={
                     constants.JOB_METADATA_EXPERIMENT_NAME: req.name,
@@ -382,9 +376,7 @@ class ExperimentService:
                 )
             if j.status is JobStatus.PENDING:
                 raise InternalError(
-                    "job {} is still pending, stop experiment first".format(
-                        j.job_id
-                    )
+                    "job {} is still pending, stop experiment first".format(j.job_id)
                 )
         # Delete experiment data
         experiment_paths = await self._get_experiment_paths(experiment_name)
@@ -395,9 +387,7 @@ class ExperimentService:
         logger.info("deleting experiment data...")
         delete_data_coros = []
         for path in experiment_paths:
-            delete_data_coros.append(
-                self.storage_client.delete(path.as_path())
-            )
+            delete_data_coros.append(self.storage_client.delete(path.as_path()))
         try:
             await asyncio.gather(*delete_data_coros)
         except FileNotFoundError as e:
@@ -441,15 +431,11 @@ class ExperimentService:
         # Check if the experiment exists
         paths = await self._get_experiment_paths(experiment_name)
         if len(paths) == 0:
-            raise NotFoundError(
-                "experiment {} does not exist".format(experiment_name)
-            )
+            raise NotFoundError("experiment {} does not exist".format(experiment_name))
         # Check if experiment can be stopped
         experiment_jobs = await self._get_experiment_jobs(experiment_name)
         if len(experiment_jobs) == 0:
-            raise ValueError(
-                "no jobs found for experiment {}".format(experiment_name)
-            )
+            raise ValueError("no jobs found for experiment {}".format(experiment_name))
         status = self._get_experiment_status(experiment_jobs)
         if self.__can_stop_experiment(status) is False:
             raise ValueError("cannot stop {} experiment".format(status.value))
@@ -562,3 +548,28 @@ def new_experiment_service(config: SurferConfig) -> ExperimentService:
         job_client=job_client,
         surfer_config=config,
     )
+
+
+@functools.cache
+def _get_job_requirements() -> List[str]:
+    import typer
+
+    requirements = [
+        f"typer=={typer.__version__}",
+    ]
+
+    # Add GCP storage dependency
+    try:
+        from surfer.storage import gcp
+
+        requirements.append(f"google-cloud-storage=={gcp.storage.__version__}")
+    except ImportError:
+        pass
+
+    # Add Azure storage dependency
+    # TODO
+
+    # Add AWS storage dependency
+    # TODO
+
+    return requirements
