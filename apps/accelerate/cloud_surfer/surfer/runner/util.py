@@ -20,9 +20,7 @@ def get_requirements() -> List[str]:
     try:
         from surfer.storage import gcp
 
-        requirements.append(
-            f"google-cloud-storage=={gcp.storage.__version__}"
-        )
+        requirements.append(f"google-cloud-storage=={gcp.storage.__version__}")
     except ImportError:
         pass
 

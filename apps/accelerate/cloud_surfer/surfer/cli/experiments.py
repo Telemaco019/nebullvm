@@ -91,7 +91,7 @@ def describe_experiment(
 @app.command(
     name="delete",
     help="Delete an experiment. "
-         "If the experiment is running, it will be stopped and deleted.",
+    "If the experiment is running, it will be stopped and deleted.",
 )
 def delete_experiment(
     name: str = typer.Argument(

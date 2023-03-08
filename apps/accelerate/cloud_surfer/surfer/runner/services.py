@@ -10,7 +10,7 @@ class SpeedsterResultsCollector:
     def __init__(
         self,
         result_files_dir: Path = Path("."),
-        result_files_regex: str = "*.json"
+        result_files_regex: str = "*.json",
     ):
         """
         Parameters
@@ -34,8 +34,7 @@ class SpeedsterResultsCollector:
         """
         logger.info("collecting Nebullvm results...")
         result_riles = [
-            f for f in
-            self._results_file_dir.glob(self._results_file_regex)
+            f for f in self._results_file_dir.glob(self._results_file_regex)
         ]
         if len(result_riles) == 0:
             msg = "could not find any Nebullvm results file in path {}".format(
@@ -47,7 +46,10 @@ class SpeedsterResultsCollector:
                 f"found {len(result_riles)} Nebullvm results file, "
                 f"using only {result_riles[0]}"
             )
-        with open(result_riles[0], "r", ) as res_file:
+        with open(
+            result_riles[0],
+            "r",
+        ) as res_file:
             return json.load(res_file)
 
 

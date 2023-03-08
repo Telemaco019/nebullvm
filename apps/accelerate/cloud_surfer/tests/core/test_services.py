@@ -701,7 +701,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
             surfer_config=SurferConfig(
                 cluster_file=Path(cluster_file_path),
                 storage=MockedStorageConfig(),
-            )
+            ),
         )
         # Setup storage client mock
         storage_client.list.return_value = []
