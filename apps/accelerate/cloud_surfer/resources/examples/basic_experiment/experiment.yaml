@@ -1,3 +1,6 @@
 description: "Description of the experiment"
 data_loader: resources/examples/basic_experiment/data_loader.py
 model_loader: resources/examples/basic_experiment/model_loader.py
+additional_requirements:
+  - "torch"
+  - "torchvision"
