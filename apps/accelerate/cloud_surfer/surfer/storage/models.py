@@ -12,5 +12,6 @@ class StorageProvider(str, Enum):
 class StorageConfig(BaseModel):
     class Config:
         use_enum_values = True
+        frozen = True
 
     provider: StorageProvider
