@@ -3,13 +3,26 @@ from pathlib import Path
 
 import surfer.core.experiments
 from surfer import ModelLoader
+from surfer.storage.models import StorageConfig, StorageProvider
 from surfer.utilities.python_utils import ClassLoader, load_module
 from tests import _get_assets_path
 
 
-def test_get_requirements():
-    requirements = surfer.core.experiments._get_job_requirements()
-    assert len(requirements) > 0
+def test_get_requirements__azure():
+    configs = [
+        StorageConfig(
+            provider=StorageProvider.AZURE,
+        ),
+        StorageConfig(
+            provider=StorageProvider.AWS,
+        ),
+        StorageConfig(
+            provider=StorageProvider.GCP,
+        ),
+    ]
+    for config in configs:
+        requirements = surfer.core.experiments._get_job_requirements(config)
+        assert len(requirements) > 0
 
 
 class TestLoadModule(unittest.TestCase):
