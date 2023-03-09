@@ -60,12 +60,12 @@ def run(
         config_dict = yaml.safe_load(f.read())
         surfer_config = SurferConfig.parse_obj(config_dict)
     run_config = RunConfig(
-        model_loader=model_loader_path,
-        data_loader=data_loader_path,
+        model_loader_path=model_loader_path,
+        data_loader_path=data_loader_path,
         metric_drop_threshold=1e-3,  # TODO
         ignored_compilers=[],
         ignored_accelerators=[],
-        model_evaluator=model_evaluator_path,
+        model_evaluator_path=model_evaluator_path,
     )
     cmd.run(surfer_config, run_config, experiment_name)
 
