@@ -13,8 +13,8 @@ from surfer.storage.models import StorageProvider, StorageConfig
 def _new_azure_storage_config() -> StorageConfig:
     if StorageProvider.AZURE not in storage.enabled_providers:
         logger.error(
-            "Azure storage is not enabled. "
-            "Please install surfer[azure] to use Azure as storage provider"
+            'Azure storage is not enabled. '
+            'Please install "surfer\[azure]" to use Azure as storage provider'
         )
         raise typer.Exit(1)
 
@@ -29,8 +29,8 @@ def _new_azure_storage_config() -> StorageConfig:
 def _new_gcp_storage_config() -> StorageConfig:
     if StorageProvider.GCP not in storage.enabled_providers:
         logger.error(
-            "GCP storage is not enabled. "
-            "Please install surfer[gcp] to use GCP as storage provider"
+            'GCP storage is not enabled. '
+            'Please install "surfer\[gcp]" to use GCP as storage provider'
         )
         raise typer.Exit(1)
 
@@ -44,8 +44,8 @@ def _new_gcp_storage_config() -> StorageConfig:
 def _new_aws_storage_config():
     if StorageProvider.AWS not in storage.enabled_providers:
         logger.error(
-            "AWS storage is not enabled. "
-            "Please install surfer[aws] to use AWS as storage provider"
+            'AWS storage is not enabled. '
+            'Please install "surfer\[aws]" to use AWS as storage provider'
         )
         raise typer.Exit(1)
     from surfer.storage.providers import aws

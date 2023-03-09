@@ -1,11 +1,16 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from urllib.parse import urlparse
 
+from azure.storage.blob.aio import ContainerClient
 from rich.prompt import Prompt, PromptType, InvalidResponse
 
 from surfer.storage.clients import StorageClient
 from surfer.storage.models import StorageConfig, StorageProvider
+
+if TYPE_CHECKING:
+    from azure.storage.blob.aio import BlobClient
 
 
 class SignedURL:
@@ -48,10 +53,17 @@ class AzureStorageConfig(StorageConfig):
 
 class BlobStorageClient(StorageClient):
     def __init__(self, config: AzureStorageConfig):
-        self.config = config
+        self.url = config.sas_url
+
+    @asynccontextmanager
+    async def __container_client(self) -> ContainerClient:
+        async with ContainerClient.from_container_url(self.url) as container:
+            yield container
 
     async def upload_content(self, content: str, dest: Path):
-        pass
+        async with self.__container_client() as container:
+            blob = container.get_blob_client(dest.as_posix())
+            await blob.upload_blob(content, overwrite=True)
 
     async def upload_many(
         self,
@@ -69,11 +81,21 @@ class BlobStorageClient(StorageClient):
     ):
         pass
 
-    async def list(self, glob: str) -> List[Path]:
-        pass
+    async def list(self, prefix: Optional[str]) -> List[Path]:
+        res = []
+        async with self.__container_client() as container:
+            async for b in container.list_blobs(prefix):
+                res.append(Path(b.name))
+        return res
 
     async def get(self, path: Path) -> Optional[str]:
-        pass
+        async with self.__container_client() as container:
+            blob_client: BlobClient = container.get_blob_client(path.as_posix())
+            stream = await blob_client.download_blob(encoding="UTF-8")
+            return await stream.readall()
+
 
     async def delete(self, path: Path):
-        pass
+        async with self.__container_client() as container:
+            blob_client = container.get_blob_client(path.as_posix())
+            await blob_client.delete_blob()

@@ -77,8 +77,8 @@ class SurferConfig(BaseModel):
         if provider is StorageProvider.AZURE:
             if provider not in storage.enabled_providers:
                 raise ValueError(
-                    f"storage provider {provider.value} not installed. "
-                    f"Please install surfer[azure] to use it."
+                    f'storage provider {provider.value} not installed. '
+                    f'Please install "surfer\[azure]" to use it.'
                 )
             from surfer.storage.providers.azure import AzureStorageConfig
 
@@ -87,8 +87,8 @@ class SurferConfig(BaseModel):
         if provider is StorageProvider.AWS:
             if provider not in storage.enabled_providers:
                 raise ValueError(
-                    f"storage provider {provider.value} not installed. "
-                    f"Please install surfer[aws] to use it."
+                    f'storage provider {provider.value} not installed. '
+                    f'Please install "surfer\[aws]" to use it.'
                 )
             from surfer.storage.providers.aws import AWSStorageConfig
 
@@ -97,8 +97,8 @@ class SurferConfig(BaseModel):
         if provider is StorageProvider.GCP:
             if provider not in storage.enabled_providers:
                 raise ValueError(
-                    f"storage provider {provider.value} not installed. "
-                    f"Please install surfer[gcp] to use it."
+                    f'storage provider {provider.value} not installed. '
+                    f'Please install "surfer\[gcp]" to use it.'
                 )
             from surfer.storage.providers.gcp import GCPStorageConfig
 
