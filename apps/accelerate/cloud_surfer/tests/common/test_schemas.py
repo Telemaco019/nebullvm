@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from tempfile import TemporaryDirectory, NamedTemporaryFile
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import yaml
@@ -61,7 +61,7 @@ class TestSurferConfig(unittest.TestCase):
         [StorageProvider.GCP, StorageProvider.AWS],
     )
     def test_azure_provider_not_enabled(self):
-        with NamedTemporaryFile() as f:
+        with open(Path(self.tmp_dir.name, "tmp"), "wb") as f:
             f.write(b"")
             surfer_config = SurferConfig(
                 cluster_file=Path(f.name),
@@ -78,7 +78,7 @@ class TestSurferConfig(unittest.TestCase):
         [StorageProvider.AZURE, StorageProvider.AWS],
     )
     def test_gcp_provider_not_enabled(self):
-        with NamedTemporaryFile() as f:
+        with open(Path(self.tmp_dir.name, "tmp"), "wb") as f:
             f.write(b"")
             surfer_config = SurferConfig(
                 cluster_file=Path(f.name),
@@ -96,7 +96,7 @@ class TestSurferConfig(unittest.TestCase):
         [StorageProvider.AZURE, StorageProvider.GCP],
     )
     def test_aws_provider_not_enabled(self):
-        with NamedTemporaryFile() as f:
+        with open(Path(self.tmp_dir.name, "tmp"), "wb") as f:
             f.write(b"")
             surfer_config = SurferConfig(
                 cluster_file=Path(f.name),

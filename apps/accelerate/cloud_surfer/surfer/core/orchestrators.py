@@ -3,6 +3,7 @@ from functools import cached_property, partial
 from pathlib import Path
 from typing import Optional, List
 
+import ray
 from ray import remote
 from speedster.api.functions import optimize_model
 
@@ -80,7 +81,7 @@ class RayOrchestrator:
         self.storage_client = storage_client
 
     def run_experiment(self, experiment: str, config: RunConfig):
-        actors = []
+        remote_actors = []
         # Add actors on accelerators
         for accelerator in self.cluster.get_available_accelerators():
             if accelerator in config.ignored_accelerators:
@@ -90,13 +91,20 @@ class RayOrchestrator:
                 num_gpus=1,
                 accelerator_type=accelerator.value,
             )(SpeedsterOptimizer)
-            actors.append(actor)
+            remote_actors.append(actor)
         # Add actors on CPU
         actor = remote(num_cpus=1)(SpeedsterOptimizer)
-        actors.append(actor)
+        remote_actors.append(actor)
         # Init actors
+        actors = []
         logger.info("initializing actors")
-        for actor in actors:
+        for actor in remote_actors:
             logger.debug("initializing actor", actor)
-            remote.append(actor.remote(config))
-        # Run optimizations
+            actors.append(actor.remote(config))
+        # Submit runs
+        objs = []
+        for a in actors:
+            objs.append(a.run.remote())
+        results = ray.get(objs)
+        print(results)
+

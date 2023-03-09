@@ -47,7 +47,7 @@ class URLPrompt(Prompt):
 
 
 class AzureStorageConfig(StorageConfig):
-    provider = StorageProvider.AZURE
+    provider: StorageProvider = StorageProvider.AZURE
     sas_url: str
 
 

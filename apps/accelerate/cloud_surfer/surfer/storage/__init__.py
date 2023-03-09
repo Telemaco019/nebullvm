@@ -8,8 +8,8 @@ try:
     from surfer.storage.providers.azure import AzureStorageConfig
 
     enabled_providers.append(StorageProvider.AZURE)
-except ImportError:
-    pass
+except ImportError as e:
+    raise e
 
 try:
     from surfer.storage.providers.aws import AWSStorageConfig
