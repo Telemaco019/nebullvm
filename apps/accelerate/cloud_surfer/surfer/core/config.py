@@ -1,7 +1,4 @@
-import json
 from typing import Optional
-
-import yaml
 
 from surfer.common import constants
 from surfer.common.exceptions import InternalError
@@ -49,8 +46,7 @@ class SurferConfigManager:
         # Create config file
         self.config_file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.config_file_path, "w") as f:
-            config_dict = json.loads(config.json())
-            f.write(yaml.dump(config_dict))
+            f.write(config.json(indent=2))
 
     def load_config(self) -> Optional[SurferConfig]:
         """Load the Cloud Surfer configuration
@@ -69,9 +65,7 @@ class SurferConfigManager:
         if not self.config_exists():
             return None
         try:
-            with open(self.config_file_path) as f:
-                config_dict = yaml.safe_load(f.read())
-                return SurferConfig.parse_obj(config_dict)
+            return SurferConfig.parse_file(self.config_file_path)
         except Exception as e:
             raise InternalError(
                 "error parsing CloudSurfer config at {}: {}".format(

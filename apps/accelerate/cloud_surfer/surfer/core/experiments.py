@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import List, Optional
 
 import aiofiles
-import yaml
 from pydantic import ValidationError
 from ray.dashboard.modules.job.common import JobStatus
 from ray.dashboard.modules.job.pydantic_models import JobDetails
@@ -156,8 +155,7 @@ async def job_working_dir(
         surfer_config_path = tmp / constants.SURFER_CONFIG_FILE_NAME
         surfer_config.cluster_file = surfer_config.cluster_file.name
         async with aiofiles.open(surfer_config_path, "w+") as f:
-            content = yaml.safe_dump(surfer_config.dict())
-            await f.write(content)
+            await f.write(surfer_config.json(indent=2))
         # Create working dir object
         working_dir = JobWorkingDir(
             base=tmp,
