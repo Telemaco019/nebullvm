@@ -563,6 +563,7 @@ def _get_job_requirements(config: StorageConfig) -> List[str]:
     dependencies = [
         "typer",
         "speedster",
+        "aiofiles",
     ]
 
     # Add GCP storage dependency

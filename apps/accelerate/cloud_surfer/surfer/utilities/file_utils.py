@@ -95,7 +95,6 @@ class SpeedsterResultsCollector:
         Dict[str, any]
             A dictionary containing the results produced by Speedster
         """
-        logger.info("collecting Nebullvm results...")
         result_riles = [
             f for f in self._results_file_dir.glob(self._results_file_regex)
         ]
