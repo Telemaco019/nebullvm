@@ -323,7 +323,10 @@ class ExperimentService:
             # Build run command
             entrypoint = self.__get_run_cmd(req, workdir)
             # Build dependencies
-            requirements = _get_job_requirements(self.surfer_config.storage)
+            requirements = _get_base_job_requirements(
+                self.surfer_config.storage,
+            )
+            requirements += req.config.additional_requirements
             # Submit Job
             logger.debug(
                 "submitting Ray job",
@@ -555,10 +558,13 @@ def new_experiment_service(config: SurferConfig) -> ExperimentService:
 
 
 @functools.cache
-def _get_job_requirements(config: StorageConfig) -> List[str]:
+def _get_base_job_requirements(storage_config: StorageConfig) -> List[str]:
     def __with_version(req: List[str]) -> List[str]:
         for r in req:
-            yield f"{r}=={version(r)}"
+            if len(r.split("==")) == 1:
+                yield f"{r}=={version(r)}"
+            else:
+                yield r
 
     dependencies = [
         "typer",
@@ -567,17 +573,17 @@ def _get_job_requirements(config: StorageConfig) -> List[str]:
     ]
 
     # Add GCP storage dependency
-    if config.provider is StorageProvider.GCP:
+    if storage_config.provider is StorageProvider.GCP:
         dependencies += ["google-cloud-storage"]
 
     # Add Azure storage dependency
-    if config.provider is StorageProvider.AZURE:
+    if storage_config.provider is StorageProvider.AZURE:
         dependencies += [
             "azure-storage-blob",
         ]
 
     # Add AWS storage dependency
-    if config.provider is StorageProvider.AWS:
+    if storage_config.provider is StorageProvider.AWS:
         dependencies += []  # todo
 
     requirements = list(__with_version(dependencies))

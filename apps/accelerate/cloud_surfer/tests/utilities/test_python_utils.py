@@ -8,7 +8,7 @@ from surfer.utilities.python_utils import ClassLoader, load_module
 from tests import _get_assets_path
 
 
-def test_get_requirements__azure():
+def test_get_base_job_requirements__azure():
     configs = [
         StorageConfig(
             provider=StorageProvider.AZURE,
@@ -21,7 +21,7 @@ def test_get_requirements__azure():
         ),
     ]
     for config in configs:
-        requirements = surfer.core.experiments._get_job_requirements(config)
+        requirements = surfer.core.experiments._get_base_job_requirements(config)
         assert len(requirements) > 0
 
 
