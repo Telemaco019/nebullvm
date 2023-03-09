@@ -14,3 +14,7 @@ help: ## Display this help.
 .PHONY: docker-build-py39-cu113
 docker-build-py39-cu113: ## Build the docker image for Python 3.9, NVIDIA CUDA 11.3
 	docker build -t $(DOCKER_IMAGE_PY39_CU11) -f deploy/Dockerfile.py39-cu113 .
+
+.PHONY: docker-push-py39-cu113
+docker-push-py39-cu113: ## Push the docker image for Python 3.9, NVIDIA CUDA 11.3
+	docker push $(DOCKER_IMAGE_PY39_CU11)
