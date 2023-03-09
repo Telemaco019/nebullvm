@@ -5,8 +5,8 @@ from typing import Optional, List
 
 import ray
 from ray import remote
-from speedster.api.functions import optimize_model
 
+from speedster.api.functions import optimize_model
 from surfer import ModelLoader, DataLoader, ModelEvaluator
 from surfer.common.schemas import SpeedsterResult
 from surfer.core.clusters import RayCluster, Accelerator
@@ -48,14 +48,7 @@ class RunConfig:
 
 def _speedster_optimize(config: RunConfig) -> SpeedsterResult:
     def __get_optimize_model_fn() -> callable:
-        fn = partial(
-            optimize_model,
-            model=config.model_loader.load_model(),
-            input_data=config.data_loader.load_data(),
-            metric_drop_ths=config.metric_drop_threshold,
-            store_latencies=True,
-            ignored_compilers=config.ignored_compilers,
-        )
+        fn = optimize_model
         if config.model_evaluator is not None:
             precision_fn = config.model_evaluator.get_precision_metric_fn
             fn = partial(fn, precision_metric_fn=precision_fn)
@@ -63,7 +56,13 @@ def _speedster_optimize(config: RunConfig) -> SpeedsterResult:
 
     logger.info("starting speedster optimization")
     optimize_fn = __get_optimize_model_fn()
-    optimize_fn()
+    optimize_fn(
+        model=config.model_loader.load_model(),
+        input_data=config.data_loader.load_data(),
+        metric_drop_ths=config.metric_drop_threshold,
+        store_latencies=True,
+        ignored_compilers=config.ignored_compilers,
+    )
     logger.info("collecting optimization results")
     raw_results = SpeedsterResultsCollector().collect_results()
     return raw_results
