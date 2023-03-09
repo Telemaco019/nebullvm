@@ -28,12 +28,5 @@ RUN if [ "$COMPILER" = "all" ] ; then \
         python3 -m nebullvm.installers.auto_installer --frameworks all --extra-backends all --compilers onnxruntime ; \
     fi
 
-# Install TVM
-RUN if [ "$COMPILER" = "all" ] || [ "$COMPILER" = "tvm" ] ; then \
-        pip install --no-cache-dir https://github.com/tlc-pack/tlcpack/releases/download/v0.10.0/apache_tvm_cu116_cu116-0.10.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl ; \
-        pip install --no-cache-dir xgboost ; \
-        python3 -c "from tvm.runtime import Module" ; \
-    fi
-
 ENV SIGOPT_PROJECT="tmp"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/python3.8/dist-packages/tensorrt
