@@ -15,7 +15,7 @@ surfer = "surfer.cli.surfer:main"
 [tool.poetry.dependencies]
 python = ">=3.7, <3.10"
 typer = "^0.7.0"
-ray = {extras = ["default"], version = "^2.3.0"}
+ray = { extras = ["default"], version = "^2.3.0" }
 speedster = "^0.2.1"
 rich = "^13.3.1"
 pyyaml = "^6.0"
@@ -23,25 +23,43 @@ pydantic = "^1.10.5"
 aiofiles = "^23.1.0"
 mnemonic = "^0.20"
 
+# Azure optionals
+azure-storage-blob = { version = "^12.15.0", optional = true }
+azure-identity = { version = "^1.12.0", optional = true }
+azure-cli = { version = "^2.46.0", optional = true }
+azure-core = { version = "^1.26.3", optional = true }
+
+# GCP optionals
+google-cloud-storage = { version = "^2.7.0", optional = true }
+
+[tool.poetry.extras]
+azure = [
+    "azure-storage-blob",
+    "azure-core",
+    "azure-identity",
+    "azure-cli"
+]
+gcp = [
+    "google-cloud-storage"
+]
+all = [
+    # Azure
+    "azure-storage-blob",
+    "azure-core",
+    "azure-identity",
+    "azure-cli",
+    # GCP
+    "google-cloud-storage",
+]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.1"
 coverage = "^7.2.1"
 
-
-[tool.poetry.group.gcp.dependencies]
-google-cloud-storage = "^2.7.0"
-
-
-[tool.poetry.group.azure.dependencies]
-azure-core = "^1.26.3"
-azure-identity = "^1.12.0"
-azure-cli = "^2.46.0"
-
 [tool.pytest.ini_options]
 addopts = [
-  "--strict-config",
-  "--strict-markers",
+    "--strict-config",
+    "--strict-markers",
 ]
 minversion = "7.0"
 testpaths = [
