@@ -88,3 +88,7 @@ def get_conversion_op(framework: DeepLearningFramework) -> Converter:
         conversion_op = ONNXConverter()
 
     return conversion_op
+
+
+def get_throughput(latency: float, batch_size: int) -> float:
+    return (1 / latency) * batch_size

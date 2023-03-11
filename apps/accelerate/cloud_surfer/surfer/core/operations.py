@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable, Callable, List, Union, Sequence, Dict
+from typing import Any, Iterable, Callable, List, Union, Sequence, Dict, \
+    Optional
+
+from pydantic.main import BaseModel
 
 from nebullvm.config import TRAIN_TEST_SPLIT_RATIO
 from nebullvm.operations.base import Operation
@@ -42,6 +45,7 @@ from nebullvm.tools.utils import (
 )
 from surfer import DataLoader
 from surfer.utilities import nebullvm_utils
+from surfer.utilities.nebullvm_utils import HardwareSetup
 
 
 @dataclass
@@ -53,11 +57,13 @@ class ModelInfo:
 
 @dataclass
 class OptimizedModel:
-    inference_learner: BaseInferenceLearner
+    inference_learner: Optional[BaseInferenceLearner]
     latency: float
     metric_drop: float
     technique: str
     compiler: str
+    throughput: float
+    model_size_mb: Optional[float]
 
 
 @dataclass
@@ -66,9 +72,41 @@ class OriginalModel:
     framework: DeepLearningFramework
     model_info: ModelInfo
     latency: float
+    throughput: float
+
+
+class OptimizationResult(BaseModel):
+    class Config:
+        frozen = True
+        extra_fields = "forbid"
+
+    original_model: OriginalModel
+    hardware_setup: HardwareSetup
+    optimized_models: List[OptimizedModel]
 
 
 class OptimizeInferenceOp(Operation):
+    @staticmethod
+    def _as_data_manager(data) -> DataManager:
+        if isinstance(data, DataManager):
+            return data
+        if check_input_data(data) is False:
+            raise ValueError(
+                "The provided data does not match the expected "
+                "format.\n"
+                "Speedster supports data in the following formats: \n"
+                "- PyTorch DataLoader\n"
+                "- TensorFlow Dataset\n"
+                "- List of tuples: [((input_0, ... ), label), ...] \n"
+                "Inputs and labels should be either tensors or numpy "
+                "arrays,\n"
+                "depending on the framework used.\n"
+            )
+        if is_data_subscriptable(data):
+            return DataManager(data)
+        else:
+            return DataManager.from_iterable(data)
+
     def execute(
         self,
         model: Any,
@@ -88,13 +126,15 @@ class OptimizeInferenceOp(Operation):
         if len(input_data) == 0:
             raise ValueError("Input data cannot be empty")
 
-        device_id = f":{self.device.idx}" if self.device.type is DeviceType.GPU else ""
         self.logger.info(
             "running optimization on {}{}".format(
                 self.device.type.name,
-                device_id,
+                self.device.idx if self.device.type is DeviceType.GPU else "",
             )
         )
+
+        hw_setup = nebullvm_utils.get_hw_setup(self.device)
+        self.logger.info("hardware setup", hw_setup.json(indent=2))
 
         check_dependencies(self.device)
 
@@ -127,7 +167,6 @@ class OptimizeInferenceOp(Operation):
                     "depending on the framework used.\n"
                 )
 
-        needs_conversion_to_hf = False
         if is_huggingface_data(data[0]):
             (
                 model,
@@ -136,7 +175,6 @@ class OptimizeInferenceOp(Operation):
                 output_structure,
                 output_type,
             ) = convert_hf_model(model, data, self.device, **kwargs)
-            needs_conversion_to_hf = True
 
             if dynamic_info is None:
                 self.logger.warning(
@@ -149,25 +187,7 @@ class OptimizeInferenceOp(Operation):
                     "#using-dynamic-shape."
                 )
 
-        if not isinstance(data, DataManager):
-            if check_input_data(data):
-                if is_data_subscriptable(data):
-                    data = DataManager(data)
-                else:
-                    data = DataManager.from_iterable(data)
-            else:
-                raise ValueError(
-                    "The provided data does not match the expected "
-                    "format.\n"
-                    "Speedster supports data in the following formats: \n"
-                    "- PyTorch DataLoader\n"
-                    "- TensorFlow Dataset\n"
-                    "- List of tuples: [((input_0, ... ), label), ...] \n"
-                    "Inputs and labels should be either tensors or numpy "
-                    "arrays,\n"
-                    "depending on the framework used.\n"
-                )
-
+        data = self._as_data_manager(data)
         dl_framework = get_dl_framework(model)
 
         if metric_drop_ths is not None and metric_drop_ths <= 0:
@@ -177,7 +197,7 @@ class OptimizeInferenceOp(Operation):
         if isinstance(metric, str):
             metric = QUANTIZATION_METRIC_MAP.get(metric)
 
-        model_params = extract_info_from_data(
+        model_params: ModelParams = extract_info_from_data(
             model=model,
             input_data=data,
             dl_framework=dl_framework,
@@ -187,15 +207,6 @@ class OptimizeInferenceOp(Operation):
 
         data.split(TRAIN_TEST_SPLIT_RATIO)
 
-        # -------- HW and original model infos --------
-        model_info = ModelInfo(
-            model_name=nebullvm_utils.get_model_name(model),
-            model_size_mb=nebullvm_utils.get_model_size_mb(model),
-            framework=dl_framework,
-        )
-        hw_setup = nebullvm_utils.get_hw_setup(self.device)
-        # ---------------------------------------------
-
         # -------- Benchmark original model --------
         original_latency_op = LatencyOriginalModelMeasure().to(self.device)
         original_latency_op.execute(
@@ -203,11 +214,21 @@ class OptimizeInferenceOp(Operation):
             input_data=data.get_split("test"),
             dl_framework=dl_framework,
         )
+        original_latency = original_latency_op.get_result()[1]
+        model_info = ModelInfo(
+            model_name=nebullvm_utils.get_model_name(model),
+            model_size_mb=nebullvm_utils.get_model_size_mb(model),
+            framework=dl_framework,
+        )
         original_model = OriginalModel(
             model=model,
             model_info=model_info,
-            latency=original_latency_op.get_result()[1],
+            latency=original_latency,
             framework=dl_framework,
+            throughput=nebullvm_utils.get_throughput(
+                latency=original_latency,
+                batch_size=model_params.batch_size,
+            ),
         )
         # ------------------------------------------
 
@@ -247,25 +268,25 @@ class OptimizeInferenceOp(Operation):
                 "report in details your use case."
             )
 
-        # orig_latency = self.orig_latency_measure_op.get_result()[1]
-        # valid_optimizations = [v for v in optimizations if v["latency"] != -1]
-        # best_technique = _convert_technique(
-        #     sorted(valid_optimizations, key=lambda x: x["latency"])[0]["technique"]
-        # )
-
-        if needs_conversion_to_hf:
+        if is_huggingface_data(data[0]):
             from nebullvm.operations.inference_learners.huggingface import (
                 HuggingFaceInferenceLearner,
             )
 
-            optimal_model = HuggingFaceInferenceLearner(
+            optimal_inference_learner = HuggingFaceInferenceLearner(
                 core_inference_learner=optimized_models[0].inference_learner,
                 output_structure=output_structure,
                 input_names=input_names,
                 output_type=output_type,
             )
         else:
-            optimal_model = optimized_models[0].inference_learner
+            optimal_inference_learner = optimized_models[0].inference_learner
+
+        return OptimizationResult(
+            original_model=original_model,
+            optimized_models=optimized_models,
+            hardware_setup=hw_setup,
+        )
 
     def _optimize(
         self,
@@ -288,7 +309,11 @@ class OptimizeInferenceOp(Operation):
             optimization_op = ONNXOptimizer()
 
         # Add adapter for output results
-        optimization_op = OptimizerAdapter(optimization_op)
+        optimization_op = OptimizerAdapter(
+            optimizer=optimization_op,
+            batch_size=model_params.batch_size,
+            input_data=input_data,
+        )
 
         # Run optimization
         optimized_models = (
@@ -320,10 +345,17 @@ class OptimizeInferenceOp(Operation):
 
 
 class OptimizerAdapter:
-    def __init__(self, optimizer: Optimizer):
+    def __init__(
+        self,
+        optimizer: Optimizer,
+        batch_size: int,
+        input_data: Iterable,
+    ):
         self.collector = FeedbackCollector("", "", "")
         self.optimizer = optimizer
         self.optimizer.set_feedback_collector(self.collector)
+        self._batch_size = batch_size
+        self._input_data = input_data
 
     def to(self, device: Device) -> "OptimizerAdapter":
         self.optimizer.to(device)
@@ -346,11 +378,21 @@ class OptimizerAdapter:
         for technique_result, optimized_model_tuple in zip(
             self.collector.get("optimizations"), self.optimizer.get_result()
         ):
-            inference_learner = optimized_model_tuple[0]
             metric_drop = optimized_model_tuple[2]
             compiler = technique_result["compiler"]
             technique = technique_result["technique"]
             latency = technique_result["latency"]
+            throughput = nebullvm_utils.get_throughput(
+                latency,
+                self._batch_size,
+            )
+            inference_learner: Optional[BaseInferenceLearner]
+            inference_learner = optimized_model_tuple[0]
+            # Compute model size
+            model_size_mb = None
+            if inference_learner is not None:
+                model_size_mb = inference_learner.get_size()
+            # Add to results
             res.append(
                 OptimizedModel(
                     inference_learner=inference_learner,
@@ -358,6 +400,8 @@ class OptimizerAdapter:
                     compiler=compiler,
                     technique=technique,
                     latency=latency,
+                    throughput=throughput,
+                    model_size_mb=model_size_mb,
                 )
             )
         return res
