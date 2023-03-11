@@ -568,7 +568,7 @@ def _get_base_job_requirements(storage_config: StorageConfig) -> List[str]:
 
     dependencies = [
         "typer",
-        "speedster",
+        "nebullvm",
         "aiofiles",
     ]
 

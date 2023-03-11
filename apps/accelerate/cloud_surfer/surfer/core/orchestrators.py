@@ -6,7 +6,6 @@ from typing import Optional, List
 import ray
 from ray import remote
 
-from speedster.api.functions import optimize_model
 from surfer import ModelLoader, DataLoader, ModelEvaluator
 from surfer.common.schemas import SpeedsterResult
 from surfer.core.clusters import RayCluster, Accelerator
@@ -48,7 +47,7 @@ class RunConfig:
 
 def _speedster_optimize(config: RunConfig) -> SpeedsterResult:
     def __get_optimize_model_fn() -> callable:
-        fn = optimize_model
+        fn = lambda **kwargs: None # todo
         if config.model_evaluator is not None:
             precision_fn = config.model_evaluator.get_precision_metric_fn
             fn = partial(fn, precision_metric_fn=precision_fn)
