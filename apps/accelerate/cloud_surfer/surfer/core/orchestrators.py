@@ -6,12 +6,14 @@ from typing import Optional, List
 import ray
 from ray import remote
 
+from nebullvm.tools.base import DeviceType, Device
+from nebullvm.tools.utils import gpu_is_available
 from surfer import ModelLoader, DataLoader, ModelEvaluator
 from surfer.common.schemas import SpeedsterResult
 from surfer.core.clusters import RayCluster, Accelerator
+from surfer.core.operations import OptimizeInferenceOp
 from surfer.log import logger
 from surfer.storage.clients import StorageClient
-from surfer.utilities.file_utils import SpeedsterResultsCollector
 from surfer.utilities.python_utils import ClassLoader
 
 
@@ -45,29 +47,7 @@ class RunConfig:
         return loader.load_from_module(self.model_evaluator_path)()
 
 
-def _speedster_optimize(config: RunConfig) -> SpeedsterResult:
-    def __get_optimize_model_fn() -> callable:
-        fn = lambda **kwargs: None # todo
-        if config.model_evaluator is not None:
-            precision_fn = config.model_evaluator.get_precision_metric_fn
-            fn = partial(fn, precision_metric_fn=precision_fn)
-        return fn
-
-    logger.info("starting speedster optimization")
-    optimize_fn = __get_optimize_model_fn()
-    optimize_fn(
-        model=config.model_loader.load_model(),
-        input_data=config.data_loader.load_data(),
-        metric_drop_ths=config.metric_drop_threshold,
-        store_latencies=True,
-        ignored_compilers=config.ignored_compilers,
-    )
-    logger.info("collecting optimization results")
-    raw_results = SpeedsterResultsCollector().collect_results()
-    return raw_results
-
-
-class SpeedsterOptimizationTask:
+class InferenceOptimizationTask:
     def __init__(
         self,
         accelerator: Accelerator,
@@ -79,10 +59,37 @@ class SpeedsterOptimizationTask:
             num_gpus=num_gpus,
             accelerator_type=accelerator.value,
         )
-        self.remote_fn = remote_decorator(_speedster_optimize)
+        self._optimize_inference = remote_decorator(self._optimize_inference)
+
+    @staticmethod
+    def _optimize_inference(config: RunConfig) -> SpeedsterResult:
+        def __get_optimize_fn() -> callable:
+            op = OptimizeInferenceOp()
+            if gpu_is_available():
+                device = Device(DeviceType.GPU)
+            else:
+                device = Device(DeviceType.CPU)
+            op.to(device)
+            fn = op.execute
+            if config.model_evaluator is not None:
+                precision_fn = config.model_evaluator.get_precision_metric_fn
+                fn = partial(fn, precision_metric_fn=precision_fn)
+            return fn
+
+        logger.info("starting inference optimization")
+        optimize_fn = __get_optimize_fn()
+        optimized_models = optimize_fn(
+            model=config.model_loader.load_model(),
+            input_data=config.data_loader.load_data(),
+            metric_drop_ths=config.metric_drop_threshold,
+            store_latencies=True,
+            ignored_compilers=config.ignored_compilers,
+        )
+        logger.info("results", optimized_models)
+        return None
 
     def run(self, config: RunConfig) -> ray.ObjectRef:
-        return self.remote_fn.remote(config)
+        return self._optimize_inference.remote(config)
 
 
 class RayOrchestrator:
@@ -100,7 +107,7 @@ class RayOrchestrator:
         for accelerator in self.cluster.get_available_accelerators():
             if accelerator in config.ignored_accelerators:
                 continue
-            tasks.append(SpeedsterOptimizationTask(accelerator))
+            tasks.append(InferenceOptimizationTask(accelerator))
         # Submit
         objs = []
         for t in tasks:
