@@ -17,8 +17,8 @@ from nebullvm.operations.optimizations.optimizers import (
 )
 from nebullvm.operations.optimizations.utils import \
     map_compilers_and_compressors
-from nebullvm.optional_modules import torch
 from nebullvm.optional_modules.tensorflow import tensorflow as tf
+from nebullvm.optional_modules.torch import torch
 from nebullvm.optional_modules.utils import (
     check_dependencies,
 )
@@ -89,7 +89,12 @@ class OptimizeInferenceOp(Operation):
             raise ValueError("Input data cannot be empty")
 
         device_id = f":{self.device.idx}" if self.device.type is DeviceType.GPU else ""
-        self.logger.info(f"Running Speedster on {self.device.type.name}{device_id}")
+        self.logger.info(
+            "running optimization on {}{}".format(
+                self.device.type.name,
+                device_id,
+            )
+        )
 
         check_dependencies(self.device)
 
