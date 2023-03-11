@@ -1,18 +1,11 @@
-from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable, Callable, List, Union, Sequence, Dict, \
-    Optional
-
-from pydantic.main import BaseModel
+from typing import Any, Iterable, Callable, List, Union, Sequence, Dict
 
 from nebullvm.config import TRAIN_TEST_SPLIT_RATIO
 from nebullvm.operations.base import Operation
-from nebullvm.operations.conversions.huggingface import convert_hf_model
-from nebullvm.operations.inference_learners.base import BaseInferenceLearner
 from nebullvm.operations.measures.measures import LatencyOriginalModelMeasure
 from nebullvm.operations.measures.utils import QUANTIZATION_METRIC_MAP
-from nebullvm.operations.optimizations.base import Optimizer
 from nebullvm.operations.optimizations.optimizers import (
     PytorchOptimizer,
     TensorflowOptimizer,
@@ -32,10 +25,8 @@ from nebullvm.tools.base import (
     DeepLearningFramework,
     DeviceType,
     ModelParams,
-    Device,
 )
 from nebullvm.tools.data import DataManager
-from nebullvm.tools.feedback_collector import FeedbackCollector
 from nebullvm.tools.utils import (
     is_huggingface_data,
     check_input_data,
@@ -44,45 +35,14 @@ from nebullvm.tools.utils import (
     extract_info_from_data,
 )
 from surfer import DataLoader
+from surfer.optimization.adapters import OptimizerAdapter, HuggingFaceConverter
+from surfer.optimization.models import (
+    ModelInfo,
+    OptimizedModel,
+    OriginalModel,
+    OptimizeInferenceResult,
+)
 from surfer.utilities import nebullvm_utils
-from surfer.utilities.nebullvm_utils import HardwareSetup
-
-
-@dataclass
-class ModelInfo:
-    model_name: str
-    model_size_mb: float
-    framework: DeepLearningFramework
-
-
-@dataclass
-class OptimizedModel:
-    inference_learner: Optional[BaseInferenceLearner]
-    latency: float
-    metric_drop: float
-    technique: str
-    compiler: str
-    throughput: float
-    model_size_mb: Optional[float]
-
-
-@dataclass
-class OriginalModel:
-    model: Any
-    framework: DeepLearningFramework
-    model_info: ModelInfo
-    latency: float
-    throughput: float
-
-
-class OptimizationResult(BaseModel):
-    class Config:
-        frozen = True
-        extra_fields = "forbid"
-
-    original_model: OriginalModel
-    hardware_setup: HardwareSetup
-    optimized_models: List[OptimizedModel]
 
 
 class OptimizeInferenceOp(Operation):
@@ -134,8 +94,6 @@ class OptimizeInferenceOp(Operation):
         )
 
         hw_setup = nebullvm_utils.get_hw_setup(self.device)
-        self.logger.info("hardware setup", hw_setup.json(indent=2))
-
         check_dependencies(self.device)
 
         ignore_compilers = map_compilers_and_compressors(
@@ -167,15 +125,10 @@ class OptimizeInferenceOp(Operation):
                     "depending on the framework used.\n"
                 )
 
+        hf_converter = HuggingFaceConverter(model, data, self.device)
         if is_huggingface_data(data[0]):
-            (
-                model,
-                data,
-                input_names,
-                output_structure,
-                output_type,
-            ) = convert_hf_model(model, data, self.device, **kwargs)
-
+            model = hf_converter.hf_model
+            data = hf_converter.data
             if dynamic_info is None:
                 self.logger.warning(
                     "Dynamic shape info has not been provided for the "
@@ -224,7 +177,6 @@ class OptimizeInferenceOp(Operation):
             model=model,
             model_info=model_info,
             latency=original_latency,
-            framework=dl_framework,
             throughput=nebullvm_utils.get_throughput(
                 latency=original_latency,
                 batch_size=model_params.batch_size,
@@ -249,6 +201,7 @@ class OptimizeInferenceOp(Operation):
                 optimized_models += self._optimize(
                     model=model,
                     input_data=data,
+                    hf_converter=hf_converter,
                     model_outputs=original_latency_op.get_result()[0],
                     optimization_time=optimization_time,
                     metric_drop_ths=metric_drop_ths,
@@ -261,28 +214,19 @@ class OptimizeInferenceOp(Operation):
 
         optimized_models.sort(key=lambda x: x.latency, reverse=False)
 
-        if len(optimized_models) < 1 or optimized_models[0].inference_learner is None:
+        # Check if at least one optimized model has been created
+        no_optimized_models = len(optimized_models) < 1
+        no_inference_learners = all(
+            o.inference_learner is None for o in optimized_models
+        )
+        if no_optimized_models or no_inference_learners:
             raise RuntimeError(
                 "No optimized model has been created. This is likely "
                 "due to a bug in Speedster. Please open an issue and "
                 "report in details your use case."
             )
 
-        if is_huggingface_data(data[0]):
-            from nebullvm.operations.inference_learners.huggingface import (
-                HuggingFaceInferenceLearner,
-            )
-
-            optimal_inference_learner = HuggingFaceInferenceLearner(
-                core_inference_learner=optimized_models[0].inference_learner,
-                output_structure=output_structure,
-                input_names=input_names,
-                output_type=output_type,
-            )
-        else:
-            optimal_inference_learner = optimized_models[0].inference_learner
-
-        return OptimizationResult(
+        return OptimizeInferenceResult(
             original_model=original_model,
             optimized_models=optimized_models,
             hardware_setup=hw_setup,
@@ -292,6 +236,7 @@ class OptimizeInferenceOp(Operation):
         self,
         model: Any,
         model_outputs: Iterable,
+        hf_converter: HuggingFaceConverter,
         input_data: Iterable,
         optimization_time: OptimizationTime,
         metric_drop_ths: float,
@@ -311,6 +256,7 @@ class OptimizeInferenceOp(Operation):
         # Add adapter for output results
         optimization_op = OptimizerAdapter(
             optimizer=optimization_op,
+            hf_converter=hf_converter,
             batch_size=model_params.batch_size,
             input_data=input_data,
         )
@@ -342,69 +288,3 @@ class OptimizeInferenceOp(Operation):
         raise NotImplementedError(
             "get_result() is not implemented for this operation",
         )
-
-
-class OptimizerAdapter:
-    def __init__(
-        self,
-        optimizer: Optimizer,
-        batch_size: int,
-        input_data: Iterable,
-    ):
-        self.collector = FeedbackCollector("", "", "")
-        self.optimizer = optimizer
-        self.optimizer.set_feedback_collector(self.collector)
-        self._batch_size = batch_size
-        self._input_data = input_data
-
-    def to(self, device: Device) -> "OptimizerAdapter":
-        self.optimizer.to(device)
-        return self
-
-    def execute(self, *args, **kwargs) -> "OptimizerAdapter":
-        self.optimizer.execute(*args, **kwargs)
-        return self
-
-    def get_result(self) -> List[OptimizedModel]:
-        """
-        TODO - This is a temporary solution to merge the results of
-        optimization operations. This is brittle -> Nebullvm operation
-        must return a class containing all the necessary information
-
-        """
-        res = []
-        # Merge models returned by th operation with the
-        # latencies stored internally in the feedback collector
-        for technique_result, optimized_model_tuple in zip(
-            self.collector.get("optimizations"), self.optimizer.get_result()
-        ):
-            metric_drop = optimized_model_tuple[2]
-            compiler = technique_result["compiler"]
-            technique = technique_result["technique"]
-            latency = technique_result["latency"]
-            throughput = nebullvm_utils.get_throughput(
-                latency,
-                self._batch_size,
-            )
-            inference_learner: Optional[BaseInferenceLearner]
-            inference_learner = optimized_model_tuple[0]
-            # Compute model size
-            model_size_mb = None
-            if inference_learner is not None:
-                model_size_mb = inference_learner.get_size()
-            # Add to results
-            res.append(
-                OptimizedModel(
-                    inference_learner=inference_learner,
-                    metric_drop=metric_drop,
-                    compiler=compiler,
-                    technique=technique,
-                    latency=latency,
-                    throughput=throughput,
-                    model_size_mb=model_size_mb,
-                )
-            )
-        return res
-
-    def free_model_gpu(self, model):
-        self.optimizer.free_model_gpu(model)

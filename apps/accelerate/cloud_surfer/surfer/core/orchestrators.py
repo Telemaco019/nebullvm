@@ -5,14 +5,18 @@ from typing import Optional, List
 
 import ray
 from ray import remote
+from rich import print
 
 from nebullvm.tools.base import DeviceType, Device
 from nebullvm.tools.utils import gpu_is_available
 from surfer import ModelLoader, DataLoader, ModelEvaluator
-from surfer.common.schemas import SpeedsterResult
+from surfer.common import schemas
 from surfer.core.clusters import RayCluster, Accelerator
-from surfer.core.operations import OptimizeInferenceOp
 from surfer.log import logger
+from surfer.optimization.models import OptimizeInferenceResult
+from surfer.optimization.operations import (
+    OptimizeInferenceOp,
+)
 from surfer.storage.clients import StorageClient
 from surfer.utilities.python_utils import ClassLoader
 
@@ -62,7 +66,7 @@ class InferenceOptimizationTask:
         self._optimize_inference = remote_decorator(self._optimize_inference)
 
     @staticmethod
-    def _optimize_inference(config: RunConfig) -> SpeedsterResult:
+    def _optimize_inference(config: RunConfig) -> schemas.OptimizationResult:
         def __get_optimize_fn() -> callable:
             op = OptimizeInferenceOp()
             if gpu_is_available():
@@ -78,15 +82,17 @@ class InferenceOptimizationTask:
 
         logger.info("starting inference optimization")
         optimize_fn = __get_optimize_fn()
-        optimized_models = optimize_fn(
+        res: OptimizeInferenceResult = optimize_fn(
             model=config.model_loader.load_model(),
             input_data=config.data_loader.load_data(),
             metric_drop_ths=config.metric_drop_threshold,
             store_latencies=True,
             ignored_compilers=config.ignored_compilers,
         )
-        logger.info("results", optimized_models)
-        return None
+        print(res)
+        return schemas.OptimizationResult( # TODO
+
+        )
 
     def run(self, config: RunConfig) -> ray.ObjectRef:
         return self._optimize_inference.remote(config)
@@ -113,4 +119,7 @@ class RayOrchestrator:
         for t in tasks:
             objs.append(t.run(config))
         results = ray.get(objs)
-        print(results)
+        if len(results) == 0:
+            print("No results")
+        for r in results:
+            print(r.json())

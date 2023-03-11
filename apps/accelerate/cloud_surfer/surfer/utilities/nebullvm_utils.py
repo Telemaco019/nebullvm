@@ -1,11 +1,11 @@
 import os
 import platform
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
 import cpuinfo
 import psutil
-from pydantic.main import BaseModel
 
 from nebullvm.operations.conversions.converters import (
     PytorchConverter,
@@ -26,11 +26,8 @@ from nebullvm.tools.tf import tensorflow_get_gpu_name
 # TODO: move this module to Nebullvm SDK
 
 
-class HardwareSetup(BaseModel):
-    class Config:
-        extra = "forbid"
-        frozen = True
-
+@dataclass
+class HardwareSetup:
     cpu: str
     operating_system: str
     memory_gb: int
