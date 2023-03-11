@@ -1,8 +1,6 @@
 import unittest
 
-from surfer.core.util import (
-    RandomGenerator,
-)
+from surfer.utilities.string_utils import RandomGenerator
 
 
 class TestRandomGenerator(unittest.TestCase):
