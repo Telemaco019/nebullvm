@@ -141,7 +141,7 @@ class OptimizerAdapter:
                     technique=technique,
                     latency=latency,
                     throughput=throughput,
-                    model_size_mb=model_size_mb,
+                    size_mb=model_size_mb,
                 )
             )
         return res

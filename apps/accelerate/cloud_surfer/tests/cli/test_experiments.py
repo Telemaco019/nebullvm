@@ -151,7 +151,7 @@ class TestExperimentCli(unittest.TestCase):
         result = runner.invoke(app, ["describe", "test"])
         self.assertEqual(1, result.exit_code)
 
-    def test_describe_experiment(
+    def test_describe_experiment__no_results(
         self,
         load_config_mock,
         factory,

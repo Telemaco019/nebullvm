@@ -30,24 +30,12 @@ class TestOptimizedModel(unittest.TestCase):
             metric_drop=0.0,
             technique="",
             compiler="",
-            model_size_mb=0.0,
+            size_mb=0.0,
         )
         ids = [model.model_id for _ in range(10)]
         self.assertTrue(all([i is not None for i in ids]))
         self.assertTrue(len(ids[0]) > 0)
         self.assertTrue(all([i == ids[0] for i in ids]))
-
-    def test_get_id__inference_learner_is_none(self):
-        model = OptimizedModel(
-            inference_learner=None,
-            latency=0.0,
-            throughput=0.0,
-            metric_drop=0.0,
-            technique="",
-            compiler="",
-            model_size_mb=0.0,
-        )
-        self.assertIsNone(model.model_id)
 
 
 class TestOptimizeInferenceResult(unittest.TestCase):
@@ -71,7 +59,7 @@ class TestOptimizeInferenceResult(unittest.TestCase):
                     metric_drop=0.0,
                     technique="",
                     compiler="",
-                    model_size_mb=0.0,
+                    size_mb=0.0,
                 )
             ],
         )
@@ -88,7 +76,7 @@ class TestOptimizeInferenceResult(unittest.TestCase):
                     metric_drop=0.0,
                     technique="",
                     compiler="",
-                    model_size_mb=0.0,
+                    size_mb=0.0,
                 ),
                 OptimizedModel(
                     inference_learner=MagicMock(),
@@ -97,7 +85,7 @@ class TestOptimizeInferenceResult(unittest.TestCase):
                     metric_drop=0.0,
                     technique="",
                     compiler="",
-                    model_size_mb=0.0,
+                    size_mb=0.0,
                 )
             ],
         )
@@ -124,7 +112,7 @@ class TestOptimizeInferenceResult(unittest.TestCase):
                     metric_drop=0.0,
                     technique="",
                     compiler="",
-                    model_size_mb=0.0,
+                    size_mb=0.0,
                 )
             ],
         )
@@ -142,7 +130,7 @@ class TestOptimizeInferenceResult(unittest.TestCase):
                     metric_drop=0.0,
                     technique="",
                     compiler="",
-                    model_size_mb=0.0,
+                    size_mb=0.0,
                 )
             ],
         )

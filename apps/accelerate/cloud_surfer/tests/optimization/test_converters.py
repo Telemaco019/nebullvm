@@ -10,29 +10,16 @@ from surfer.utilities.nebullvm_utils import HardwareSetup
 
 
 class TestModelDescriptor(unittest.TestCase):
-    def test_from_optimized_model__path_is_none(self):
-        m = OptimizedModel(
-            inference_learner=None,
-            latency=0.0,
-            throughput=0.0,
-            metric_drop=0.0,
-            technique="",
-            compiler="",
-            model_size_mb=0.0,
-        )
-        res = converters.ModelDescriptor.from_optimized_model(m)
-        self.assertIsNotNone(res)
-
     def test_from_optimized_model__path_is_not_none(self):
         path = Path("path")
         m = OptimizedModel(
-            inference_learner=None,
+            inference_learner=MagicMock(),
             latency=0.0,
             throughput=0.0,
             metric_drop=0.0,
             technique="",
             compiler="",
-            model_size_mb=0.0,
+            size_mb=0.0,
         )
         res = converters.ModelDescriptor.from_optimized_model(
             m,

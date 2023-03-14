@@ -17,18 +17,16 @@ class ModelInfo:
 
 @dataclass
 class OptimizedModel:
-    inference_learner: Optional[BaseInferenceLearner]
+    inference_learner: BaseInferenceLearner
     latency: float
     metric_drop: float
     technique: str
     compiler: str
     throughput: float
-    model_size_mb: Optional[float]
+    size_mb: Optional[float]
 
     @cached_property
     def model_id(self) -> Optional[str]:
-        if self.inference_learner is None:
-            return None
         return nebullvm_utils.generate_model_id(self.inference_learner)
 
 

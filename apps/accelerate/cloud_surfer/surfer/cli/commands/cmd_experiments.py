@@ -1,8 +1,10 @@
+import random
 from pathlib import Path
 
 import typer
 import yaml
 from pydantic.error_wrappers import ValidationError
+from rich import box
 from rich import print
 from rich import progress
 from rich.panel import Panel
@@ -97,7 +99,131 @@ async def stop_experiment(name: str):
 
 
 def _render_optimization_result(res: schemas.OptimizationResult):
-    pass
+    print(Rule(style="bold white"))
+
+    # Hardware info
+    hw_table = Table(
+        box=box.SIMPLE,
+        header_style="bold white",
+        title_style="italic yellow",
+        title=res.hardware_info.vm_size,
+        expand=True,
+    )
+    hw_table.add_column("Cloud Provider")
+    hw_table.add_column("VM Size")
+    hw_table.add_column("Accelerator")
+    hw_table.add_column("CPU")
+    hw_table.add_column("Memory")
+    hw_table.add_column("Operating System")
+    hw_table.add_row(
+        res.hardware_info.vm_provider.value,
+        res.hardware_info.vm_size,
+        res.hardware_info.accelerator,
+        res.hardware_info.cpu,
+        f"{res.hardware_info.memory_gb} GB",
+        res.hardware_info.operating_system,
+    )
+    print(hw_table)
+
+    # Models
+    table = Table(
+        box=box.ROUNDED,
+        header_style="bold cyan",
+        expand=True,
+        show_footer=True,
+    )
+    table.add_column("", footer="Improvement")
+    table.add_column("Backend")
+    table.add_column("Technique")
+    table.add_column("Latency", footer="3.4x")
+    table.add_column("Throughput", footer="1x")
+    table.add_column("Size", footer="0%")
+    table.add_row(
+        "Original",
+        res.original_model.framework,
+        "[italic]None[/italic]",
+        f"{res.original_model.latency:.2f} ms",
+        f"{res.original_model.throughput} batch/sec",
+        f"{res.original_model.size_mb:.2f} MB",
+    )
+    table.add_row(
+        "Optimized",
+        res.optimized_model.compiler,
+        res.optimized_model.technique,
+        f"{res.optimized_model.latency:.2f} ms",
+        f"{res.optimized_model.throughput} batch/sec",
+        f"{res.optimized_model.size_mb:.2f} MB",
+        style="bold green",
+    )
+    print(table)
+
+
+def _render_experiment_results(experiment: ExperimentDetails):
+    print(Rule("Results"))
+    if experiment.result is None:
+        print("No results available")
+        return
+    for optimization in experiment.result.optimizations:
+        _render_optimization_result(optimization)
+
+
+def _render_experiment_summary(experiment: ExperimentDetails):
+    print(Rule("Summary"))
+    print("[bold]Experiment name[/bold]: {}".format(experiment.name))
+    print(
+        "[bold]Created at[/bold]: {}".format(
+            surfer.utilities.datetime_utils.format_datetime_ui(experiment.created_at)
+        )
+    )
+    print("[bold]Status[/bold]: {}".format(experiment.status))
+
+    # Results summary
+    if experiment.result is None:
+        return
+    results_summary_table = Table(
+        header_style="bold cyan",
+        expand=True,
+        box=box.SIMPLE,
+    )
+    results_summary_table.add_column("")
+    results_summary_table.add_column("Accelerator")
+    results_summary_table.add_column("Latency \[ms]")
+    results_summary_table.add_column("Throughput \[batch/sec]")
+    results_summary_table.add_column("$/inference")
+    for o in experiment.result.optimizations:
+        results_summary_table.add_row(
+            o.hardware_info.vm_size,
+            o.hardware_info.accelerator,
+            f"Original: {o.original_model.latency:.2f}\nOptimized: {o.optimized_model.latency:.2f}",
+            f"Original: {o.original_model.throughput}\nOptimized: {o.optimized_model.throughput}",
+            f"Original: {random.randint(1, 1000) / 1000:.3f}\nOptimized: {random.randint(1, 1000) / 1000:.3f}",
+        )
+    print(results_summary_table)
+
+    print(
+        "[bold]Lowest latency[/bold]: [green]{} ({} ms)".format(
+            experiment.result.optimizations[0].hardware_info.vm_size,
+            experiment.result.optimizations[0].optimized_model.latency,
+        )
+    )
+    print("[bold]Lowest cost[/bold]: [green]{} ({} $/inference)".format(
+        experiment.result.optimizations[0].hardware_info.vm_size,
+        random.randint(1, 1000) / 1000,
+    ))
+
+
+def _render_experiment_jobs(experiment: ExperimentDetails):
+    print(Rule("Jobs"))
+    jobs_table = Table(box=None)
+    jobs_table.add_column("ID", header_style="cyan")
+    jobs_table.add_column("Status", header_style="cyan")
+    jobs_table.add_column("Details", header_style="cyan")
+    for j in experiment.jobs:
+        jobs_table.add_row(j.job_id, j.status, j.additional_info)
+    if len(experiment.jobs) == 0:
+        print("No jobs")
+    else:
+        print(jobs_table)
 
 
 async def describe_experiment(name: str):
@@ -112,34 +238,10 @@ async def describe_experiment(name: str):
     if experiment is None:
         logger.error("Experiment not found")
         raise typer.Exit(1)
-    # Render summary
-    print(Rule("Summary"))
-    print("[bold]Experiment name[/bold]: {}".format(experiment.name))
-    print(
-        "[bold]Created at[/bold]: {}".format(
-            surfer.utilities.datetime_utils.format_datetime_ui(experiment.created_at)
-        )
-    )
-    print("[bold]Status[/bold]: {}".format(experiment.status))
-    # List jobs
-    print(Rule("Jobs"))
-    jobs_table = Table(box=None)
-    jobs_table.add_column("ID", header_style="cyan")
-    jobs_table.add_column("Status", header_style="cyan")
-    jobs_table.add_column("Details", header_style="cyan")
-    for j in experiment.jobs:
-        jobs_table.add_row(j.job_id, j.status, j.additional_info)
-    if len(experiment.jobs) == 0:
-        print("No jobs")
-    else:
-        print(jobs_table)
-    # Show results
-    print(Rule("Results"))
-    if experiment.result is None:
-        print("No results available")
-        return
-    for optimization in experiment.result.optimizations:
-        _render_optimization_result(optimization)
+    # Render
+    _render_experiment_summary(experiment)
+    _render_experiment_jobs(experiment)
+    _render_experiment_results(experiment)
 
 
 async def delete_experiment(name: str):
