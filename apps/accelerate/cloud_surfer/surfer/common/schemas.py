@@ -1,3 +1,4 @@
+import abc
 from pathlib import Path
 from typing import Optional, List, Union
 
@@ -11,7 +12,7 @@ from surfer.common import constants
 from surfer.storage.models import StorageConfig, StorageProvider
 
 
-class ModelDescriptor(BaseModel):
+class ModelDescriptor(abc.ABC, BaseModel):
     class Config:
         frozen = True
         extra = "forbid"
@@ -20,14 +21,20 @@ class ModelDescriptor(BaseModel):
         }
 
     model_name: str
-    framework: str
     latency: float
-    metric_drop: float
     throughput: float
     model_size_mb: float
-    technique: Optional[str] = None
-    compiler: Optional[str] = None
     model_path: Optional[Path] = None
+
+
+class OriginalModelDescriptor(ModelDescriptor):
+    framework: str
+
+
+class OptimizedModelDescriptor(ModelDescriptor):
+    technique: str
+    compiler: str
+    metric_drop: float
 
 
 class HardwareInfo(BaseModel):
@@ -50,9 +57,9 @@ class OptimizationResult(BaseModel):
         }
 
     hardware_info: HardwareInfo
-    best_model: ModelDescriptor
+    best_model: Optional[ModelDescriptor]
     original_model: ModelDescriptor
-    all_models: List[ModelDescriptor]
+    all_optimized_models: List[ModelDescriptor]
 
 
 class SurferConfig(BaseModel):

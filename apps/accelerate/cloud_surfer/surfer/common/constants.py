@@ -17,3 +17,4 @@ DISPLAYED_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 # Storage
 EXPERIMENTS_STORAGE_PREFIX = "nebuly/surfer/experiments"
 EXPERIMENT_RESULTS_FILE_NAME = "results.json"
+INFERENCE_LEARNERS_DIR_NAME = "inference-learners"

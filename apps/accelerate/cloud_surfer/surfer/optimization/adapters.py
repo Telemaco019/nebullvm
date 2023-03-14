@@ -6,6 +6,7 @@ from nebullvm.operations.optimizations.base import Optimizer
 from nebullvm.tools.base import Device
 from nebullvm.tools.feedback_collector import FeedbackCollector
 from nebullvm.tools.utils import is_huggingface_data
+from surfer.optimization import types
 from surfer.optimization.models import OptimizedModel
 from surfer.utilities import nebullvm_utils
 
@@ -67,7 +68,7 @@ class OptimizerAdapter:
         optimizer: Optimizer,
         hf_converter: HuggingFaceConverter,
         batch_size: int,
-        input_data: List,
+        input_data: types.InputData,
     ):
         self.collector = FeedbackCollector("", "", "")
         self.optimizer = optimizer

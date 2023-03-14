@@ -1,0 +1,51 @@
+from pathlib import Path
+from typing import Optional
+
+from surfer.common import schemas
+from surfer.optimization.models import OptimizedModel, OriginalModel
+from surfer.utilities.nebullvm_utils import HardwareSetup
+
+
+class ModelDescriptor:
+    @staticmethod
+    def from_optimized_model(
+        m: OptimizedModel,
+        model_path: Optional[Path] = None,
+    ) -> schemas.OptimizedModelDescriptor:
+        return schemas.OptimizedModelDescriptor(
+            model_id=m.model_id,
+            latency=m.latency,
+            throughput=m.throughput,
+            metric_drop=m.metric_drop,
+            technique=m.technique,
+            model_size_mb=m.model_size_mb,
+            compiler=m.compiler,
+            model_path=model_path,
+        )
+
+    @staticmethod
+    def from_original_model(
+        m: OriginalModel,
+        model_path: Optional[Path] = None,
+    ) -> schemas.OptimizedModelDescriptor:
+        return schemas.OptimizedModelDescriptor(
+            model_id=m.model_id,
+            latency=m.latency,
+            throughput=m.throughput,
+            metric_drop=m.metric_drop,
+            technique=m.technique,
+            model_size_mb=m.model_size_mb,
+            compiler=m.compiler,
+            model_path=model_path,
+        )
+
+
+class HardwareSetupConverter:
+    @staticmethod
+    def to_hw_info_schema(h: HardwareSetup) -> schemas.HardwareInfo:
+        return schemas.HardwareInfo(
+            cpu=h.cpu,
+            operating_system=h.operating_system,
+            memory_gb=h.memory_gb,
+            accelerator=h.gpu,
+        )

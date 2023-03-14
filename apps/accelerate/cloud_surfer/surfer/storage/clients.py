@@ -35,9 +35,7 @@ class StorageClient(abc.ABC):
 
         If source is a directory, then all the files included in it
         (and in its subdirectories) are uploaded.
-
-        Since GCS Buckets have a flat filesystem, the hierarchy of
-        the directory is reflected into filenames.
+        The hierarchy of the directory is reflected into filenames.
 
         If destination is empty, the source is uploaded to the root
         of the target Bucket, otherwise "dest" is used as prefix for

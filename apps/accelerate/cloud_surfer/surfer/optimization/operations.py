@@ -1,6 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable, Callable, List, Union, Sequence, Dict
+from typing import Any, Iterable, Callable, List, Union, Dict
 
 from nebullvm.config import TRAIN_TEST_SPLIT_RATIO
 from nebullvm.operations.base import Operation
@@ -35,6 +35,7 @@ from nebullvm.tools.utils import (
     extract_info_from_data,
 )
 from surfer import DataLoader
+from surfer.optimization import types
 from surfer.optimization.adapters import OptimizerAdapter, HuggingFaceConverter
 from surfer.optimization.models import (
     ModelInfo,
@@ -70,7 +71,7 @@ class OptimizeInferenceOp(Operation):
     def execute(
         self,
         model: Any,
-        input_data: Union[Iterable, Sequence, DataManager],
+        input_data: types.InputData,
         metric_drop_ths: float = None,
         metric: Union[str, Callable] = None,
         optimization_time: str = "constrained",
@@ -80,7 +81,7 @@ class OptimizeInferenceOp(Operation):
         ignore_compressors: List[str] = None,
         store_latencies: bool = False,
         **kwargs,
-    ):
+    ) -> OptimizeInferenceResult:
         if model is None:
             raise ValueError("Input model cannot be None")
         if len(input_data) == 0:
@@ -237,7 +238,7 @@ class OptimizeInferenceOp(Operation):
         model: Any,
         model_outputs: Iterable,
         hf_converter: HuggingFaceConverter,
-        input_data: Iterable,
+        input_data: types.InputData,
         optimization_time: OptimizationTime,
         metric_drop_ths: float,
         metric: Callable,
