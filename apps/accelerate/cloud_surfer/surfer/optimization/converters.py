@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 from surfer.common import schemas
 from surfer.computing.models import VMProvider
@@ -11,7 +10,7 @@ class ModelDescriptor:
     @staticmethod
     def from_optimized_model(
         m: OptimizedModel,
-        model_path: Optional[Path] = None,
+        model_path: Path,
     ) -> schemas.OptimizedModelDescriptor:
         return schemas.OptimizedModelDescriptor(
             model_id=m.model_id,
@@ -19,7 +18,7 @@ class ModelDescriptor:
             throughput=m.throughput,
             metric_drop=m.metric_drop,
             technique=m.technique,
-            model_size_mb=m.model_size_mb,
+            size_mb=m.size_mb,
             compiler=m.compiler,
             model_path=model_path,
         )
@@ -32,7 +31,7 @@ class ModelDescriptor:
             model_id=m.model_id,
             latency=m.latency,
             throughput=m.throughput,
-            model_size_mb=m.model_info.model_size_mb,
+            size_mb=m.model_info.model_size_mb,
             model_name=m.model_info.model_name,
             framework=m.model_info.framework.value,
         )

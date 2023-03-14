@@ -1,4 +1,5 @@
 import abc
+from functools import cached_property
 from pathlib import Path
 from typing import Optional, List, Union
 
@@ -23,7 +24,7 @@ class ModelDescriptor(abc.ABC, BaseModel):
 
     latency: float
     throughput: float
-    model_size_mb: float
+    size_mb: float
 
 
 class OriginalModelDescriptor(ModelDescriptor):
@@ -36,8 +37,8 @@ class OptimizedModelDescriptor(ModelDescriptor):
     technique: str
     compiler: str
     metric_drop: float
-    model_id: Optional[str]
-    model_path: Optional[Path] = None
+    model_id: str
+    model_path: Path
 
 
 class HardwareInfo(BaseModel):
@@ -60,11 +61,15 @@ class OptimizationResult(BaseModel):
         json_encoders = {
             Path: lambda v: v.resolve().as_posix(),
         }
+        keep_untouched = (cached_property,)
 
     hardware_info: HardwareInfo
-    best_model: Optional[ModelDescriptor]
-    original_model: ModelDescriptor
-    all_optimized_models: List[ModelDescriptor]
+    optimized_model: Optional[OptimizedModelDescriptor]
+    original_model: OriginalModelDescriptor
+
+    @cached_property
+    def latency_improvement(self) -> float:
+        return 0
 
 
 class ExperimentResult(BaseModel):

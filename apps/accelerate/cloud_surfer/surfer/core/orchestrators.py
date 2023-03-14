@@ -156,12 +156,6 @@ class InferenceOptimizationTask:
             )
         else:
             logger.warning("optimization didn't produce any best model")
-        # Convert all other optimized models
-        optimized_models_desc: List[schemas.OptimizedModelDescriptor] = []
-        for m in res.optimized_models:
-            optimized_models_desc.append(
-                converters.ModelDescriptor.from_optimized_model(m)
-            )
         # Convert original model
         original_model_desc = converters.ModelDescriptor.from_original_model(
             res.original_model,
@@ -175,9 +169,8 @@ class InferenceOptimizationTask:
         # Return result
         return schemas.OptimizationResult(
             hardware_info=hw_info,
-            best_model=best_model_desc,
+            optimized_model=best_model_desc,
             original_model=original_model_desc,
-            all_optimized_models=optimized_models_desc,
         )
 
     def run(

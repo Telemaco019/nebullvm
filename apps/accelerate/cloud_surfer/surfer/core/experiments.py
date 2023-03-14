@@ -2,6 +2,8 @@ import asyncio
 import datetime
 import functools
 import logging
+import os
+import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -10,7 +12,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import aiofiles
-from pydantic import ValidationError
+from pydantic.error_wrappers import ValidationError
 from ray.dashboard.modules.job.common import JobStatus
 from ray.dashboard.modules.job.pydantic_models import JobDetails
 from ray.dashboard.modules.job.sdk import JobSubmissionClient
@@ -170,6 +172,71 @@ async def job_working_dir(
         yield working_dir
 
 
+def _mocked_experiment_result() -> ExperimentResult:
+    from surfer.computing.models import VMProvider
+
+    return ExperimentResult(
+        optimizations=[
+            schemas.OptimizationResult(
+                hardware_info=schemas.HardwareInfo(
+                    cpu="Intel Xeon E5-2690 v4 (Broadwell)",
+                    accelerator="NVIDIA Tesla V100-SXM2-16GB",
+                    memory_gb=128,
+                    vm_size="Standard NC6s v3",
+                    vm_provider=VMProvider.AZURE,
+                    operating_system="Ubuntu 18.04",
+                ),
+                optimized_model=schemas.OptimizedModelDescriptor(
+                    model_path=Path("experiments/1/optimized_model.onnx"),
+                    model_id=str(uuid.uuid4()),
+                    technique="quantization",
+                    compiler="onnx",
+                    metric_drop=0.1,
+                    latency=0.25,
+                    size_mb=52,
+                    throughput=14.5,
+                ),
+                original_model=schemas.OriginalModelDescriptor(
+                    model_name="restnet50",
+                    framework="pytorch",
+                    model_id=str(uuid.uuid4()),
+                    latency=31.135991,
+                    size_mb=194,
+                    throughput=14.5,
+                ),
+            ),
+            schemas.OptimizationResult(
+                hardware_info=schemas.HardwareInfo(
+                    cpu="AMD EPYC 7V12(Rome)",
+                    accelerator="AMD Radeon Instinct MI25",
+                    memory_gb=14,
+                    vm_size="Standard_NV4as_v4",
+                    vm_provider=VMProvider.AZURE,
+                    operating_system="Ubuntu 18.04",
+                ),
+                optimized_model=schemas.OptimizedModelDescriptor(
+                    model_path=Path("experiments/1/optimized_model.onnx"),
+                    model_id=str(uuid.uuid4()),
+                    technique="quantization",
+                    compiler="onnx",
+                    metric_drop=0,
+                    latency=12,
+                    size_mb=52,
+                    throughput=10.8,
+                ),
+                original_model=schemas.OriginalModelDescriptor(
+                    model_name="restnet50",
+                    framework="pytorch",
+                    model_id=str(uuid.uuid4()),
+                    latency=20.32,
+                    size_mb=100,
+                    throughput=14.5,
+                ),
+            ),
+        ],
+    )
+
+
 class ExperimentService:
     def __init__(
         self,
@@ -177,6 +244,10 @@ class ExperimentService:
         job_client: JobSubmissionClient,
         surfer_config: SurferConfig,
     ):
+        # TODO: remove mocking
+        self.__mocking = False
+        if os.getenv("MOCKING", "false") == "true":
+            self.__mocking = True
         self.storage_client = storage_client
         self.job_client = job_client
         self.surfer_config = surfer_config
@@ -281,6 +352,8 @@ class ExperimentService:
         self,
         experiment_path: ExperimentPath,
     ) -> Optional[ExperimentResult]:
+        if self.__mocking:  # TODO: remove mocking
+            return _mocked_experiment_result()
         try:
             path = Path(
                 experiment_path.as_path(),
@@ -523,6 +596,8 @@ class ExperimentService:
         experiment_jobs = await self._get_experiment_jobs(experiment_name)
         summary.status = self._get_experiment_status(experiment_jobs)
         # Fetch experiment result
+        if self.__mocking:  # TODO - remove me
+            summary.status = ExperimentStatus.SUCCEEDED
         result = None
         if summary.status is ExperimentStatus.SUCCEEDED:
             result = await self._fetch_result(experiment_path)
