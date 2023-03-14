@@ -29,7 +29,8 @@ class RayCluster:
 
     def get_available_accelerators(self) -> List[Accelerator]:
         accelerators = []
-        for _, node in self.config["available_node_types"].items():
+        node_types = self.config.get("available_node_types", {})
+        for _, node in node_types.items():
             resources = node.get("resources", None)
             if resources is None:
                 continue
