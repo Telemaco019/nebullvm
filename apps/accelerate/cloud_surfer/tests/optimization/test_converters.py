@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 from nebullvm.tools.base import DeepLearningFramework
 from surfer.optimization import converters
 from surfer.optimization.models import OptimizedModel, OriginalModel, ModelInfo
+from surfer.utilities.nebullvm_utils import HardwareSetup
 
 
 class TestModelDescriptor(unittest.TestCase):
@@ -51,4 +52,16 @@ class TestModelDescriptor(unittest.TestCase):
             model=MagicMock(),
         )
         res = converters.ModelDescriptor.from_original_model(m)
+        self.assertIsNotNone(res)
+
+
+class TestHardwareSetupConverter(unittest.TestCase):
+    def test_to_hw_info_schema(self):
+        h = HardwareSetup(
+            cpu="",
+            operating_system="",
+            memory_gb=0,
+            gpu="",
+        )
+        res = converters.HardwareSetupConverter.to_hw_info_schema(h)
         self.assertIsNotNone(res)
