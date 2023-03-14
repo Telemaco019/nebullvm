@@ -26,17 +26,14 @@ class ModelDescriptor:
     @staticmethod
     def from_original_model(
         m: OriginalModel,
-        model_path: Optional[Path] = None,
-    ) -> schemas.OptimizedModelDescriptor:
-        return schemas.OptimizedModelDescriptor(
+    ) -> schemas.OriginalModelDescriptor:
+        return schemas.OriginalModelDescriptor(
             model_id=m.model_id,
             latency=m.latency,
             throughput=m.throughput,
-            metric_drop=m.metric_drop,
-            technique=m.technique,
-            model_size_mb=m.model_size_mb,
-            compiler=m.compiler,
-            model_path=model_path,
+            model_size_mb=m.model_info.model_size_mb,
+            model_name=m.model_info.model_name,
+            framework=m.model_info.framework.value,
         )
 
 

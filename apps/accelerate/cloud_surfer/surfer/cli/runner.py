@@ -25,9 +25,7 @@ def doc():
 def run(
     results_dir: Path = typer.Option(
         ...,
-        exists=True,
-        dir_okay=True,
-        file_okay=False,
+        exists=False,  # the path refers to a remote storage
     ),
     data_loader_path: Path = typer.Option(
         ...,

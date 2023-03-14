@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import cached_property
 from typing import Optional, Any, List
 
@@ -24,17 +24,12 @@ class OptimizedModel:
     compiler: str
     throughput: float
     model_size_mb: Optional[float]
-    __id: str = field(default=None, init=False)
 
-    @property
+    @cached_property
     def model_id(self) -> Optional[str]:
         if self.inference_learner is None:
             return None
-        if self.__id is None:
-            self.__id = nebullvm_utils.generate_model_id(
-                self.inference_learner,
-            )
-        return self.__id
+        return nebullvm_utils.generate_model_id(self.inference_learner)
 
 
 @dataclass
@@ -43,13 +38,10 @@ class OriginalModel:
     model_info: ModelInfo
     latency: float
     throughput: float
-    __id: str
 
-    @property
-    def mode_id(self) -> str:
-        if self.__id is None:
-            self.__id = nebullvm_utils.generate_model_id(self.model)
-        return self.__id
+    @cached_property
+    def model_id(self) -> str:
+        return nebullvm_utils.generate_model_id(self.model)
 
 
 @dataclass

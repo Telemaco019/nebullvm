@@ -20,21 +20,23 @@ class ModelDescriptor(abc.ABC, BaseModel):
             Path: lambda v: v.resolve().as_posix(),
         }
 
-    model_name: str
     latency: float
     throughput: float
     model_size_mb: float
-    model_path: Optional[Path] = None
 
 
 class OriginalModelDescriptor(ModelDescriptor):
+    model_name: str
     framework: str
+    model_id: str
 
 
 class OptimizedModelDescriptor(ModelDescriptor):
     technique: str
     compiler: str
     metric_drop: float
+    model_id: Optional[str]
+    model_path: Optional[Path] = None
 
 
 class HardwareInfo(BaseModel):
