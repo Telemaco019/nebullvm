@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 from surfer.common import schemas
+from surfer.computing.models import VMProvider
 from surfer.optimization.models import OptimizedModel, OriginalModel
 from surfer.utilities.nebullvm_utils import HardwareSetup
 
@@ -39,10 +40,16 @@ class ModelDescriptor:
 
 class HardwareSetupConverter:
     @staticmethod
-    def to_hw_info_schema(h: HardwareSetup) -> schemas.HardwareInfo:
+    def to_hw_info_schema(
+        h: HardwareSetup,
+        vm_size: str,
+        vm_provider: VMProvider,
+    ) -> schemas.HardwareInfo:
         return schemas.HardwareInfo(
             cpu=h.cpu,
             operating_system=h.operating_system,
             memory_gb=h.memory_gb,
             accelerator=h.gpu,
+            vm_size=vm_size,
+            vm_provider=vm_provider.value,
         )

@@ -9,6 +9,7 @@ from pydantic.error_wrappers import ValidationError
 from nebullvm.config import DEFAULT_METRIC_DROP_THS
 from surfer import storage
 from surfer.common import constants
+from surfer.computing.models import VMProvider
 from surfer.storage.models import StorageConfig, StorageProvider
 
 
@@ -48,6 +49,8 @@ class HardwareInfo(BaseModel):
     operating_system: str
     memory_gb: int
     accelerator: str
+    vm_size: str
+    vm_provider: VMProvider
 
 
 class OptimizationResult(BaseModel):
@@ -62,6 +65,10 @@ class OptimizationResult(BaseModel):
     best_model: Optional[ModelDescriptor]
     original_model: ModelDescriptor
     all_optimized_models: List[ModelDescriptor]
+
+
+class ExperimentResult(BaseModel):
+    optimizations: List[OptimizationResult]
 
 
 class SurferConfig(BaseModel):
@@ -174,7 +181,3 @@ class ExperimentConfig(BaseModel):
             if isinstance(v, Path):
                 res[k] = v.resolve().as_posix()
         return res
-
-
-class ExperimentResult(BaseModel):
-    pass

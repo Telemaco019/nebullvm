@@ -12,8 +12,10 @@ from rich.table import Table
 import surfer.core.experiments
 import surfer.utilities.datetime_utils
 from surfer.cli.commands.common import must_load_config
+from surfer.common import schemas
 from surfer.common.exceptions import NotFoundError, InternalError
 from surfer.common.schemas import ExperimentConfig
+from surfer.core.experiments import ExperimentDetails
 from surfer.core.experiments import SubmitExperimentRequest
 from surfer.log import logger
 
@@ -94,12 +96,16 @@ async def stop_experiment(name: str):
     logger.info("Experiment stopped")
 
 
+def _render_optimization_result(res: schemas.OptimizationResult):
+    pass
+
+
 async def describe_experiment(name: str):
     # Init services
     experiment_service = _new_experiment_service()
     # Fetch experiment
     try:
-        experiment = await experiment_service.get(name)
+        experiment: ExperimentDetails = await experiment_service.get(name)
     except InternalError as e:
         logger.error(f"Failed to fetch experiment: {e}")
         raise typer.Exit(1)
@@ -131,6 +137,9 @@ async def describe_experiment(name: str):
     print(Rule("Results"))
     if experiment.result is None:
         print("No results available")
+        return
+    for optimization in experiment.result.optimizations:
+        _render_optimization_result(optimization)
 
 
 async def delete_experiment(name: str):

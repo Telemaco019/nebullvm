@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from surfer.common.schemas import SurferConfig
-from surfer.core.clusters import get_ray_cluster
+from surfer.computing.clusters import get_ray_cluster
 from surfer.core.orchestrators import RunConfig, RayOrchestrator
 from surfer.storage.clients import StorageClient
 

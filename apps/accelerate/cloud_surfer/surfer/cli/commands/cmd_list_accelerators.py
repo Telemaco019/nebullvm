@@ -2,7 +2,7 @@ from rich import print
 from rich.table import Table
 
 from surfer.cli.commands.common import must_load_config
-from surfer.core import clusters
+from surfer.computing import clusters
 
 
 def list_accelerators():
