@@ -190,12 +190,12 @@ class ExperimentService:
 
     @staticmethod
     def __get_run_cmd(
-        req: SubmitExperimentRequest,
+        experiment_path: ExperimentPath,
         workdir: JobWorkingDir,
     ) -> str:
         builder = (
             RunCommandBuilder()
-            .with_experiment_name(req.name)
+            .with_results_dir(experiment_path.as_path())
             .with_model_loader(workdir.model_loader_path)
             .with_data_loader(workdir.data_loader_path)
             .with_surfer_config(workdir.surfer_config_path)
@@ -321,7 +321,7 @@ class ExperimentService:
         # Submit Ray job
         async with job_working_dir(self.surfer_config, req.config) as workdir:
             # Build run command
-            entrypoint = self.__get_run_cmd(req, workdir)
+            entrypoint = self.__get_run_cmd(experiment_path, workdir)
             # Build dependencies
             requirements = _get_base_job_requirements(
                 self.surfer_config.storage,

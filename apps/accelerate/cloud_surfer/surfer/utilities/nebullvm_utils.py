@@ -1,5 +1,6 @@
 import os
 import platform
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
@@ -54,6 +55,11 @@ def get_model_name(model: Any) -> str:
     if isinstance(model, Path):
         return model.as_posix()
     return model.__class__.__name__
+
+
+def generate_model_id(model: Any) -> str:
+    model_name = get_model_name(model)
+    return f"{str(uuid.uuid4())}_{hash(model_name)}"
 
 
 def get_hw_setup(device: Device) -> HardwareSetup:

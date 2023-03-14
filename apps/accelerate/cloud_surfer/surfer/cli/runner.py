@@ -23,8 +23,11 @@ def doc():
 
 @app.command(name="run", help="test")
 def run(
-    experiment_name: str = typer.Option(
+    results_dir: Path = typer.Option(
         ...,
+        exists=True,
+        dir_okay=True,
+        file_okay=False,
     ),
     data_loader_path: Path = typer.Option(
         ...,
@@ -67,7 +70,7 @@ def run(
         ignored_accelerators=[],
         model_evaluator_path=model_evaluator_path,
     )
-    cmd.run(surfer_config, run_config, experiment_name)
+    cmd.run(surfer_config, run_config, results_dir)
 
 
 class RunCommandBuilder:
@@ -106,6 +109,10 @@ class RunCommandBuilder:
 
     def with_surfer_config(self, path: Path) -> "RunCommandBuilder":
         self.__command += f" --surfer-config-path {path}"
+        return self
+
+    def with_results_dir(self, path: Path) -> "RunCommandBuilder":
+        self.__command += f" --results-dir {path.as_posix()}"
         return self
 
     def with_debug(self) -> "RunCommandBuilder":
