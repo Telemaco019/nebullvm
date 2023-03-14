@@ -15,3 +15,8 @@ def must_load_config() -> SurferConfig:
         )
         raise typer.Exit(1)
     return config
+
+
+def format_float(f: float, precision=2) -> str:
+    return f"{f:.{precision}f}"
+

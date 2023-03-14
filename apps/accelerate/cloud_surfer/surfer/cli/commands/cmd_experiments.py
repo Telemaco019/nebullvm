@@ -13,7 +13,7 @@ from rich.table import Table
 
 import surfer.core.experiments
 import surfer.utilities.datetime_utils
-from surfer.cli.commands.common import must_load_config
+from surfer.cli.commands.common import must_load_config, format_float
 from surfer.common import schemas
 from surfer.common.exceptions import NotFoundError, InternalError
 from surfer.common.schemas import ExperimentConfig
@@ -113,14 +113,14 @@ def _render_optimization_result(res: schemas.OptimizationResult):
     hw_table.add_column("VM Size")
     hw_table.add_column("Accelerator")
     hw_table.add_column("CPU")
-    hw_table.add_column("Memory")
+    hw_table.add_column("Memory (GB)")
     hw_table.add_column("Operating System")
     hw_table.add_row(
         res.hardware_info.vm_provider.value,
         res.hardware_info.vm_size,
         res.hardware_info.accelerator,
         res.hardware_info.cpu,
-        f"{res.hardware_info.memory_gb} GB",
+        str(res.hardware_info.memory_gb),
         res.hardware_info.operating_system,
     )
     print(hw_table)
@@ -135,24 +135,24 @@ def _render_optimization_result(res: schemas.OptimizationResult):
     table.add_column("", footer="Improvement")
     table.add_column("Backend")
     table.add_column("Technique")
-    table.add_column("Latency", footer="3.4x")
-    table.add_column("Throughput", footer="1x")
+    table.add_column("Latency (ms)", footer="3.4x")
+    table.add_column("Throughput (batch/sec)", footer="1x")
     table.add_column("Size", footer="0%")
     table.add_row(
         "Original",
         res.original_model.framework,
         "[italic]None[/italic]",
-        f"{res.original_model.latency:.2f} ms",
-        f"{res.original_model.throughput} batch/sec",
-        f"{res.original_model.size_mb:.2f} MB",
+        format_float(res.original_model.latency),
+        format_float(res.original_model.throughput),
+        format_float(res.original_model.size_mb),
     )
     table.add_row(
         "Optimized",
         res.optimized_model.compiler,
         res.optimized_model.technique,
-        f"{res.optimized_model.latency:.2f} ms",
-        f"{res.optimized_model.throughput} batch/sec",
-        f"{res.optimized_model.size_mb:.2f} MB",
+        format_float(res.optimized_model.latency),
+        format_float(res.optimized_model.throughput),
+        format_float(res.optimized_model.size_mb),
         style="bold green",
     )
     print(table)
@@ -168,6 +168,11 @@ def _render_experiment_results(experiment: ExperimentDetails):
 
 
 def _render_experiment_summary(experiment: ExperimentDetails):
+    def __format_float(original: float, optimized: float) -> str:
+        return "Original: {}\nOptimized: {}".format(
+            format_float(original), format_float(optimized)
+        )
+
     print(Rule("Summary"))
     print("[bold]Experiment name[/bold]: {}".format(experiment.name))
     print(
@@ -187,29 +192,40 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     )
     results_summary_table.add_column("")
     results_summary_table.add_column("Accelerator")
-    results_summary_table.add_column("Latency \[ms]")
-    results_summary_table.add_column("Throughput \[batch/sec]")
-    results_summary_table.add_column("$/inference")
+    results_summary_table.add_column("Latency (ms)")
+    results_summary_table.add_column("Throughput (batch/sec)")
+    results_summary_table.add_column("Cost ($/inference)")
     for o in experiment.result.optimizations:
         results_summary_table.add_row(
             o.hardware_info.vm_size,
             o.hardware_info.accelerator,
-            f"Original: {o.original_model.latency:.2f}\nOptimized: {o.optimized_model.latency:.2f}",
-            f"Original: {o.original_model.throughput}\nOptimized: {o.optimized_model.throughput}",
-            f"Original: {random.randint(1, 1000) / 1000:.3f}\nOptimized: {random.randint(1, 1000) / 1000:.3f}",
+            __format_float(
+                o.original_model.latency,
+                o.optimized_model.latency,
+            ),
+            __format_float(
+                o.original_model.throughput,
+                o.optimized_model.throughput,
+            ),
+            __format_float(
+                random.randint(1, 1000) / 1000,
+                random.randint(1, 1000) / 1000,
+            ),
         )
     print(results_summary_table)
 
     print(
-        "[bold]Lowest latency[/bold]: [green]{} ({} ms)".format(
+        "[bold]Lowest latency[/bold]: [green]{}[/green] ({} ms)".format(
             experiment.result.optimizations[0].hardware_info.vm_size,
-            experiment.result.optimizations[0].optimized_model.latency,
+            format_float(experiment.result.optimizations[0].optimized_model.latency),
         )
     )
-    print("[bold]Lowest cost[/bold]: [green]{} ({} $/inference)".format(
-        experiment.result.optimizations[0].hardware_info.vm_size,
-        random.randint(1, 1000) / 1000,
-    ))
+    print(
+        "[bold]Lowest cost[/bold]: [green]{}[/green] ({} $/inference)".format(
+            experiment.result.optimizations[0].hardware_info.vm_size,
+            format_float(random.randint(1, 1000) / 1000),
+        )
+    )
 
 
 def _render_experiment_jobs(experiment: ExperimentDetails):
