@@ -14,6 +14,7 @@ from nebullvm.operations.optimizations.optimizers import (
 from nebullvm.operations.optimizations.utils import \
     map_compilers_and_compressors
 from nebullvm.optional_modules.tensorflow import tensorflow as tf
+from nebullvm.optional_modules.torch import DataLoader as TorchDataLoader
 from nebullvm.optional_modules.torch import torch
 from nebullvm.optional_modules.utils import (
     check_dependencies,
@@ -34,7 +35,6 @@ from nebullvm.tools.utils import (
     get_dl_framework,
     extract_info_from_data,
 )
-from surfer import DataLoader
 from surfer.optimization import types
 from surfer.optimization.adapters import OptimizerAdapter, HuggingFaceConverter
 from surfer.optimization.models import (
@@ -108,7 +108,7 @@ class OptimizeInferenceOp(Operation):
 
         data = input_data
 
-        if isinstance(data, (DataLoader, tf.data.Dataset)):
+        if isinstance(data, (TorchDataLoader, tf.data.Dataset)):
             try:
                 data = DataManager.from_dataloader(data)
             except Exception:
