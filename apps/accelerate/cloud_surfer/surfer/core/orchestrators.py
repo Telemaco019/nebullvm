@@ -14,7 +14,9 @@ from nebullvm.tools.utils import gpu_is_available
 from surfer import ModelLoader, DataLoader, ModelEvaluator
 from surfer.common import schemas, constants
 from surfer.common.schemas import SurferConfig
-from surfer.core.clusters import RayCluster, Accelerator
+from surfer.computing.clusters import ClusterNode
+from surfer.computing.clusters import RayCluster, Accelerator
+from surfer.computing.models import VMProvider
 from surfer.log import logger
 from surfer.optimization import converters
 from surfer.optimization.models import OptimizeInferenceResult, OptimizedModel
@@ -59,15 +61,16 @@ class RunConfig:
 class InferenceOptimizationTask:
     def __init__(
         self,
-        accelerator: Accelerator,
+        node: ClusterNode,
         num_cpus: int = 1,
         num_gpus: int = 1,
     ):
         remote_decorator = remote(
             num_cpus=num_cpus,
             num_gpus=num_gpus,
-            accelerator_type=accelerator.value,
+            accelerator_type=node.accelerator.value,
         )
+        self.node = node
         self._run = remote_decorator(self._run)
 
     @staticmethod
@@ -127,10 +130,12 @@ class InferenceOptimizationTask:
     def _run(
         storage_config: StorageConfig,
         results_dir: Path,
-        config: RunConfig,
+        run_config: RunConfig,
+        vm_size: str,
+        vm_provider: VMProvider,
     ) -> schemas.OptimizationResult:
         logger.info("starting inference optimization")
-        res = InferenceOptimizationTask._optimize_inference(config)
+        res = InferenceOptimizationTask._optimize_inference(run_config)
         logger.info(
             "optimization produced {} inference learners".format(
                 len(res.inference_learners),
@@ -164,6 +169,8 @@ class InferenceOptimizationTask:
         # Convert hw setup
         hw_info = converters.HardwareSetupConverter.to_hw_info_schema(
             res.hardware_setup,
+            vm_size=vm_size,
+            vm_provider=vm_provider,
         )
         # Return result
         return schemas.OptimizationResult(
@@ -177,9 +184,17 @@ class InferenceOptimizationTask:
         self,
         storage_config: StorageConfig,
         results_dir: Path,
-        config: RunConfig,
+        run_config: RunConfig,
+        vm_size: str,
+        vm_provider: VMProvider,
     ) -> ray.ObjectRef:
-        return self._run.remote(storage_config, results_dir, config)
+        return self._run.remote(
+            storage_config,
+            results_dir,
+            run_config,
+            vm_size,
+            vm_provider,
+        )
 
 
 class RayOrchestrator:
@@ -200,14 +215,20 @@ class RayOrchestrator:
     ):
         # Setup tasks
         tasks = []
-        for accelerator in self.cluster.get_available_accelerators():
-            if accelerator in config.ignored_accelerators:
+        for node in self.cluster.get_nodes():
+            if node.accelerator in config.ignored_accelerators:
                 continue
-            tasks.append(InferenceOptimizationTask(accelerator))
+            tasks.append(InferenceOptimizationTask(node))
         # Submit
         objs = []
         for t in tasks:
-            o = t.run(self.surfer_config.storage, results_dir, config)
+            o = t.run(
+                storage_config=self.surfer_config.storage,
+                results_dir=results_dir,
+                run_config=config,
+                vm_size=t.node.vm_size,
+                vm_provider=self.cluster.provider,
+            )
             objs.append(o)
         results = ray.get(objs)
         if len(results) == 0:

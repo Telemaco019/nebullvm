@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from surfer import ModelLoader, DataLoader, ModelEvaluator
-from surfer.core.clusters import Accelerator
+from surfer.computing.clusters import Accelerator, ClusterNode
 from surfer.core.orchestrators import RunConfig, RayOrchestrator
 from tests import _get_assets_path
 
@@ -69,24 +69,30 @@ class TestRayOrchestrator(unittest.TestCase):
         mocked_task.run.assert_not_called()
 
     @patch("surfer.core.orchestrators.InferenceOptimizationTask")
-    def test_run_experiment__at_least_one_task_per_accelerator(
+    def test_run_experiment__at_least_one_task_per_node(
         self,
         mocked_task,
         *_,
     ):
         mocked_ray_cluster = MagicMock()
-        accelerators = [
-            Accelerator.NVIDIA_TESLA_K80,
-            Accelerator.NVIDIA_TESLA_V100,
+        nodes = [
+            ClusterNode(
+                accelerator=Accelerator.NVIDIA_TESLA_V100,
+                vm_size="Standard_NC6",
+            ),
+            ClusterNode(
+                accelerator=Accelerator.NVIDIA_TESLA_K80,
+                vm_size="test",
+            ),
         ]
-        mocked_ray_cluster.get_available_accelerators.return_value = accelerators
+        mocked_ray_cluster.get_nodes.return_value = nodes
         orchestrator = RayOrchestrator(
             cluster=mocked_ray_cluster,
             storage_client=MagicMock(),
             surfer_config=MagicMock(),
         )
         orchestrator.run_experiment(MagicMock(), MagicMock())
-        self.assertGreaterEqual(mocked_task.call_count, len(accelerators))
+        self.assertGreaterEqual(mocked_task.call_count, len(nodes))
 
     @patch("surfer.core.orchestrators.InferenceOptimizationTask")
     def test_run_experiment__ignored_accelerators(

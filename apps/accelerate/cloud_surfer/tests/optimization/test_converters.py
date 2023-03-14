@@ -3,6 +3,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from nebullvm.tools.base import DeepLearningFramework
+from surfer.computing.models import VMProvider
 from surfer.optimization import converters
 from surfer.optimization.models import OptimizedModel, OriginalModel, ModelInfo
 from surfer.utilities.nebullvm_utils import HardwareSetup
@@ -63,5 +64,7 @@ class TestHardwareSetupConverter(unittest.TestCase):
             memory_gb=0,
             gpu="",
         )
-        res = converters.HardwareSetupConverter.to_hw_info_schema(h)
+        res = converters.HardwareSetupConverter.to_hw_info_schema(
+            h, vm_size="test", vm_provider=VMProvider.AZURE
+        )
         self.assertIsNotNone(res)
