@@ -1,12 +1,21 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Optional
 from unittest.mock import patch
 
 import yaml
 from pydantic.error_wrappers import ValidationError
 
-from surfer.common.schemas import SurferConfig, ExperimentConfig
+from surfer.common.schemas import (
+    SurferConfig,
+    ExperimentConfig,
+    OptimizationResult,
+    HardwareInfo,
+    OriginalModelDescriptor,
+    OptimizedModelDescriptor,
+)
+from surfer.computing.models import VMProvider
 from surfer.storage import (
     StorageProvider,
     AzureStorageConfig,
@@ -132,3 +141,69 @@ class TestExperimentConfig(unittest.TestCase):
             deserialized_yaml = yaml.safe_load(yaml.safe_dump(config.dict()))
             deserialized_config = ExperimentConfig(**deserialized_yaml)
             self.assertEqual(config.dict(), deserialized_config.dict())
+
+
+class TestOptimizationResult(unittest.TestCase):
+    @staticmethod
+    def _new_optimization_result(
+        optimized_model: Optional[OptimizedModelDescriptor] = None,
+        latency_rate_improvement: Optional[float] = None,
+        throughput_rate_improvement: Optional[float] = None,
+        size_rate_improvement: Optional[float] = None,
+    ) -> OptimizationResult:
+        return OptimizationResult(
+            hardware_info=HardwareInfo(
+                cpu="",
+                operating_system="",
+                memory_gb=0,
+                vm_size="",
+                vm_provider=VMProvider.AZURE,
+            ),
+            optimized_model=optimized_model,
+            original_model=OriginalModelDescriptor(
+                name="",
+                framework="",
+                latency=0,
+                throughput=0,
+                size_mb=0,
+            ),
+            latency_improvement_rate=latency_rate_improvement,
+            throughput_improvement_rate=throughput_rate_improvement,
+            size_improvement_rate=size_rate_improvement,
+        )
+
+    def test_rates_validation__optimized_model_is_none(self):
+        res = self._new_optimization_result()
+        self.assertIsNotNone(res)
+
+    def test_rates_validation__optimized_model_but_rates_are_none(self):
+        optimized_model = OptimizedModelDescriptor(
+            latency=0,
+            throughput=0,
+            size_mb=0,
+            technique="",
+            compiler="",
+            metric_drop=0,
+            model_path=Path(),
+        )
+        with self.assertRaises(ValidationError):
+            self._new_optimization_result(
+                optimized_model=optimized_model,
+                latency_rate_improvement=None,
+                throughput_rate_improvement=None,
+                size_rate_improvement=None,
+            )
+        with self.assertRaises(ValidationError):
+            self._new_optimization_result(
+                optimized_model=optimized_model,
+                latency_rate_improvement=1,
+                throughput_rate_improvement=None,
+                size_rate_improvement=None,
+            )
+        with self.assertRaises(ValidationError):
+            self._new_optimization_result(
+                optimized_model=optimized_model,
+                latency_rate_improvement=1,
+                throughput_rate_improvement=1,
+                size_rate_improvement=None,
+            )

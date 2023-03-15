@@ -5,6 +5,7 @@ from typing import Optional, List, Union
 
 import yaml
 from pydantic import BaseModel, FilePath, AnyUrl, validator
+from pydantic.class_validators import root_validator
 from pydantic.error_wrappers import ValidationError
 
 from nebullvm.config import DEFAULT_METRIC_DROP_THS
@@ -67,6 +68,27 @@ class OptimizationResult(BaseModel):
     latency_improvement_rate: Optional[float]
     throughput_improvement_rate: Optional[float]
     size_improvement_rate: Optional[float]
+
+    @root_validator
+    def validate_rates(cls, values):
+        if values.get("optimized_model") is None:
+            return values
+        if values.get("latency_improvement_rate") is None:
+            raise ValueError(
+                "latency_improvement_rate must "
+                "be provided if optimized_model is provided"
+            )
+        if values.get("throughput_improvement_rate") is None:
+            raise ValueError(
+                "throughput_improvement_rate must "
+                "be provided if optimized_model is provided"
+            )
+        if values.get("size_improvement_rate") is None:
+            raise ValueError(
+                "size_improvement_rate must "
+                "be provided if optimized_model is provided"
+            )
+        return values
 
 
 class ExperimentResult(BaseModel):
