@@ -81,7 +81,11 @@ class InferenceOptimizationTask:
         model: OptimizedModel,
     ) -> Path:
         with TemporaryDirectory() as tmp:
-            dir_path = Path(tmp)
+            dir_path = Path(
+                tmp,
+                # Fixme: BaseInferenceLearner should expose property "name"
+                model.inference_learner.name,
+            )
             model.inference_learner.save(dir_path)
             client = StorageClient.from_config(storage_config)
             dest_path = Path(
@@ -90,7 +94,7 @@ class InferenceOptimizationTask:
                 vm_size,
                 str(uuid.uuid4()),
             )
-            logger.info("uploading inference learner to ", results_dir)
+            logger.info("uploading inference learner to {}".format(dest_path))
             asyncio.run(client.upload(source=dir_path, dest=dest_path))
             return dest_path
 
@@ -220,5 +224,5 @@ class RayOrchestrator:
             logger.warn("optimization tasks produced no results")
             return
         # Save results
-        logger.info("saving results to ", results_dir)
+        logger.info("saving results to directory {}".format(results_dir))
         self.save_results(results_dir, results)
