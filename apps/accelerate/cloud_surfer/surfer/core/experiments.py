@@ -3,7 +3,6 @@ import datetime
 import functools
 import logging
 import os
-import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -188,7 +187,6 @@ def _mocked_experiment_result() -> ExperimentResult:
                 ),
                 optimized_model=schemas.OptimizedModelDescriptor(
                     model_path=Path("experiments/1/optimized_model.onnx"),
-                    model_id=str(uuid.uuid4()),
                     technique="quantization",
                     compiler="onnx",
                     metric_drop=0.1,
@@ -197,12 +195,11 @@ def _mocked_experiment_result() -> ExperimentResult:
                     throughput=14.5,
                 ),
                 original_model=schemas.OriginalModelDescriptor(
-                    model_name="restnet50",
+                    name="restnet50",
                     framework="pytorch",
-                    model_id=str(uuid.uuid4()),
                     latency=31.135991,
                     size_mb=194,
-                    throughput=14.5,
+                    throughput=8.5,
                 ),
             ),
             schemas.OptimizationResult(
@@ -216,21 +213,19 @@ def _mocked_experiment_result() -> ExperimentResult:
                 ),
                 optimized_model=schemas.OptimizedModelDescriptor(
                     model_path=Path("experiments/1/optimized_model.onnx"),
-                    model_id=str(uuid.uuid4()),
                     technique="quantization",
                     compiler="onnx",
-                    metric_drop=0,
-                    latency=12,
+                    metric_drop=0.1,
+                    latency=0.30,
                     size_mb=52,
-                    throughput=10.8,
+                    throughput=12.5,
                 ),
                 original_model=schemas.OriginalModelDescriptor(
-                    model_name="restnet50",
+                    name="restnet50",
                     framework="pytorch",
-                    model_id=str(uuid.uuid4()),
-                    latency=20.32,
-                    size_mb=100,
-                    throughput=14.5,
+                    latency=40.19441,
+                    size_mb=194,
+                    throughput=6.4,
                 ),
             ),
         ],

@@ -28,16 +28,14 @@ class ModelDescriptor(abc.ABC, BaseModel):
 
 
 class OriginalModelDescriptor(ModelDescriptor):
-    model_name: str
+    name: str
     framework: str
-    model_id: str
 
 
 class OptimizedModelDescriptor(ModelDescriptor):
     technique: str
     compiler: str
     metric_drop: float
-    model_id: str
     model_path: Path
 
 
@@ -49,9 +47,9 @@ class HardwareInfo(BaseModel):
     cpu: str
     operating_system: str
     memory_gb: int
-    accelerator: str
     vm_size: str
     vm_provider: VMProvider
+    accelerator: Optional[str]
 
 
 class OptimizationResult(BaseModel):
@@ -66,10 +64,9 @@ class OptimizationResult(BaseModel):
     hardware_info: HardwareInfo
     optimized_model: Optional[OptimizedModelDescriptor]
     original_model: OriginalModelDescriptor
-
-    @cached_property
-    def latency_improvement(self) -> float:
-        return 0
+    latency_improvement_rate: Optional[float]
+    throughput_improvement_rate: Optional[float]
+    size_improvement_rate: Optional[float]
 
 
 class ExperimentResult(BaseModel):

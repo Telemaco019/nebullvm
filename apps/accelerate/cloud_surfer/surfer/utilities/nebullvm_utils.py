@@ -32,7 +32,7 @@ class HardwareSetup:
     cpu: str
     operating_system: str
     memory_gb: int
-    gpu: Optional[str]
+    gpu: Optional[str] = None
 
 
 def get_model_size_mb(model: Any) -> float:
