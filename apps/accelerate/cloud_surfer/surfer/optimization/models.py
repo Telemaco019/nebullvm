@@ -49,12 +49,8 @@ class OptimizeInferenceResult:
         if self.optimized_model is None:
             return None
         if self.original_model.throughput == 0:
-            return 0
-        if self.optimized_model.throughput == 0:
             return -1
-        original = 1 / self.original_model.throughput
-        optimized = 1 / self.optimized_model.throughput
-        return original / optimized
+        return self.optimized_model.throughput / self.original_model.throughput
 
     @cached_property
     def size_improvement_rate(self) -> Optional[float]:
