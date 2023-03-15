@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
@@ -77,9 +78,9 @@ class InferenceOptimizationTask:
     def _upload_model(
         storage_config: StorageConfig,
         results_dir: Path,
+        vm_size: str,
         model: OptimizedModel,
     ) -> Path:
-        Path(model.model_id).mkdir(exist_ok=True)
         with TemporaryDirectory() as tmp:
             dir_path = Path(tmp)
             model.inference_learner.save(dir_path)
@@ -87,7 +88,8 @@ class InferenceOptimizationTask:
             dest_path = Path(
                 results_dir,
                 constants.INFERENCE_LEARNERS_DIR_NAME,
-                model.model_id,
+                vm_size,
+                str(uuid.uuid4()),
             )
             asyncio.run(client.upload(source=dir_path, dest=dest_path))
             return dest_path
@@ -134,6 +136,7 @@ class InferenceOptimizationTask:
             optimized_model_path = InferenceOptimizationTask._upload_model(
                 storage_config,
                 results_dir,
+                vm_size,
                 res.optimized_model,
             )
         else:
