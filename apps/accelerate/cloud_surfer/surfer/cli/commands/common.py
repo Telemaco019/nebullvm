@@ -20,3 +20,5 @@ def must_load_config() -> SurferConfig:
 def format_float(f: float, precision=2) -> str:
     return f"{f:.{precision}f}"
 
+def format_rate(rate: float) -> str:
+    return "{:.1f}x".format(rate)

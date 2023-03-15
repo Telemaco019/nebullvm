@@ -69,7 +69,7 @@ class TestOptimizeInferenceResult(unittest.TestCase):
             hardware_setup=MagicMock(),
             optimized_model=MagicMock(throughput=optimized_th),
         )
-        self.assertEqual(-1, res.throughput_improvement_rate)
+        self.assertEqual(0, res.throughput_improvement_rate)
 
     def test_th_improvement_rate__original_th_is_zero(self):
         original_th = 0.0
@@ -79,7 +79,7 @@ class TestOptimizeInferenceResult(unittest.TestCase):
             hardware_setup=MagicMock(),
             optimized_model=MagicMock(throughput=optimized_th),
         )
-        self.assertEqual(0, res.throughput_improvement_rate)
+        self.assertEqual(-1, res.throughput_improvement_rate)
 
     def test_th_improvement_rate__rate_gt_1(self):
         original_th = 0.5

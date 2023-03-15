@@ -13,7 +13,11 @@ from rich.table import Table
 
 import surfer.core.experiments
 import surfer.utilities.datetime_utils
-from surfer.cli.commands.common import must_load_config, format_float
+from surfer.cli.commands.common import (
+    must_load_config,
+    format_float,
+    format_rate,
+)
 from surfer.common import schemas
 from surfer.common.exceptions import NotFoundError, InternalError
 from surfer.common.schemas import ExperimentConfig
@@ -137,15 +141,15 @@ def _render_optimization_result(res: schemas.OptimizationResult):
     table.add_column("Technique")
     table.add_column(
         "Latency (ms)",
-        footer=f"{res.latency_improvement_rate}x",
+        footer=format_rate(res.latency_improvement_rate),
     )
     table.add_column(
         "Throughput (batch/sec)",
-        footer=f"{res.throughput_improvement_rate}x",
+        footer=format_rate(res.throughput_improvement_rate),
     )
     table.add_column(
-        "Size",
-        footer=f"{res.size_improvement_rate / 100:.2f}%",
+        "Size (MB)",
+        footer=format_rate(res.size_improvement_rate),
     )
     table.add_row(
         "Original",
