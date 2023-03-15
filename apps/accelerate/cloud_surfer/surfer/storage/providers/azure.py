@@ -76,6 +76,7 @@ class BlobStorageClient(StorageClient):
             yield container
 
     async def upload_content(self, content: str, dest: Path):
+        logger.debug("uploading content to {}".format(dest))
         async with self.__container_client() as container:
             blob = container.get_blob_client(dest.as_posix())
             await blob.upload_blob(content, overwrite=True)
