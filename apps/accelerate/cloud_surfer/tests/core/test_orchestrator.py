@@ -1,8 +1,9 @@
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 
 from surfer import ModelLoader, DataLoader, ModelEvaluator
+from surfer.common import schemas
 from surfer.computing.clusters import Accelerator, ClusterNode
 from surfer.core.orchestrators import RunConfig, RayOrchestrator
 from tests import _get_assets_path
@@ -59,7 +60,7 @@ class TestRayOrchestrator(unittest.TestCase):
     @patch("surfer.core.orchestrators.InferenceOptimizationTask")
     def test_run_experiment__no_available_accelerators(self, mocked_task, *_):
         mocked_ray_cluster = MagicMock()
-        mocked_ray_cluster.get_available_accelerators.return_value = []
+        mocked_ray_cluster.get_nodes.return_value = []
         orchestrator = RayOrchestrator(
             cluster=mocked_ray_cluster,
             storage_client=MagicMock(),
@@ -101,10 +102,13 @@ class TestRayOrchestrator(unittest.TestCase):
         *_,
     ):
         mocked_ray_cluster = MagicMock()
-        accelerators = [
-            Accelerator.NVIDIA_TESLA_K80,
+        nodes = [
+            ClusterNode(
+                vm_size="",
+                accelerator=Accelerator.NVIDIA_TESLA_V100,
+            )
         ]
-        mocked_ray_cluster.get_available_accelerators.return_value = accelerators
+        mocked_ray_cluster.get_nodes.return_value = nodes
         orchestrator = RayOrchestrator(
             cluster=mocked_ray_cluster,
             storage_client=MagicMock(),
@@ -121,3 +125,47 @@ class TestRayOrchestrator(unittest.TestCase):
             ),
         )
         mocked_task.assert_not_called()
+
+    def test_save_results(self, *_):
+        mocked_storage_client = AsyncMock()
+        orchestrator = RayOrchestrator(
+            cluster=MagicMock(),
+            storage_client=mocked_storage_client,
+            surfer_config=MagicMock(),
+        )
+        results = [
+            schemas.OptimizationResult(
+                hardware_info=schemas.HardwareInfo(
+                    cpu="",
+                    operating_system="",
+                    memory_gb=0,
+                    vm_size="",
+                    vm_provider="azure",
+                ),
+                original_model=schemas.OriginalModelDescriptor(
+                    name="test",
+                    framework="pytorch",
+                    latency=0.0,
+                    throughput=0.0,
+                    size_mb=0.0,
+                ),
+            ),
+            schemas.OptimizationResult(
+                hardware_info=schemas.HardwareInfo(
+                    cpu="",
+                    operating_system="",
+                    memory_gb=0,
+                    vm_size="",
+                    vm_provider="azure",
+                ),
+                original_model=schemas.OriginalModelDescriptor(
+                    name="test",
+                    framework="pytorch",
+                    latency=0.0,
+                    throughput=0.0,
+                    size_mb=0.0,
+                ),
+            ),
+        ]
+        orchestrator.save_results(Path(), results)
+        mocked_storage_client.upload_content.assert_called_once()
