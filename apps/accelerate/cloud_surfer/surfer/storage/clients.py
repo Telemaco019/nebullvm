@@ -28,7 +28,7 @@ class StorageClient(abc.ABC):
         source: Path,
         dest: Path,
         exclude_glob: Optional[str] = None,
-    ):
+    ) -> Path:
         """
         Upload the file or directory specified by source path
         to the specified destination.
@@ -53,24 +53,6 @@ class StorageClient(abc.ABC):
             The content of the file to upload
         dest
             The path to which the file will be uploaded
-        """
-        pass
-
-    @abc.abstractmethod
-    async def upload_many(
-        self,
-        sources: List[Path],
-        dest: Path,
-        exclude_glob: Optional[str] = None,
-    ):
-        """Upload one or more files/directories concurrently.
-
-        If destination is empty, the source is uploaded to the
-        root of the target Bucket, otherwise "dest" is used as
-        prefix for the uploaded file names.
-
-        There can be multiple upload_many(...) coroutines running
-        concurrently at the same time.
         """
         pass
 
