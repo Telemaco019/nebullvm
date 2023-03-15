@@ -102,6 +102,8 @@ available_node_types:
         #     maxPrice: -1
 
   ray.worker.gpu-t4-node:
+    docker:
+      worker_image: "telemaco019/cloud-surfer:0.1.0-py39-cu118"
     min_workers: 0
     max_workers: 1
     node_config:
