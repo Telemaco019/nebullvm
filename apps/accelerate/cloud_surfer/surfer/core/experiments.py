@@ -351,7 +351,9 @@ class ExperimentService:
         paths = await self.storage_client.list(prefix)
         for path in paths:
             try:
-                experiment_paths.append(ExperimentPath.from_path(path))
+                p = ExperimentPath.from_path(path)
+                if p not in experiment_paths:
+                    experiment_paths.append(p)
             except ValueError:
                 pass
             except IndexError:
