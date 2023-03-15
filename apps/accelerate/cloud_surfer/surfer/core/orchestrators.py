@@ -1,4 +1,5 @@
 import asyncio
+import json
 import uuid
 from dataclasses import dataclass
 from functools import cached_property
@@ -72,6 +73,21 @@ class InferenceOptimizationTask:
         )
         self.node = node
         self._run = remote_decorator(self._run)
+        self._num_cpus = num_cpus
+        self._num_gpus = num_gpus
+
+    def __str__(self):
+        return json.dumps(
+            {
+                "node": {
+                    "vm_size": self.node.vm_size,
+                    "accelerator": self.node.accelerator.value,
+                },
+                "num_cpus": self._num_cpus,
+                "num_gpus": self._num_gpus,
+            },
+            indent=2,
+        )
 
     @staticmethod
     def _upload_model(
@@ -209,6 +225,7 @@ class RayOrchestrator:
         logger.info("submitting {} tasks".format(len(tasks)))
         objs = []
         for t in tasks:
+            logger.debug("submitting task", t)
             o = t.run(
                 storage_config=self.surfer_config.storage,
                 results_dir=results_dir,
