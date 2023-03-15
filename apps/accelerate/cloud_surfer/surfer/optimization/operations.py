@@ -1,6 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Iterable, Callable, List, Union, Dict
+from typing import Any, Iterable, Callable, List, Union, Dict, Optional
 
 from nebullvm.config import TRAIN_TEST_SPLIT_RATIO
 from nebullvm.operations.base import Operation
@@ -38,7 +38,6 @@ from nebullvm.tools.utils import (
 from surfer.optimization import types
 from surfer.optimization.adapters import OptimizerAdapter, HuggingFaceConverter
 from surfer.optimization.models import (
-    ModelInfo,
     OptimizedModel,
     OriginalModel,
     OptimizeInferenceResult,
@@ -169,15 +168,12 @@ class OptimizeInferenceOp(Operation):
             dl_framework=dl_framework,
         )
         original_latency = original_latency_op.get_result()[1]
-        model_info = ModelInfo(
-            model_name=nebullvm_utils.get_model_name(model),
-            model_size_mb=nebullvm_utils.get_model_size_mb(model),
-            framework=dl_framework,
-        )
         original_model = OriginalModel(
             model=model,
-            model_info=model_info,
             latency=original_latency,
+            name=nebullvm_utils.get_model_name(model),
+            size_mb=nebullvm_utils.get_model_size_mb(model),
+            framework=dl_framework,
             throughput=nebullvm_utils.get_throughput(
                 latency=original_latency,
                 batch_size=model_params.batch_size,
@@ -221,15 +217,18 @@ class OptimizeInferenceOp(Operation):
             o.inference_learner is None for o in optimized_models
         )
         if no_optimized_models or no_inference_learners:
-            raise RuntimeError(
+            self.logger.warning(
                 "No optimized model has been created. This is likely "
                 "due to a bug in Speedster. Please open an issue and "
                 "report in details your use case."
             )
 
+        # Extract lowest-latency model
+        lowest_latency = self._extract_lowest_latency_model(optimized_models)
+
         return OptimizeInferenceResult(
             original_model=original_model,
-            optimized_models=optimized_models,
+            optimized_model=lowest_latency,
             hardware_setup=hw_setup,
         )
 
@@ -284,6 +283,20 @@ class OptimizeInferenceOp(Operation):
             optimization_op.free_model_gpu(model)
 
         return optimized_models
+
+    @staticmethod
+    def _extract_lowest_latency_model(
+        models: List[OptimizedModel],
+    ) -> Optional[OptimizedModel]:
+        # fmt: off
+        inference_learner_models = [
+            m for m in models
+            if m.inference_learner is not None
+        ]
+        # fmt: on
+        if len(inference_learner_models) == 0:
+            return None
+        return min(inference_learner_models, key=lambda m: m.latency)
 
     def get_result(self) -> Any:
         raise NotImplementedError(

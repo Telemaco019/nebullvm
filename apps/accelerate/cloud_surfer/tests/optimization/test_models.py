@@ -1,137 +1,150 @@
 import unittest
 from unittest.mock import MagicMock
 
-from surfer.optimization.models import (
-    OriginalModel,
-    OptimizedModel,
-    OptimizeInferenceResult,
-)
-
-
-class TestOriginalModel(unittest.TestCase):
-    def test_get_id(self):
-        model = OriginalModel(
-            model=MagicMock(),
-            model_info=MagicMock(),
-            latency=0.0,
-            throughput=0.0,
-        )
-        ids = [model.model_id for _ in range(10)]
-        self.assertTrue(len(ids[0]) > 0)
-        self.assertTrue(all([i == ids[0] for i in ids]))
-
-
-class TestOptimizedModel(unittest.TestCase):
-    def test_get_id(self):
-        model = OptimizedModel(
-            inference_learner=MagicMock(),
-            latency=0.0,
-            throughput=0.0,
-            metric_drop=0.0,
-            technique="",
-            compiler="",
-            size_mb=0.0,
-        )
-        ids = [model.model_id for _ in range(10)]
-        self.assertTrue(all([i is not None for i in ids]))
-        self.assertTrue(len(ids[0]) > 0)
-        self.assertTrue(all([i == ids[0] for i in ids]))
+from surfer.optimization.models import OptimizeInferenceResult
 
 
 class TestOptimizeInferenceResult(unittest.TestCase):
-    def test_lowest_latency_model__no_models(self):
-        result = OptimizeInferenceResult(
+    def test_latency_improvement_rate__optimized_model_is_none(self):
+        res = OptimizeInferenceResult(
             original_model=MagicMock(),
             hardware_setup=MagicMock(),
-            optimized_models=[],
+            optimized_model=None,
         )
-        self.assertIsNone(result.lowest_latency_model)
+        self.assertIsNone(res.latency_improvement_rate)
 
-    def test_lowest_latency_model__no_inference_learners(self):
-        result = OptimizeInferenceResult(
-            original_model=MagicMock(),
+    def test_latency_improvement_rate__optimized_latency_is_zero(self):
+        original_latency = 1.0
+        optimized_latency = 0.0
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(latency=original_latency),
             hardware_setup=MagicMock(),
-            optimized_models=[
-                OptimizedModel(
-                    inference_learner=None,
-                    latency=0.0,
-                    throughput=0.0,
-                    metric_drop=0.0,
-                    technique="",
-                    compiler="",
-                    size_mb=0.0,
-                )
-            ],
+            optimized_model=MagicMock(latency=optimized_latency),
         )
-        self.assertIsNone(result.lowest_latency_model)
-    def test_lowest_latency_model(self):
-        result = OptimizeInferenceResult(
-            original_model=MagicMock(),
-            hardware_setup=MagicMock(),
-            optimized_models=[
-                OptimizedModel(
-                    inference_learner=MagicMock(),
-                    latency=0.0,
-                    throughput=0.0,
-                    metric_drop=0.0,
-                    technique="",
-                    compiler="",
-                    size_mb=0.0,
-                ),
-                OptimizedModel(
-                    inference_learner=MagicMock(),
-                    latency=5.0,
-                    throughput=0.0,
-                    metric_drop=0.0,
-                    technique="",
-                    compiler="",
-                    size_mb=0.0,
-                )
-            ],
-        )
-        self.assertIsNotNone(result.lowest_latency_model)
-        self.assertEqual(result.lowest_latency_model.latency, 0.0) 
+        self.assertEqual(-1, res.latency_improvement_rate)
 
-    def test_inference_learners__no_models(self):
-        result = OptimizeInferenceResult(
-            original_model=MagicMock(),
+    def test_latency_improvement_rate__original_latency_is_zero(self):
+        original_latency = 0.0
+        optimized_latency = 1.0
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(latency=original_latency),
             hardware_setup=MagicMock(),
-            optimized_models=[],
+            optimized_model=MagicMock(latency=optimized_latency),
         )
-        self.assertEqual(len(result.inference_learners), 0)
+        self.assertEqual(0, res.latency_improvement_rate)
 
-    def test_inference_learners__no_inference_learners(self):
-        result = OptimizeInferenceResult(
-            original_model=MagicMock(),
+    def test_latency_improvement_rate__rate_gt_1(self):
+        original_latency = 1.0
+        optimized_latency = 0.5
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(latency=original_latency),
             hardware_setup=MagicMock(),
-            optimized_models=[
-                OptimizedModel(
-                    inference_learner=None,
-                    latency=0.0,
-                    throughput=0.0,
-                    metric_drop=0.0,
-                    technique="",
-                    compiler="",
-                    size_mb=0.0,
-                )
-            ],
+            optimized_model=MagicMock(latency=optimized_latency),
         )
-        self.assertEqual(len(result.inference_learners), 0)
+        self.assertGreater(res.latency_improvement_rate, 1)
 
-    def test_inference_learners__multiple_inference_learners(self):
-        result = OptimizeInferenceResult(
+    def test_latency_improvement_rate__rate_lt_1(self):
+        original_latency = 0.5
+        optimized_latency = 1.0
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(latency=original_latency),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(latency=optimized_latency),
+        )
+        self.assertLess(res.latency_improvement_rate, 1)
+
+    def test_th_improvement_rate__optimized_model_is_none(self):
+        res = OptimizeInferenceResult(
             original_model=MagicMock(),
             hardware_setup=MagicMock(),
-            optimized_models=[
-                OptimizedModel(
-                    inference_learner=MagicMock(),
-                    latency=0.0,
-                    throughput=0.0,
-                    metric_drop=0.0,
-                    technique="",
-                    compiler="",
-                    size_mb=0.0,
-                )
-            ],
+            optimized_model=None,
         )
-        self.assertEqual(len(result.inference_learners), 1)
+        self.assertIsNone(res.throughput_improvement_rate)
+
+    def test_th_improvement_rate__optimized_th_is_zero(self):
+        original_th = 1.0
+        optimized_th = 0.0
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(throughput=original_th),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(throughput=optimized_th),
+        )
+        self.assertEqual(-1, res.throughput_improvement_rate)
+
+    def test_th_improvement_rate__original_th_is_zero(self):
+        original_th = 0.0
+        optimized_th = 1.0
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(throughput=original_th),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(throughput=optimized_th),
+        )
+        self.assertEqual(0, res.throughput_improvement_rate)
+
+    def test_th_improvement_rate__rate_gt_1(self):
+        original_th = 0.5
+        optimized_th = 1
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(throughput=original_th),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(throughput=optimized_th),
+        )
+        self.assertGreater(res.throughput_improvement_rate, 1)
+
+    def test_th_improvement_rate__rate_lt_1(self):
+        original_th = 1.0
+        optimized_th = 0.5
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(throughput=original_th),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(throughput=optimized_th),
+        )
+        self.assertLess(res.throughput_improvement_rate, 1)
+
+    def test_size_improvement_rate__optimized_model_is_none(self):
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(),
+            hardware_setup=MagicMock(),
+            optimized_model=None,
+        )
+        self.assertIsNone(res.size_improvement_rate)
+
+    def test_size_improvement_rate__optimized_size_is_zero(self):
+        original_size = 1.0
+        optimized_size = 0.0
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(size_mb=original_size),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(size_mb=optimized_size),
+        )
+        self.assertEqual(-1, res.size_improvement_rate)
+
+    def test_size_improvement_rate__original_size_is_zero(self):
+        original_size = 0.0
+        optimized_size = 1.0
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(size_mb=original_size),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(size_mb=optimized_size),
+        )
+        self.assertEqual(0, res.size_improvement_rate)
+
+    def test_size_improvement_rate__rate_gt_1(self):
+        original_size = 1
+        optimized_size = 0.5
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(size_mb=original_size),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(size_mb=optimized_size),
+        )
+        self.assertGreater(res.size_improvement_rate, 1)
+
+    def test_size_improvement_rate__rate_lt_1(self):
+        original_size = 0.5
+        optimized_size = 1
+        res = OptimizeInferenceResult(
+            original_model=MagicMock(size_mb=original_size),
+            hardware_setup=MagicMock(),
+            optimized_model=MagicMock(size_mb=optimized_size),
+        )
+        self.assertLess(res.size_improvement_rate, 1)

@@ -135,9 +135,18 @@ def _render_optimization_result(res: schemas.OptimizationResult):
     table.add_column("", footer="Improvement")
     table.add_column("Backend")
     table.add_column("Technique")
-    table.add_column("Latency (ms)", footer="3.4x")
-    table.add_column("Throughput (batch/sec)", footer="1x")
-    table.add_column("Size", footer="0%")
+    table.add_column(
+        "Latency (ms)",
+        footer=f"{res.latency_improvement_rate}x",
+    )
+    table.add_column(
+        "Throughput (batch/sec)",
+        footer=f"{res.throughput_improvement_rate}x",
+    )
+    table.add_column(
+        "Size",
+        footer=f"{res.size_improvement_rate / 100:.2f}%",
+    )
     table.add_row(
         "Original",
         res.original_model.framework,

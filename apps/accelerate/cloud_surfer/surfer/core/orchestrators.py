@@ -118,15 +118,6 @@ class InferenceOptimizationTask:
         return res
 
     @staticmethod
-    def _get_best_model(
-        res: OptimizeInferenceResult,
-    ) -> Optional[OptimizedModel]:
-        # Currently, the best model is always the one with the lowest latency
-        if res.lowest_latency_model is not None:
-            return res.lowest_latency_model
-        return None
-
-    @staticmethod
     def _run(
         storage_config: StorageConfig,
         results_dir: Path,
@@ -134,43 +125,25 @@ class InferenceOptimizationTask:
         vm_size: str,
         vm_provider: VMProvider,
     ) -> schemas.OptimizationResult:
+        # Run inference optimization
         logger.info("starting inference optimization")
         res = InferenceOptimizationTask._optimize_inference(run_config)
-        logger.info(
-            "optimization produced {} inference learners".format(
-                len(res.inference_learners),
-            )
-        )
-        # Extract best model
-        best_model = InferenceOptimizationTask._get_best_model(res)
-        best_model_desc: Optional[schemas.ModelDescriptor] = None
-        if best_model is not None:
-            best_model_path = InferenceOptimizationTask._upload_model(
+        # Extract best model (if present) and upload it to storage
+        optimized_model_path: Optional[Path] = None
+        if res.optimized_model is not None:
+            optimized_model_path = InferenceOptimizationTask._upload_model(
                 storage_config,
                 results_dir,
-                best_model,
-            )
-            best_model_desc = converters.ModelDescriptor.from_optimized_model(
-                best_model,
-                best_model_path,
+                res.optimized_model,
             )
         else:
             logger.warning("optimization didn't produce any best model")
-        # Convert original model
-        original_model_desc = converters.ModelDescriptor.from_original_model(
-            res.original_model,
-        )
-        # Convert hw setup
-        hw_info = converters.HardwareSetupConverter.to_hw_info_schema(
-            res.hardware_setup,
-            vm_size=vm_size,
-            vm_provider=vm_provider,
-        )
         # Return result
-        return schemas.OptimizationResult(
-            hardware_info=hw_info,
-            optimized_model=best_model_desc,
-            original_model=original_model_desc,
+        return converters.InferenceResultConverter.to_optimization_result(
+            res,
+            vm_size,
+            vm_provider,
+            optimized_model_path,
         )
 
     def run(
