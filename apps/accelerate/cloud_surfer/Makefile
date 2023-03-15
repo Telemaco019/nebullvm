@@ -1,7 +1,7 @@
 DOCKER_REGISTRY ?= ghcr.io/telemaco019
 SURFER_VERSION ?= 0.1.0
 
-DOCKER_IMAGE_PY39_CU11 ?= $(DOCKER_REGISTRY)/cloud-surfer:$(SURFER_VERSION)-py39-cu116
+DOCKER_IMAGE_PY39_CU11 ?= $(DOCKER_REGISTRY)/cloud-surfer:$(SURFER_VERSION)-py39-cu118
 
 ##@ General
 
@@ -11,10 +11,10 @@ help: ## Display this help.
 
 
 ##@ Build
-.PHONY: docker-build-py39-cu116
-docker-build-py39-cu116: ## Build the docker image for Python 3.9, NVIDIA CUDA 11.6
-	docker build -t $(DOCKER_IMAGE_PY39_CU11) -f deploy/Dockerfile.py39-cu116 .
+.PHONY: docker-build-py39-cu118
+docker-build-py39-cu118: ## Build the docker image for Python 3.9, NVIDIA CUDA 11.8
+	docker build -t $(DOCKER_IMAGE_PY39_CU11) -f deploy/Dockerfile.py39-cu118 .
 
-.PHONY: docker-push-py39-cu116
-docker-push-py39-cu116: ## Push the docker image for Python 3.9, NVIDIA CUDA 11.6
+.PHONY: docker-push-py39-cu118
+docker-push-py39-cu118: ## Push the docker image for Python 3.9, NVIDIA CUDA 11.8
 	docker push $(DOCKER_IMAGE_PY39_CU11)

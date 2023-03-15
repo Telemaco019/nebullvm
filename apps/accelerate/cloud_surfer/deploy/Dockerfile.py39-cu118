@@ -1,11 +1,11 @@
-FROM rayproject/ray:2.3.0-py39-cu116
+FROM rayproject/ray:2.3.0-py39-cu118
 
 # Args
 ARG COMPILER=all
 ARG NEBULLVM_VERSION=0.8.1
 
 # Install dl frameworks
-RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cu117
+RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cu118
 RUN pip3 install --no-cache-dir tensorflow
 RUN pip3 install --no-cache-dir onnx
 RUN pip3 install --no-cache-dir transformers
