@@ -8,7 +8,6 @@ from typing import Optional, List
 
 import ray
 from ray import remote
-from rich import print
 
 from nebullvm.tools.base import DeviceType, Device
 from nebullvm.tools.utils import gpu_is_available
@@ -91,6 +90,7 @@ class InferenceOptimizationTask:
                 vm_size,
                 str(uuid.uuid4()),
             )
+            logger.info("uploading inference learner to ", results_dir)
             asyncio.run(client.upload(source=dir_path, dest=dest_path))
             return dest_path
 
@@ -133,6 +133,7 @@ class InferenceOptimizationTask:
         # Extract best model (if present) and upload it to storage
         optimized_model_path: Optional[Path] = None
         if res.optimized_model is not None:
+            logger.info("saving inference learner")
             optimized_model_path = InferenceOptimizationTask._upload_model(
                 storage_config,
                 results_dir,
@@ -140,7 +141,7 @@ class InferenceOptimizationTask:
                 res.optimized_model,
             )
         else:
-            logger.warning("optimization didn't produce any best model")
+            logger.warning("optimization didn't produce any inference learner")
         # Return result
         return converters.InferenceResultConverter.to_optimization_result(
             res,
@@ -177,6 +178,18 @@ class RayOrchestrator:
         self.surfer_config = surfer_config
         self.storage_client = storage_client
 
+    def save_results(
+        self,
+        results_dir: Path,
+        task_results: List[schemas.OptimizationResult],
+    ):
+        res = schemas.ExperimentResult(optimizations=task_results)
+        coro = self.storage_client.upload_content(
+            content=res.json(),
+            dest=results_dir / constants.EXPERIMENT_RESULT_FILE_NAME,
+        )
+        asyncio.run(coro)
+
     def run_experiment(
         self,
         results_dir: Path,
@@ -189,6 +202,7 @@ class RayOrchestrator:
                 continue
             tasks.append(InferenceOptimizationTask(node))
         # Submit
+        logger.info("submitting {} tasks".format(len(tasks)))
         objs = []
         for t in tasks:
             o = t.run(
@@ -199,8 +213,12 @@ class RayOrchestrator:
                 vm_provider=self.cluster.provider,
             )
             objs.append(o)
+        logger.info("waiting for results...")
         results = ray.get(objs)
+        logger.info("collected {} results".format(len(results)))
         if len(results) == 0:
-            print("No results")
-        for r in results:
-            print(r.json())
+            logger.warn("optimization tasks produced no results")
+            return
+        # Save results
+        logger.info("saving results to ", results_dir)
+        self.save_results(results_dir, results)

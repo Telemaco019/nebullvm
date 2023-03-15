@@ -367,7 +367,7 @@ class ExperimentService:
         try:
             path = Path(
                 experiment_path.as_path(),
-                constants.EXPERIMENT_RESULTS_FILE_NAME,
+                constants.EXPERIMENT_RESULT_FILE_NAME,
             )
             raw_data = await self.storage_client.get(path)
             if raw_data is None:
