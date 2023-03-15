@@ -27,14 +27,6 @@ class S3Client(StorageClient):
     async def upload_content(self, content: str, dest: Path):
         pass
 
-    async def upload_many(
-        self,
-        sources: List[Path],
-        dest: Path,
-        exclude_glob: Optional[str] = None,
-    ):
-        pass
-
     async def list(self, glob: str) -> List[Path]:
         pass
 

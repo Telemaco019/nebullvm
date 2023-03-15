@@ -1,11 +1,15 @@
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional, List, TYPE_CHECKING
 from urllib.parse import urlparse
 
+import aiofiles
 from azure.storage.blob.aio import ContainerClient
 from rich.prompt import Prompt, PromptType, InvalidResponse
 
+from surfer.log import logger
+from surfer.storage import util
 from surfer.storage.clients import StorageClient
 from surfer.storage.models import StorageConfig, StorageProvider
 
@@ -51,6 +55,17 @@ class AzureStorageConfig(StorageConfig):
     sas_url: str
 
 
+async def _upload_file(
+    container: ContainerClient,
+    source: Path,
+    dest: Path,
+):
+    logger.debug("uploading {} to {}".format(source, dest))
+    async with aiofiles.open(source, "rb") as f:
+        blob = container.get_blob_client(dest.as_posix())
+        await blob.upload_blob(f, overwrite=True)
+
+
 class BlobStorageClient(StorageClient):
     def __init__(self, config: AzureStorageConfig):
         self.url = config.sas_url
@@ -65,6 +80,21 @@ class BlobStorageClient(StorageClient):
             blob = container.get_blob_client(dest.as_posix())
             await blob.upload_blob(content, overwrite=True)
 
+    async def _upload_dir(
+        self,
+        source: Path,
+        dest: Path,
+        exclude_globs: Optional[List[str]],
+    ):
+        coros = []
+        async with self.__container_client() as container:
+            for f in util.rglob(source, "*", exclude_globs):
+                if f.is_file():
+                    full_dest_path = dest / f.relative_to(source.parent)
+                    coro = _upload_file(container, f, full_dest_path)
+                    coros.append(coro)
+            await asyncio.gather(*coros)
+
     async def upload_many(
         self,
         sources: List[Path],
@@ -78,8 +108,13 @@ class BlobStorageClient(StorageClient):
         source: Path,
         dest: Path,
         exclude_glob: Optional[str] = None,
-    ):
-        pass
+    ) -> Path:
+        if source.is_dir():
+            await self._upload_dir(source, dest, exclude_glob)
+            return Path(dest, source.name)
+        async with self.__container_client() as container:
+            await _upload_file(container, source, dest)
+            return Path(dest, source.name)
 
     async def list(self, prefix: Optional[str]) -> List[Path]:
         res = []
@@ -93,7 +128,6 @@ class BlobStorageClient(StorageClient):
             blob_client: BlobClient = container.get_blob_client(path.as_posix())
             stream = await blob_client.download_blob(encoding="UTF-8")
             return await stream.readall()
-
 
     async def delete(self, path: Path):
         async with self.__container_client() as container:

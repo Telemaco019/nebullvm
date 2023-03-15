@@ -51,18 +51,14 @@ class GCSBucketClient(StorageClient):
             if f.is_file():
                 full_dest_path = dest / f.relative_to(source.parent)
                 blob = self.bucket.blob(full_dest_path.as_posix())
-                coros.append(
-                    self._async_upload_blob_from_filename(blob, f.as_posix())
-                )
+                coros.append(self._async_upload_blob_from_filename(blob, f.as_posix()))
         await asyncio.gather(*coros)
 
     async def _upload_file(self, source_file_path: Path, dest_path: Path):
         final_dest_path = dest_path / source_file_path.name
         logger.debug(f'uploading "{source_file_path}" to "{final_dest_path}"')
         blob = self.bucket.blob(final_dest_path.as_posix())
-        await self._async_upload_blob_from_filename(
-            blob, source_file_path.as_posix()
-        )
+        await self._async_upload_blob_from_filename(blob, source_file_path.as_posix())
 
     async def upload(
         self,
@@ -83,25 +79,6 @@ class GCSBucketClient(StorageClient):
                 )
             )
 
-    async def upload_many(
-        self,
-        sources: List[Path],
-        dest: Path,
-        exclude_globs: List[str] = None,
-    ):
-        coros = []
-        for s in sources:
-            if s.is_dir():
-                coros.append(self._upload_dir(s, dest, exclude_globs))
-            elif s.is_file():
-                coros.append(self._upload_file(s, dest))
-            else:
-                raise ValueError(
-                    f"source path must either link a File or a Directory, "
-                    f"got {s}"
-                )
-        await asyncio.gather(*coros)
-
     async def upload_content(self, content: str, dest: Path):
         blob = self.bucket.blob(dest.as_posix())
         logger.debug(f"uploading content to {dest}")
@@ -117,9 +94,7 @@ class GCSBucketClient(StorageClient):
                 res.append(blob.name)
             return res
 
-        blob_names = await asyncio.get_running_loop().run_in_executor(
-            None, _list_blobs
-        )
+        blob_names = await asyncio.get_running_loop().run_in_executor(None, _list_blobs)
         return [Path(n) for n in blob_names]
 
     async def get(self, path: Path) -> Optional[str]:
@@ -160,14 +135,10 @@ class GCSBucketClient(StorageClient):
             ]
 
         async def _delete_blob_async(b: Blob):
-            await asyncio.get_running_loop().run_in_executor(
-                None, _delete_blob, b
-            )
+            await asyncio.get_running_loop().run_in_executor(None, _delete_blob, b)
 
         # Expand path (which might be a dir) to blobs
-        blobs = await asyncio.get_running_loop().run_in_executor(
-            None, _expand_path
-        )
+        blobs = await asyncio.get_running_loop().run_in_executor(None, _expand_path)
         if len(blobs) == 0:
             __raise_not_found()
         # Delete blobs
