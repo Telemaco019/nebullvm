@@ -3,7 +3,7 @@ cluster_name: demo
 
 # The maximum number of workers nodes to launch in addition to the head
 # node.
-max_workers: 2
+max_workers: 8
 
 # The autoscaler will scale up the cluster faster with higher upscaling speed.
 # E.g., if the task requires adding more nodes then autoscaler will gradually
@@ -26,8 +26,8 @@ docker:
   # Example of running a GPU head with CPU workers
   # head_image: "rayproject/ray-ml:latest-gpu"
   # Allow Ray to automatically detect GPUs
-  worker_image: "rayproject/ray:2.3.0-py39-gpu"
-  worker_run_options: []
+  # worker_image: "rayproject/ray:2.3.0-py39-gpu"
+  # worker_run_options: []
 
 # If a node is idle for this many minutes, it will be removed.
 idle_timeout_minutes: 5
