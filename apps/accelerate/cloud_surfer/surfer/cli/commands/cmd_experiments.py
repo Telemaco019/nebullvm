@@ -38,6 +38,9 @@ async def list_experiments():
 
     # List experiments
     experiments = await experiment_service.list()
+    if len(experiments) == 0:
+        logger.info("No experiments available")
+        return
 
     # Render
     table = Table(box=box.SIMPLE)
