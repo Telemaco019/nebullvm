@@ -100,9 +100,6 @@ class ExperimentPath:
         """
         Return a path to a marker file used for identifying experiments
         on the cloud storage.
-
-        The goal of the marker field is to make it easy to
-        list experiments on a cloud storage with flat file system.
         """
         return self.as_path() / constants.EXPERIMENT_MARKER_FILE_NAME
 
@@ -354,12 +351,11 @@ class ExperimentService:
         self,
         experiment_name: Optional[str] = None,
     ) -> List[ExperimentPath]:
-        experiment_paths = []
         prefix = f"{constants.EXPERIMENTS_STORAGE_PREFIX}/"
         if experiment_name is not None:
             prefix += f"{experiment_name}/"
-            prefix += f"{constants.EXPERIMENT_MARKER_FILE_NAME}"
         experiment_paths = []
+        logger.debug("listing paths with prefix: ", prefix)
         for path in await self.storage_client.list(prefix):
             try:
                 p = ExperimentPath.from_path(path)
