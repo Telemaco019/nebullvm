@@ -5,6 +5,7 @@ from typing import Optional, List, TYPE_CHECKING
 from urllib.parse import urlparse
 
 import aiofiles
+from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob.aio import ContainerClient
 from rich.prompt import Prompt, PromptType, InvalidResponse
 
@@ -131,6 +132,10 @@ class BlobStorageClient(StorageClient):
             return await stream.readall()
 
     async def delete(self, path: Path):
-        async with self.__container_client() as container:
-            blob_client = container.get_blob_client(path.as_posix())
-            await blob_client.delete_blob()
+        try:
+            async with self.__container_client() as container:
+                async for b in container.list_blobs(path.as_posix()):
+                    logger.debug("deleting {}".format(b.name))
+                    await container.get_blob_client(b).delete_blob()
+        except ResourceNotFoundError as e:
+            raise FileNotFoundError(e.message)
