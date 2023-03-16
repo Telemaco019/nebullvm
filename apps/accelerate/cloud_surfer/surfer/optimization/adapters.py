@@ -131,7 +131,7 @@ class OptimizerAdapter:
             # Compute model size
             model_size_mb = None
             if inference_learner is not None:
-                model_size_mb = inference_learner.get_size()
+                model_size_mb = inference_learner.get_size() / 1e6
             # Add to results
             res.append(
                 OptimizedModel(
