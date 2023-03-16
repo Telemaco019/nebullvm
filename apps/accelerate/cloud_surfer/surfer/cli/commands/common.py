@@ -1,4 +1,5 @@
 import typer
+from pydantic.error_wrappers import ValidationError
 
 from surfer.common.schemas import SurferConfig
 from surfer.core.config import SurferConfigManager
@@ -8,17 +9,24 @@ config_manager = SurferConfigManager()
 
 
 def must_load_config() -> SurferConfig:
-    config = config_manager.load_config()
+    try:
+        config = config_manager.load_config()
+    except ValidationError as e:
+        logger.error(e)
+        raise typer.Exit(1)
+
     if config is None:
         logger.error(
             "Cloud Surfer is not initialized. Please run `surfer init` first.",
         )
         raise typer.Exit(1)
+
     return config
 
 
 def format_float(f: float, precision=2) -> str:
     return f"{f:.{precision}f}"
+
 
 def format_rate(rate: float) -> str:
     return "{:.1f}x".format(rate)
