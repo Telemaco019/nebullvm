@@ -1,9 +1,9 @@
 # An unique identifier for the head node and workers of this cluster.
-cluster_name: surfer
+cluster_name: default
 
 # The maximum number of workers nodes to launch in addition to the head
 # node.
-max_workers: 8
+max_workers: 12
 
 # The autoscaler will scale up the cluster faster with higher upscaling speed.
 # E.g., if the task requires adding more nodes then autoscaler will gradually
@@ -12,7 +12,10 @@ max_workers: 8
 upscaling_speed: 1.0
 
 docker:
-  head_image: "rayproject/ray:2.3.0-py39"
+  # 16/03/222 - At the moment we need to use nightly release for head node until 2.3.1 release,
+  # since issue https://github.com/ray-project/ray/issues/10920 prevents
+  # Azure autoscaler from working properly.
+  head_image: "rayproject/ray:nightly-py39" # FIXME
   worker_image: "telemaco019/cloud-surfer:0.1.0-py39-cu118"
   container_name: "ray_container"
   pull_before_run: False
@@ -26,7 +29,7 @@ idle_timeout_minutes: 5
 provider:
   type: azure
   location: westeurope
-  resource_group: rg-ray
+  resource_group: rg-surfer
   # set subscription id otherwise the default from az cli will be used
   #subscription_id: <subscription-id>
   # set unique subnet mask or a random mask will be used
@@ -54,6 +57,19 @@ auth:
 # The node config specifies the launch config and physical instance type.
 available_node_types:
   ray.head.default:
+    node_config:
+      azure_arm_parameters:
+        vmSize: Standard_D2s_v3
+        imagePublisher: microsoft-dsvm
+        imageOffer: ubuntu-1804
+        imageSku: 1804-gen2
+        imageVersion: latest
+        priority: Spot
+    resources:
+      CPU: 2
+  ray.worker.default:
+    min_workers: 0
+    max_workers: 2
     node_config:
       azure_arm_parameters:
         vmSize: Standard_D2s_v3
