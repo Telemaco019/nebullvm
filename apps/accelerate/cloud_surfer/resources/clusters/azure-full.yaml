@@ -1,5 +1,5 @@
 # An unique identifier for the head node and workers of this cluster.
-cluster_name: demo
+cluster_name: surfer
 
 # The maximum number of workers nodes to launch in addition to the head
 # node.
@@ -11,23 +11,13 @@ max_workers: 8
 # This number should be > 0.
 upscaling_speed: 1.0
 
-# This executes all commands on all nodes in the docker container,
-# and opens all the necessary ports to support the Ray cluster.
-# Empty object means disabled.
 docker:
-  image: rayproject/ray:2.3.0-py39
+  head_image: "rayproject/ray:2.3.0-py39"
+  worker_image: "telemaco019/cloud-surfer:0.1.0-py39-cu118"
   container_name: "ray_container"
-  #   If true, pulls latest version of image. Otherwise, `docker run` will only pull the image
-  #   if no cached version is present.
   pull_before_run: False
-  run_options:   # Extra options to pass into "docker run"
+  run_options:
     - --ulimit nofile=65536:65536
-
-  # Example of running a GPU head with CPU workers
-  # head_image: "rayproject/ray-ml:latest-gpu"
-  # Allow Ray to automatically detect GPUs
-  # worker_image: "rayproject/ray:2.3.0-py39-gpu"
-  # worker_run_options: []
 
 # If a node is idle for this many minutes, it will be removed.
 idle_timeout_minutes: 5
@@ -64,22 +54,18 @@ auth:
 # The node config specifies the launch config and physical instance type.
 available_node_types:
   ray.head.default:
-    # The resources provided by this node type.
-    resources: {"CPU": 2}
-    # Provider-specific config, e.g. instance type.
     node_config:
       azure_arm_parameters:
         vmSize: Standard_D2s_v3
-        # List images https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage
         imagePublisher: microsoft-dsvm
         imageOffer: ubuntu-1804
         imageSku: 1804-gen2
         imageVersion: latest
         priority: Spot
+    resources:
+      CPU: 2
 
   ray.worker.gpu-t4-node:
-    docker:
-      worker_image: "telemaco019/cloud-surfer:0.1.0-py39-cu118"
     min_workers: 0
     max_workers: 1
     node_config:
@@ -91,23 +77,41 @@ available_node_types:
         imageVersion: latest
         priority: Spot
     resources:
-      CPU: 2
+      CPU: 4
       GPU: 1
       accelerator_type:T4: 1
 
-  ray.worker.cpu-default:
+  ray.worker.gpu-v100-node:
     min_workers: 0
     max_workers: 1
     node_config:
       azure_arm_parameters:
-        vmSize: Standard_D2s_v3
+        vmSize: Standard_NC6s_v3
         imagePublisher: microsoft-dsvm
         imageOffer: ubuntu-1804
         imageSku: 1804-gen2
         imageVersion: latest
         priority: Spot
     resources:
-      CPU: 2
+      CPU: 6
+      GPU: 1
+      accelerator_type:V100: 1
+
+  ray.worker.gpu-a100-80gb-node:
+    min_workers: 0
+    max_workers: 1
+    node_config:
+      azure_arm_parameters:
+        vmSize: Standard_NC24ads_A100_v4
+        imagePublisher: microsoft-dsvm
+        imageOffer: ubuntu-1804
+        imageSku: 1804-gen2
+        imageVersion: latest
+        priority: Spot
+    resources:
+      CPU: 24
+      GPU: 1
+      accelerator_type:A100: 1
 
 # Specify the node type of the head node (as configured above).
 head_node_type: ray.head.default
