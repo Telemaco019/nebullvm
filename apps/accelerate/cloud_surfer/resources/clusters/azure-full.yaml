@@ -23,7 +23,7 @@ docker:
     - --ulimit nofile=65536:65536
 
 # If a node is idle for this many minutes, it will be removed.
-idle_timeout_minutes: 5
+idle_timeout_minutes: 15
 
 # Cloud-provider specific configuration.
 provider:
