@@ -40,7 +40,7 @@ async def list_experiments():
     experiments = await experiment_service.list()
 
     # Render
-    table = Table()
+    table = Table(box=box.SIMPLE)
     table.add_column("Experiment", header_style="cyan")
     table.add_column("Status", header_style="cyan")
     table.add_column("Created at", header_style="cyan")
@@ -51,6 +51,8 @@ async def list_experiments():
             surfer.utilities.datetime_utils.format_datetime_ui(e.created_at),
         )
     print(table)
+    logger.info("\nYou can view experiment details with:")
+    print(Panel(f"> [green]surfer experiment describe <experiment>[/green]"))
 
 
 def _load_experiments_config(path: Path) -> ExperimentConfig:
