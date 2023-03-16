@@ -54,8 +54,6 @@ async def list_experiments():
             surfer.utilities.datetime_utils.format_datetime_ui(e.created_at),
         )
     print(table)
-    logger.info("\nYou can view experiment details with:")
-    print(Panel(f"> [green]surfer experiment describe <experiment>[/green]"))
 
 
 def _load_experiments_config(path: Path) -> ExperimentConfig:

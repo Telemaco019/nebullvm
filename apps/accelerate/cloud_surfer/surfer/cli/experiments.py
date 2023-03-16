@@ -2,6 +2,10 @@ import asyncio
 from pathlib import Path
 
 import typer
+from rich import print
+from rich import progress
+from rich.panel import Panel
+from rich.progress import SpinnerColumn, TextColumn
 
 import surfer.log
 from surfer.cli.commands import cmd_experiments as cmd
@@ -17,8 +21,12 @@ def list_experiments(
     ),
 ):
     surfer.log.configure_debug_mode(debug)
-    asyncio.run(cmd.list_experiments())
-
+    columns = [TextColumn("Loading experiments..."), SpinnerColumn()]
+    with progress.Progress(*columns, transient=True) as progress_bar:
+        progress_bar.add_task("")
+        asyncio.run(cmd.list_experiments())
+    print("\nYou can view experiment details with:")
+    print(Panel(f"> [green]surfer experiment describe <experiment>[/green]"))
 
 @app.command(
     name="submit",
