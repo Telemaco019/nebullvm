@@ -216,8 +216,8 @@ def _render_experiment_summary(experiment: ExperimentDetails):
             o.hardware_info.vm_size,
             o.hardware_info.accelerator,
             __format_float(
-                o.original_model.latency_seconds,
-                o.optimized_model.latency_seconds,
+                o.original_model.latency_ms,
+                o.optimized_model.latency_ms,
             ),
             __format_float(
                 o.original_model.throughput,
@@ -233,7 +233,9 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     print(
         "[bold]Lowest latency[/bold]: [green]{}[/green] ({} ms)".format(
             experiment.result.optimizations[0].hardware_info.vm_size,
-            format_float(experiment.result.optimizations[0].optimized_model.latency_seconds),
+            format_float(
+                experiment.result.optimizations[0].optimized_model.latency_ms,
+            ),
         )
     )
     print(
