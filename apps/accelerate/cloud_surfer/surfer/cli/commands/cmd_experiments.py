@@ -18,7 +18,7 @@ from surfer.cli.commands.common import (
     format_float,
     format_rate,
 )
-from surfer.common import schemas
+from surfer.common import schemas, constants
 from surfer.common.exceptions import NotFoundError, InternalError
 from surfer.common.schemas import ExperimentConfig
 from surfer.core.experiments import ExperimentDetails
@@ -162,15 +162,27 @@ def _render_optimization_result(res: schemas.OptimizationResult):
         format_float(res.original_model.throughput),
         format_float(res.original_model.size_mb),
     )
-    table.add_row(
-        "Optimized",
-        res.optimized_model.compiler,
-        res.optimized_model.technique,
-        format_float(res.optimized_model.latency_ms),
-        format_float(res.optimized_model.throughput),
-        format_float(res.optimized_model.size_mb),
-        style="bold green",
-    )
+    if res.optimized_model is None:
+        table.add_row(
+            "Optimized",
+            constants.NOT_AVAILABLE_MSG,
+            constants.NOT_AVAILABLE_MSG,
+            constants.NOT_AVAILABLE_MSG,
+            constants.NOT_AVAILABLE_MSG,
+            constants.NOT_AVAILABLE_MSG,
+            style="bold red",
+        )
+        print(table)
+    else:
+        table.add_row(
+            "Optimized",
+            res.optimized_model.compiler,
+            res.optimized_model.technique,
+            format_float(res.optimized_model.latency_ms),
+            format_float(res.optimized_model.throughput),
+            format_float(res.optimized_model.size_mb),
+            style="bold green",
+        )
     print(table)
 
 
@@ -212,6 +224,8 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     results_summary_table.add_column("Throughput (batch/sec)")
     results_summary_table.add_column("Cost ($/inference)")
     for o in experiment.result.optimizations:
+        if o.optimized_model is None:
+            continue
         results_summary_table.add_row(
             o.hardware_info.vm_size,
             o.hardware_info.accelerator,
@@ -230,20 +244,37 @@ def _render_experiment_summary(experiment: ExperimentDetails):
         )
     print(results_summary_table)
 
-    print(
-        "[bold]Lowest latency[/bold]: [green]{}[/green] ({} ms)".format(
-            experiment.result.lowest_latency.hardware_info.vm_size,
-            format_float(
-                experiment.result.lowest_latency.optimized_model.latency_ms,
-            ),
+    # Best results
+    lowest_latency = "[bold]Lowest latency[/bold]: [green]{}[/green] ({} ms)"
+    lowest_cost = "[bold]Lowest cost[/bold]: [green]{}[/green] ({} $/inference)"
+    if experiment.result.lowest_latency is None:
+        print(
+            lowest_latency.format(
+                constants.NOT_AVAILABLE_MSG,
+                constants.NOT_AVAILABLE_MSG,
+            )
         )
-    )
-    print(
-        "[bold]Lowest cost[/bold]: [green]{}[/green] ({} $/inference)".format(
-            experiment.result.optimizations[0].hardware_info.vm_size,
-            format_float(random.randint(1, 1000) / 1000),
+        print(
+            lowest_cost.format(
+                constants.NOT_AVAILABLE_MSG,
+                constants.NOT_AVAILABLE_MSG,
+            )
         )
-    )
+    else:
+        print(
+            lowest_latency.format(
+                experiment.result.lowest_latency.hardware_info.vm_size,
+                format_float(
+                    experiment.result.lowest_latency.optimized_model.latency_ms,
+                ),
+            )
+        )
+        print(
+            lowest_cost.format(
+                experiment.result.optimizations[0].hardware_info.vm_size,
+                format_float(random.randint(1, 1000) / 1000),
+            )
+        )
 
 
 def _render_experiment_jobs(experiment: ExperimentDetails):
