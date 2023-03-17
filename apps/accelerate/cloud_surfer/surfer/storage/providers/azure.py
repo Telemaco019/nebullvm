@@ -126,10 +126,13 @@ class BlobStorageClient(StorageClient):
         return res
 
     async def get(self, path: Path) -> Optional[str]:
-        async with self.__container_client() as container:
-            blob_client: BlobClient = container.get_blob_client(path.as_posix())
-            stream = await blob_client.download_blob(encoding="UTF-8")
-            return await stream.readall()
+        try:
+            async with self.__container_client() as container:
+                blob_client: BlobClient = container.get_blob_client(path.as_posix())
+                stream = await blob_client.download_blob(encoding="UTF-8")
+                return await stream.readall()
+        except ResourceNotFoundError:
+            return None
 
     async def delete(self, path: Path):
         try:
