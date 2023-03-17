@@ -28,6 +28,7 @@ def list_experiments(
     print("\nYou can view experiment details with:")
     print(Panel(f"> [green]surfer experiment describe <experiment>[/green]"))
 
+
 @app.command(
     name="submit",
     help="Submit a new model optimization experiment",
@@ -72,7 +73,8 @@ def stop_experiment(
 ):
     surfer.log.configure_debug_mode(debug)
     typer.confirm(
-        f"Are you sure you want to stop experiment {name}?", abort=True
+        f"Are you sure you want to stop experiment {name}?",
+        abort=True,
     )
     asyncio.run(cmd.stop_experiment(name))
 
@@ -114,6 +116,7 @@ def delete_experiment(
 ):
     surfer.log.configure_debug_mode(debug)
     typer.confirm(
-        f"Are you sure you want to delete experiment {name}?", abort=True
+        f"Are you sure you want to delete experiment {name}?",
+        abort=True,
     )
     asyncio.run(cmd.delete_experiment(name))

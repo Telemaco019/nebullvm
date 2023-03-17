@@ -1,4 +1,5 @@
 import unittest
+from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
 from typer.testing import CliRunner
@@ -19,7 +20,7 @@ class TestListAccelerators(unittest.TestCase):
             Accelerator.NVIDIA_TESLA_V100,
         ]
         result = runner.invoke(app, ["list-accelerators"])
-        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.exit_code, 0, result.stdout)
 
     @patch("surfer.computing.clusters.get_available_accelerators")
     def test_no_accelerators_found(self, mock_get_available_accelerators, _):
