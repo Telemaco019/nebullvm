@@ -13,7 +13,7 @@ from surfer.storage.models import StorageProvider, StorageConfig
 def _new_azure_storage_config() -> StorageConfig:
     if StorageProvider.AZURE not in storage.enabled_providers:
         logger.error(
-            'Azure storage is not enabled. '
+            "Azure storage is not enabled. "
             'Please install "surfer\[azure]" to use Azure as storage provider'
         )
         raise typer.Exit(1)
@@ -29,7 +29,7 @@ def _new_azure_storage_config() -> StorageConfig:
 def _new_gcp_storage_config() -> StorageConfig:
     if StorageProvider.GCP not in storage.enabled_providers:
         logger.error(
-            'GCP storage is not enabled. '
+            "GCP storage is not enabled. "
             'Please install "surfer\[gcp]" to use GCP as storage provider'
         )
         raise typer.Exit(1)
@@ -44,7 +44,7 @@ def _new_gcp_storage_config() -> StorageConfig:
 def _new_aws_storage_config():
     if StorageProvider.AWS not in storage.enabled_providers:
         logger.error(
-            'AWS storage is not enabled. '
+            "AWS storage is not enabled. "
             'Please install "surfer\[aws]" to use AWS as storage provider'
         )
         raise typer.Exit(1)
@@ -71,11 +71,14 @@ def init(
     config_manager = SurferConfigManager()
     write_config = True
     if config_manager.config_exists():
+        # fmt: off
         write_config = Confirm.ask(
-            "Found existing CloudSurfer configuration. Do you want to overwrite it?",
+            "Found existing CloudSurfer configuration. "
+            "Do you want to overwrite it?",
             default=False,
             show_choices=True,
         )
+        # fmt: on
     if write_config:
         config = SurferConfig(
             cluster_file=cluster_file,
