@@ -207,3 +207,18 @@ class TestOptimizationResult(unittest.TestCase):
                 throughput_rate_improvement=1,
                 size_rate_improvement=None,
             )
+
+
+class TestModelDescriptor(unittest.TestCase):
+    def test_latency_ms(self):
+        seconds = 0.2
+        model = OptimizedModelDescriptor(
+            latency_seconds=seconds,
+            throughput=0,
+            size_mb=0,
+            technique="",
+            compiler="",
+            metric_drop=0,
+            model_path=Path(),
+        )
+        self.assertEqual(seconds * 1000, model.latency_ms)
