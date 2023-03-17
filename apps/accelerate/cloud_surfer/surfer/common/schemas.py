@@ -30,7 +30,7 @@ class ModelDescriptor(abc.ABC, BaseModel):
 
     @cached_property
     def latency_ms(self) -> float:
-        return self.latency_seconds / 1000
+        return self.latency_seconds * 1000
 
 
 class OriginalModelDescriptor(ModelDescriptor):
