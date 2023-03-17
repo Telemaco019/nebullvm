@@ -1,7 +1,6 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional
 from unittest.mock import patch
 
 import yaml
@@ -10,20 +9,16 @@ from pydantic.error_wrappers import ValidationError
 from surfer.common.schemas import (
     SurferConfig,
     ExperimentConfig,
-    OptimizationResult,
-    HardwareInfo,
-    OriginalModelDescriptor,
     OptimizedModelDescriptor,
     ExperimentResult,
 )
-from surfer.computing.models import VMProvider
 from surfer.storage import (
     StorageProvider,
     AzureStorageConfig,
     GCPStorageConfig,
     AWSStorageConfig,
 )
-from tests.test_utils import MockedStorageConfig
+from tests.test_utils import MockedStorageConfig, new_optimization_result
 
 
 class TestSurferConfig(unittest.TestCase):
@@ -144,37 +139,9 @@ class TestExperimentConfig(unittest.TestCase):
             self.assertEqual(config.dict(), deserialized_config.dict())
 
 
-def _new_optimization_result(
-    optimized_model: Optional[OptimizedModelDescriptor] = None,
-    latency_rate_improvement: Optional[float] = None,
-    throughput_rate_improvement: Optional[float] = None,
-    size_rate_improvement: Optional[float] = None,
-) -> OptimizationResult:
-    return OptimizationResult(
-        hardware_info=HardwareInfo(
-            cpu="",
-            operating_system="",
-            memory_gb=0,
-            vm_size="",
-            vm_provider=VMProvider.AZURE,
-        ),
-        optimized_model=optimized_model,
-        original_model=OriginalModelDescriptor(
-            name="",
-            framework="",
-            latency_seconds=0,
-            throughput=0,
-            size_mb=0,
-        ),
-        latency_improvement_rate=latency_rate_improvement,
-        throughput_improvement_rate=throughput_rate_improvement,
-        size_improvement_rate=size_rate_improvement,
-    )
-
-
 class TestOptimizationResult(unittest.TestCase):
     def test_rates_validation__optimized_model_is_none(self):
-        res = _new_optimization_result()
+        res = new_optimization_result()
         self.assertIsNotNone(res)
 
     def test_rates_validation__optimized_model_but_rates_are_none(self):
@@ -188,21 +155,21 @@ class TestOptimizationResult(unittest.TestCase):
             model_path=Path(),
         )
         with self.assertRaises(ValidationError):
-            _new_optimization_result(
+            new_optimization_result(
                 optimized_model=optimized_model,
                 latency_rate_improvement=None,
                 throughput_rate_improvement=None,
                 size_rate_improvement=None,
             )
         with self.assertRaises(ValidationError):
-            _new_optimization_result(
+            new_optimization_result(
                 optimized_model=optimized_model,
                 latency_rate_improvement=1,
                 throughput_rate_improvement=None,
                 size_rate_improvement=None,
             )
         with self.assertRaises(ValidationError):
-            _new_optimization_result(
+            new_optimization_result(
                 optimized_model=optimized_model,
                 latency_rate_improvement=1,
                 throughput_rate_improvement=1,
@@ -234,14 +201,14 @@ class TestExperimentResult(unittest.TestCase):
 
     def test_lowest_latency__optimizations_without_models(self):
         res = ExperimentResult(
-            optimizations=[_new_optimization_result()],
+            optimizations=[new_optimization_result()],
         )
         self.assertIsNone(res.lowest_latency)
 
     def test_lowest_latency(self):
         res = ExperimentResult(
             optimizations=[
-                _new_optimization_result(
+                new_optimization_result(
                     optimized_model=OptimizedModelDescriptor(
                         latency_seconds=0.1,
                         throughput=0,
@@ -255,7 +222,7 @@ class TestExperimentResult(unittest.TestCase):
                     throughput_rate_improvement=1,
                     size_rate_improvement=1,
                 ),
-                _new_optimization_result(
+                new_optimization_result(
                     optimized_model=OptimizedModelDescriptor(
                         latency_seconds=0.9,
                         throughput=0,
@@ -269,7 +236,7 @@ class TestExperimentResult(unittest.TestCase):
                     throughput_rate_improvement=1,
                     size_rate_improvement=1,
                 ),
-                _new_optimization_result(
+                new_optimization_result(
                     optimized_model=OptimizedModelDescriptor(
                         latency_seconds=0.2,
                         throughput=0,

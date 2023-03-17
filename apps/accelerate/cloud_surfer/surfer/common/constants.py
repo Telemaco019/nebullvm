@@ -19,3 +19,6 @@ EXPERIMENTS_STORAGE_PREFIX = "nebuly/surfer/experiments"
 EXPERIMENT_RESULT_FILE_NAME = "results.json"
 EXPERIMENT_MARKER_FILE_NAME = "marker.keepme"
 INFERENCE_LEARNERS_DIR_NAME = "inference-learners"
+
+# UI
+NOT_AVAILABLE_MSG = "[italic]N/A[/italic]"
