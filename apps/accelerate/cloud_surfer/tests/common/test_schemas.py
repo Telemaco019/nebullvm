@@ -163,7 +163,7 @@ class TestOptimizationResult(unittest.TestCase):
             original_model=OriginalModelDescriptor(
                 name="",
                 framework="",
-                latency=0,
+                latency_seconds=0,
                 throughput=0,
                 size_mb=0,
             ),
@@ -178,7 +178,7 @@ class TestOptimizationResult(unittest.TestCase):
 
     def test_rates_validation__optimized_model_but_rates_are_none(self):
         optimized_model = OptimizedModelDescriptor(
-            latency=0,
+            latency_seconds=0,
             throughput=0,
             size_mb=0,
             technique="",

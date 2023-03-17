@@ -139,7 +139,7 @@ class OptimizerAdapter:
                     metric_drop=metric_drop,
                     compiler=compiler,
                     technique=technique,
-                    latency=latency,
+                    latency_seconds=latency,
                     throughput=throughput,
                     size_mb=model_size_mb,
                 )

@@ -22,10 +22,15 @@ class ModelDescriptor(abc.ABC, BaseModel):
         json_encoders = {
             Path: lambda v: v.resolve().as_posix(),
         }
+        keep_untouched = (cached_property,)
 
-    latency: float
+    latency_seconds: float
     throughput: float
     size_mb: float
+
+    @cached_property
+    def latency_ms(self) -> float:
+        return self.latency_seconds / 1000
 
 
 class OriginalModelDescriptor(ModelDescriptor):

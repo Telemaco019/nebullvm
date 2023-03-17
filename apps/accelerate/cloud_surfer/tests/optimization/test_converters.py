@@ -18,7 +18,7 @@ class TestModelDescriptor(unittest.TestCase):
         path = Path("path")
         m = OptimizedModel(
             inference_learner=MagicMock(),
-            latency=0.0,
+            latency_seconds=0.0,
             throughput=0.0,
             metric_drop=0.0,
             technique="",
@@ -37,7 +37,7 @@ class TestModelDescriptor(unittest.TestCase):
             name="",
             size_mb=0.0,
             framework=DeepLearningFramework.PYTORCH,
-            latency=0.0,
+            latency_seconds=0.0,
             throughput=0.0,
             model=MagicMock(),
         )
@@ -66,7 +66,7 @@ class TestInferenceResultConverter(unittest.TestCase):
                 name="",
                 size_mb=0.0,
                 framework=DeepLearningFramework.PYTORCH,
-                latency=0.0,
+                latency_seconds=0.0,
                 throughput=0.0,
                 model=MagicMock(),
             ),
@@ -90,13 +90,13 @@ class TestInferenceResultConverter(unittest.TestCase):
                 name="",
                 size_mb=0.0,
                 framework=DeepLearningFramework.PYTORCH,
-                latency=0.0,
+                latency_seconds=0.0,
                 throughput=0.0,
                 model=MagicMock(),
             ),
             optimized_model=OptimizedModel(
                 inference_learner=MagicMock(),
-                latency=0.0,
+                latency_seconds=0.0,
                 throughput=0.0,
                 metric_drop=0.0,
                 technique="",

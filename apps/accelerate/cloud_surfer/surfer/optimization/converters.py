@@ -18,7 +18,7 @@ class ModelDescriptor:
         model_path: Path,
     ) -> schemas.OptimizedModelDescriptor:
         return schemas.OptimizedModelDescriptor(
-            latency=m.latency,
+            latency_seconds=m.latency_seconds,
             throughput=m.throughput,
             metric_drop=m.metric_drop,
             technique=m.technique,
@@ -32,7 +32,7 @@ class ModelDescriptor:
         m: OriginalModel,
     ) -> schemas.OriginalModelDescriptor:
         return schemas.OriginalModelDescriptor(
-            latency=m.latency,
+            latency_seconds=m.latency_seconds,
             throughput=m.throughput,
             size_mb=m.size_mb,
             name=m.name,
