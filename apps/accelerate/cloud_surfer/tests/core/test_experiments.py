@@ -258,6 +258,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
         self,
     ):
         storage_client = AsyncMock()
+        storage_client.get.return_value = None
         job_client = MagicMock()
         service = ExperimentService(
             storage_client=storage_client,
@@ -589,6 +590,7 @@ class TestExperimentService(unittest.IsolatedAsyncioTestCase):
 
     async def test_submit__experiment_already_exist(self):
         storage_client = AsyncMock()
+        storage_client.get.return_value = None
         job_client = MagicMock()
         service = ExperimentService(
             storage_client=storage_client,

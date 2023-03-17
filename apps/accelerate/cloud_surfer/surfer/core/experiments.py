@@ -618,10 +618,11 @@ class ExperimentService:
         experiment_jobs = await self._get_experiment_jobs(experiment_name)
         summary.status = self._get_experiment_status(experiment_jobs)
         # Fetch experiment result
-        if self.__mocking:  # TODO - remove me
-            summary.status = ExperimentStatus.SUCCEEDED
         result = None
-        if summary.status is ExperimentStatus.SUCCEEDED:
+        if summary.status in [
+            ExperimentStatus.SUCCEEDED,
+            ExperimentStatus.UNKNOWN,
+        ]:
             result = await self._fetch_result(experiment_path)
             if result is None:
                 logger.warn(
