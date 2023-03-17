@@ -10,7 +10,7 @@ from surfer.utilities.nebullvm_utils import HardwareSetup
 @dataclass
 class OptimizedModel:
     inference_learner: BaseInferenceLearner
-    latency: float
+    latency_seconds: float
     metric_drop: float
     technique: str
     compiler: str
@@ -21,7 +21,7 @@ class OptimizedModel:
 @dataclass
 class OriginalModel:
     model: Any
-    latency: float
+    latency_seconds: float
     throughput: float
     name: str
     size_mb: float
@@ -40,9 +40,9 @@ class OptimizeInferenceResult:
     def latency_improvement_rate(self) -> Optional[float]:
         if self.optimized_model is None:
             return None
-        if self.optimized_model.latency == 0:
+        if self.optimized_model.latency_seconds == 0:
             return -1
-        return self.original_model.latency / self.optimized_model.latency
+        return self.original_model.latency_seconds / self.optimized_model.latency_seconds
 
     @cached_property
     def throughput_improvement_rate(self) -> Optional[float]:

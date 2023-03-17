@@ -17,9 +17,9 @@ class TestOptimizeInferenceResult(unittest.TestCase):
         original_latency = 1.0
         optimized_latency = 0.0
         res = OptimizeInferenceResult(
-            original_model=MagicMock(latency=original_latency),
+            original_model=MagicMock(latency_seconds=original_latency),
             hardware_setup=MagicMock(),
-            optimized_model=MagicMock(latency=optimized_latency),
+            optimized_model=MagicMock(latency_seconds=optimized_latency),
         )
         self.assertEqual(-1, res.latency_improvement_rate)
 
@@ -27,9 +27,9 @@ class TestOptimizeInferenceResult(unittest.TestCase):
         original_latency = 0.0
         optimized_latency = 1.0
         res = OptimizeInferenceResult(
-            original_model=MagicMock(latency=original_latency),
+            original_model=MagicMock(latency_seconds=original_latency),
             hardware_setup=MagicMock(),
-            optimized_model=MagicMock(latency=optimized_latency),
+            optimized_model=MagicMock(latency_seconds=optimized_latency),
         )
         self.assertEqual(0, res.latency_improvement_rate)
 
@@ -37,9 +37,9 @@ class TestOptimizeInferenceResult(unittest.TestCase):
         original_latency = 1.0
         optimized_latency = 0.5
         res = OptimizeInferenceResult(
-            original_model=MagicMock(latency=original_latency),
+            original_model=MagicMock(latency_seconds=original_latency),
             hardware_setup=MagicMock(),
-            optimized_model=MagicMock(latency=optimized_latency),
+            optimized_model=MagicMock(latency_seconds=optimized_latency),
         )
         self.assertGreater(res.latency_improvement_rate, 1)
 
@@ -47,9 +47,9 @@ class TestOptimizeInferenceResult(unittest.TestCase):
         original_latency = 0.5
         optimized_latency = 1.0
         res = OptimizeInferenceResult(
-            original_model=MagicMock(latency=original_latency),
+            original_model=MagicMock(latency_seconds=original_latency),
             hardware_setup=MagicMock(),
-            optimized_model=MagicMock(latency=optimized_latency),
+            optimized_model=MagicMock(latency_seconds=optimized_latency),
         )
         self.assertLess(res.latency_improvement_rate, 1)
 

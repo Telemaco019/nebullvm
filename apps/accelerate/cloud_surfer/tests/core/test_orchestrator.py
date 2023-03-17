@@ -145,7 +145,7 @@ class TestRayOrchestrator(unittest.TestCase):
                 original_model=schemas.OriginalModelDescriptor(
                     name="test",
                     framework="pytorch",
-                    latency=0.0,
+                    latency_seconds=0.0,
                     throughput=0.0,
                     size_mb=0.0,
                 ),
@@ -161,7 +161,7 @@ class TestRayOrchestrator(unittest.TestCase):
                 original_model=schemas.OriginalModelDescriptor(
                     name="test",
                     framework="pytorch",
-                    latency=0.0,
+                    latency_seconds=0.0,
                     throughput=0.0,
                     size_mb=0.0,
                 ),

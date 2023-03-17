@@ -170,7 +170,7 @@ class OptimizeInferenceOp(Operation):
         original_latency = original_latency_op.get_result()[1]
         original_model = OriginalModel(
             model=model,
-            latency=original_latency,
+            latency_seconds=original_latency,
             name=nebullvm_utils.get_model_name(model),
             size_mb=nebullvm_utils.get_model_size_mb(model),
             framework=dl_framework,
@@ -209,7 +209,7 @@ class OptimizeInferenceOp(Operation):
                     source_dl_framework=dl_framework,
                 )
 
-        optimized_models.sort(key=lambda x: x.latency, reverse=False)
+        optimized_models.sort(key=lambda x: x.latency_seconds, reverse=False)
 
         # Check if at least one optimized model has been created
         no_optimized_models = len(optimized_models) < 1
@@ -296,7 +296,7 @@ class OptimizeInferenceOp(Operation):
         # fmt: on
         if len(inference_learner_models) == 0:
             return None
-        return min(inference_learner_models, key=lambda m: m.latency)
+        return min(inference_learner_models, key=lambda m: m.latency_seconds)
 
     def get_result(self) -> Any:
         raise NotImplementedError(
