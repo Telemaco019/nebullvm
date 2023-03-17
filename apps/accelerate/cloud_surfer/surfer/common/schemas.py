@@ -99,6 +99,24 @@ class OptimizationResult(BaseModel):
 class ExperimentResult(BaseModel):
     optimizations: List[OptimizationResult]
 
+    class Config:
+        frozen = True
+        extra = "forbid"
+        keep_untouched = (cached_property,)
+
+    def __results_with_optimized_model(self) -> List[OptimizationResult]:
+        return [o for o in self.optimizations if o.optimized_model is not None]
+
+    @cached_property
+    def lowest_latency(self) -> Optional[OptimizationResult]:
+        res = self.__results_with_optimized_model()
+        if len(res) == 0:
+            return None
+        return min(
+            res,
+            key=lambda x: x.optimized_model.latency_seconds,
+        )
+
 
 class SurferConfig(BaseModel):
     """

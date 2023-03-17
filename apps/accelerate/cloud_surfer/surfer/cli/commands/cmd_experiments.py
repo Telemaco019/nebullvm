@@ -232,9 +232,9 @@ def _render_experiment_summary(experiment: ExperimentDetails):
 
     print(
         "[bold]Lowest latency[/bold]: [green]{}[/green] ({} ms)".format(
-            experiment.result.optimizations[0].hardware_info.vm_size,
+            experiment.result.lowest_latency.hardware_info.vm_size,
             format_float(
-                experiment.result.optimizations[0].optimized_model.latency_ms,
+                experiment.result.lowest_latency.optimized_model.latency_ms,
             ),
         )
     )
