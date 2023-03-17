@@ -74,7 +74,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, "list")
-        self.assertEqual(0, result.exit_code)
+        self.assertEqual(0, result.exit_code, result.stdout)
 
     def test_list_experiments__multiple_experiments(
         self,
@@ -99,7 +99,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, "list")
-        self.assertEqual(0, result.exit_code)
+        self.assertEqual(0, result.exit_code, result.stdout)
 
     def test_describe_experiment__not_found(
         self,
@@ -113,9 +113,9 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["describe", "test"])
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
-    def test_describe_experiment__no_results(
+    def test_describe_experiment__no_results_no_jobs(
         self,
         load_config_mock,
         factory,
@@ -136,7 +136,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["describe", "test"])
-        self.assertEqual(0, result.exit_code)
+        self.assertEqual(0, result.exit_code, result.stdout)
 
     def test_describe_experiment__internal_error(
         self,
@@ -149,7 +149,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["describe", "test"])
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_describe_experiment__no_results(
         self,
@@ -180,7 +180,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["describe", "test"])
-        self.assertEqual(0, result.exit_code)
+        self.assertEqual(0, result.exit_code, result.stdout)
 
     def test_stop_experiment__should_abort_without_confirm(
         self,
@@ -194,7 +194,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["stop", "test"])
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_stop_experiment__not_found(
         self,
@@ -208,7 +208,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["stop", "test"], input="y")
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_stop_experiment__internal_error(
         self,
@@ -221,7 +221,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["stop", "test"], input="y")
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_stop_experiment__value_error(
         self,
@@ -234,7 +234,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["stop", "test"], input="y")
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_stop_experiment__success(
         self,
@@ -246,7 +246,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["stop", "test"], input="y")
-        self.assertEqual(0, result.exit_code)
+        self.assertEqual(0, result.exit_code, result.stdout)
 
     def test_delete_experiment__should_abort_without_confirm(
         self,
@@ -260,7 +260,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["delete", "test"])
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_delete_experiment__not_found(
         self,
@@ -274,7 +274,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["delete", "test"], input="y")
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_delete_experiment__internal_error(
         self,
@@ -287,7 +287,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["delete", "test"], input="y")
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_delete_experiment__success(
         self,
@@ -299,7 +299,7 @@ class TestExperimentCli(unittest.TestCase):
         factory.return_value = service_mock
         # Run command
         result = runner.invoke(app, ["delete", "test"], input="y")
-        self.assertEqual(0, result.exit_code)
+        self.assertEqual(0, result.exit_code, result.stdout)
 
     def test_submit_experiment__config_path_does_not_exist(self, *_):
         # Run command
@@ -307,13 +307,13 @@ class TestExperimentCli(unittest.TestCase):
             app,
             ["submit", "/tmp/invalid.yaml", "--name", "test"],
         )
-        self.assertEqual(2, result.exit_code)
+        self.assertEqual(2, result.exit_code, result.stdout)
 
     def test_submit_experiment__config_path_is_dir(self, *_):
         with TemporaryDirectory() as tmpdir:
             # Run command
             result = runner.invoke(app, ["submit", tmpdir, "--name", "test"])
-            self.assertEqual(2, result.exit_code)
+            self.assertEqual(2, result.exit_code, result.stdout)
 
     def test_submit_experiment__success(
         self,
@@ -329,7 +329,7 @@ class TestExperimentCli(unittest.TestCase):
                 app,
                 ["submit", tmp_file.as_posix(), "--name", "test"],
             )
-        self.assertEqual(0, result.exit_code)
+        self.assertEqual(0, result.exit_code, result.stdout)
 
     def test_submit_experiment__internal_error(
         self,
@@ -346,7 +346,7 @@ class TestExperimentCli(unittest.TestCase):
                 app,
                 ["submit", tmp_file.as_posix(), "--name", "test"],
             )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
 
     def test_submit_experiment__config_deserialization_error(self, *_):
         with TemporaryDirectory() as d:
@@ -357,4 +357,4 @@ class TestExperimentCli(unittest.TestCase):
                 app,
                 ["submit", tmp_file.as_posix(), "--name", "test"],
             )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(1, result.exit_code, result.stdout)
