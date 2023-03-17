@@ -10,9 +10,9 @@ class BasicDataLoader(DataLoader):
         return [
             (
                 (
-                    torch.randn(5, 3, 1024),
-                    torch.randn(8, 3, 1024),
-                    torch.randn(8, 3, 1024),
+                    torch.randn(8, 5, 1024),
+                    torch.randn(8, 8, 1024),
+                    torch.randn(8, 8, 1024),
                 ),
                 torch.tensor([0, 1, 0, 1, 1]),
             )
