@@ -1,6 +1,8 @@
 description: "Description of the experiment"
 data_loader: resources/examples/basic_experiment/data_loader.py
 model_loader: resources/examples/basic_experiment/model_loader.py
+ignored_accelerators:
+  - "A100"
 additional_requirements:
-  - "torch"
-  - "torchvision"
+  - "torch==1.13.1"
+  - "torchvision==0.14.1" # Compiled with CUDA 11.7
