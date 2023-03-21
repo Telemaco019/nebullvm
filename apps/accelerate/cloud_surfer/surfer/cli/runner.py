@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import typer
 import yaml
@@ -52,6 +52,16 @@ def run(
         file_okay=True,
         dir_okay=False,
     ),
+    metric_drop_threshold: Optional[float] = typer.Option(
+        None,
+        min=0,
+    ),
+    ignored_accelerators: List[Accelerator] = typer.Option(
+        [],
+    ),
+    ignored_compilers: List[str] = typer.Option(
+        [],
+    ),
     debug: bool = typer.Option(
         False,
         help="Enable debug mode",
@@ -64,9 +74,9 @@ def run(
     run_config = RunConfig(
         model_loader_path=model_loader_path,
         data_loader_path=data_loader_path,
-        metric_drop_threshold=1e-3,  # TODO
-        ignored_compilers=[],
-        ignored_accelerators=[Accelerator("V100"), Accelerator("T4"), Accelerator("A100")],
+        metric_drop_threshold=metric_drop_threshold,
+        ignored_compilers=ignored_compilers,
+        ignored_accelerators=ignored_accelerators,
         model_evaluator_path=model_evaluator_path,
     )
     cmd.run(surfer_config, run_config, results_dir)
@@ -99,19 +109,32 @@ class RunCommandBuilder:
         self.__command += f" --model-evaluator-path {model_evaluator_path}"
         return self
 
-    def with_experiment_name(
-        self,
-        experiment_name: str,
-    ) -> "RunCommandBuilder":
-        self.__command += f" --experiment-name {experiment_name}"
-        return self
-
     def with_surfer_config(self, path: Path) -> "RunCommandBuilder":
         self.__command += f" --surfer-config-path {path}"
         return self
 
     def with_results_dir(self, path: Path) -> "RunCommandBuilder":
         self.__command += f" --results-dir {path.as_posix()}"
+        return self
+
+    def with_metric_drop_threshold(self, t: float) -> "RunCommandBuilder":
+        self.__command += f" --metric-drop-threshold {t}"
+        return self
+
+    def with_ignored_accelerators(
+        self,
+        accelerators: List[Accelerator],
+    ) -> "RunCommandBuilder":
+        for a in accelerators:
+            self.__command += f" --ignored-accelerators {a.value}"
+        return self
+
+    def with_ignored_compilers(
+        self,
+        compilers: List[str],
+    ) -> "RunCommandBuilder":
+        for c in compilers:
+            self.__command += f" --ignored-compilers {c}"
         return self
 
     def with_debug(self) -> "RunCommandBuilder":

@@ -102,10 +102,15 @@ class TestRayOrchestrator(unittest.TestCase):
         *_,
     ):
         mocked_ray_cluster = MagicMock()
+        v100_node = ClusterNode(
+            vm_size="",
+            accelerator=Accelerator.NVIDIA_TESLA_V100,
+        )
         nodes = [
+            v100_node,
             ClusterNode(
                 vm_size="",
-                accelerator=Accelerator.NVIDIA_TESLA_V100,
+                accelerator=Accelerator.NVIDIA_TESLA_K80,
             )
         ]
         mocked_ray_cluster.get_nodes.return_value = nodes
@@ -124,7 +129,8 @@ class TestRayOrchestrator(unittest.TestCase):
                 metric_drop_threshold=0,
             ),
         )
-        mocked_task.assert_not_called()
+        mocked_task.assert_called_once()
+        mocked_task.assert_called_with(v100_node)
 
     def test_save_results(self, *_):
         mocked_storage_client = AsyncMock()

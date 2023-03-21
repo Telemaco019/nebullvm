@@ -33,9 +33,9 @@ from surfer.utilities.python_utils import ClassLoader
 class RunConfig:
     model_loader_path: Path
     data_loader_path: Path
-    metric_drop_threshold: float
     ignored_compilers: List[str]
     ignored_accelerators: List[Accelerator]
+    metric_drop_threshold: Optional[float] = None
     model_evaluator_path: Optional[Path] = None
 
     @cached_property

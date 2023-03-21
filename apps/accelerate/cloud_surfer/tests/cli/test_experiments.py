@@ -10,8 +10,11 @@ from typer.testing import CliRunner
 from surfer.cli.commands.common import must_load_config
 from surfer.cli.experiments import app
 from surfer.common import exceptions
-from surfer.common.schemas import SurferConfig, ExperimentResult, \
-    OptimizedModelDescriptor
+from surfer.common.schemas import (
+    SurferConfig,
+    ExperimentResult,
+    OptimizedModelDescriptor,
+)
 from surfer.core.config import SurferConfigManager
 from surfer.core.experiments import (
     ExperimentStatus,
@@ -208,7 +211,7 @@ class TestExperimentCli(unittest.TestCase):
                 ),
             ],
             result=ExperimentResult(
-               optimizations=[],
+                optimizations=[],
             ),
         )
         factory.return_value = service_mock
