@@ -15,12 +15,15 @@ surfer = "surfer.cli.surfer:main"
 [tool.poetry.dependencies]
 python = ">=3.7, <3.10"
 typer = "^0.7.0"
-ray = { extras = ["default"], version = "^2.3.0" }
+ray = {extras = ["default"], version = "^2.3.0"}
 rich = "^13.3.1"
 pyyaml = "^6.0"
 pydantic = "^1.10.5"
 aiofiles = "^23.1.0"
 mnemonic = "^0.20"
+aiohttp = "^3.8.4"
+py-cpuinfo = "^9.0.0"
+nebullvm = "^0.8.1"
 
 # Azure optionals
 azure-storage-blob = { version = "^12.15.0", optional = true }
@@ -30,9 +33,7 @@ azure-core = { version = "^1.26.3", optional = true }
 
 # GCP optionals
 google-cloud-storage = { version = "^2.7.0", optional = true }
-aiohttp = "^3.8.4"
-py-cpuinfo = "^9.0.0"
-nebullvm = "^0.8.1"
+google-api-python-client = { version = "^2.81.0", optional = true }
 
 [tool.poetry.extras]
 azure = [
@@ -42,7 +43,8 @@ azure = [
     "azure-cli"
 ]
 gcp = [
-    "google-cloud-storage"
+    "google-cloud-storage",
+    "google-api-python-client",
 ]
 all = [
     # Azure
@@ -52,6 +54,7 @@ all = [
     "azure-cli",
     # GCP
     "google-cloud-storage",
+    "google-api-python-client",
 ]
 
 [tool.poetry.group.dev.dependencies]
