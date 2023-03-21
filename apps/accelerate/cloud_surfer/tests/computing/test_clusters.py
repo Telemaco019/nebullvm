@@ -98,16 +98,27 @@ class TestRayCluster(unittest.TestCase):
                             "machineType": "n1-standard-1",
                         },
                     },
+                    "tpuNode": {
+                        "resources": {
+                            "CPU": 1,
+                            "GPU": 1,
+                            "TPU-v2-8": 1,
+                        },
+                        "node_config": {
+                            "runtimeVersion": "2.11",
+                        },
+                    },
                 },
             }
         )
         nodes = cluster.get_nodes()
         accelerators = [node.accelerator for node in nodes]
         vm_sizes = [node.vm_size for node in nodes]
-        self.assertEqual(3, len(nodes))
+        self.assertEqual(4, len(nodes))
         # Check accelerators
         self.assertIn(Accelerator.NVIDIA_TESLA_V100, accelerators)
         self.assertIn(Accelerator.NVIDIA_TESLA_K80, accelerators)
+        self.assertIn(Accelerator.TPU_V2_8, accelerators)
         # Check VM sizes
         self.assertIn("m5.large", vm_sizes)
         self.assertIn("Standard_1", vm_sizes)

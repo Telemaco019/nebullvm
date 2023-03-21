@@ -8,6 +8,7 @@ from typer import Typer
 import surfer.log
 from surfer.cli.commands import cmd_run as cmd
 from surfer.common.schemas import SurferConfig
+from surfer.computing.models import Accelerator
 from surfer.core.orchestrators import RunConfig
 
 app = Typer(no_args_is_help=True)
@@ -65,7 +66,7 @@ def run(
         data_loader_path=data_loader_path,
         metric_drop_threshold=1e-3,  # TODO
         ignored_compilers=[],
-        ignored_accelerators=[],
+        ignored_accelerators=[Accelerator("V100"), Accelerator("T4"), Accelerator("A100")],
         model_evaluator_path=model_evaluator_path,
     )
     cmd.run(surfer_config, run_config, results_dir)

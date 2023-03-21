@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import yaml
 
@@ -45,6 +45,16 @@ class RayCluster:
             return node_config["azure_arm_parameters"]["vmSize"]
         raise ValueError(f"node config is not valid: {node_config}")
 
+    @staticmethod
+    def __extract_accelerator(resource: str) -> Optional[Accelerator]:
+        parts = resource.split(constants.CLUSTER_ACCELERATOR_TYPE_PREFIX)
+        if len(parts) > 1:
+            return Accelerator(parts[1])
+        try:
+            return Accelerator(resource)
+        except ValueError:
+            return None
+
     def get_nodes(self) -> List[ClusterNode]:
         nodes: List[ClusterNode] = []
         node_types = self.config.get("available_node_types", {})
@@ -56,13 +66,16 @@ class RayCluster:
             if node_config is None:
                 continue
             for r in resources:
-                parts = r.split(constants.CLUSTER_ACCELERATOR_TYPE_PREFIX)
-                accelerator = None
-                if len(parts) > 1:
-                    accelerator = Accelerator(parts[1])
+                accelerator = self.__extract_accelerator(r)
                 if accelerator is None:
                     continue
-                instance_type = self.__get_instance_type(node_config)
+                if accelerator.is_tpu():
+                    instance_type = "{} Runtime {}".format(
+                        accelerator.display_name,
+                        node_config["runtimeVersion"],
+                    )
+                else:
+                    instance_type = self.__get_instance_type(node_config)
                 nodes.append(ClusterNode(instance_type, accelerator))
         return nodes
 

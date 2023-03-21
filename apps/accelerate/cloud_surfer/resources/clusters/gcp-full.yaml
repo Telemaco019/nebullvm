@@ -1,0 +1,228 @@
+# An unique identifier for the head node and workers of this cluster.
+cluster_name: default
+
+# The maximum number of workers nodes to launch in addition to the head
+# node.
+max_workers: 2
+
+# The autoscaler will scale up the cluster faster with higher upscaling speed.
+# E.g., if the task requires adding more nodes then autoscaler will gradually
+# scale up the cluster in chunks of upscaling_speed*currently_running_nodes.
+# This number should be > 0.
+upscaling_speed: 1.0
+
+docker:
+  # 16/03/222 - At the moment we need to use nightly release for head node until 2.3.1 release,
+  # since issue https://github.com/ray-project/ray/issues/10920 prevents
+  # Azure autoscaler from working properly.
+  head_image: "rayproject/ray:nightly-py39" # FIXME
+  worker_image: "telemaco019/cloud-surfer:0.1.0-py39-cu118"
+  container_name: "ray_container"
+  pull_before_run: False
+  run_options:
+    - --ulimit nofile=65536:65536
+
+# If a node is idle for this many minutes, it will be removed.
+idle_timeout_minutes: 5
+
+# Cloud-provider specific configuration.
+provider:
+    type: gcp
+    region: us-central1
+    availability_zone: us-central1-c
+    project_id: cloud-surfer-dev
+    cache_stopped_nodes: true
+
+# How Ray will authenticate with newly launched nodes.
+auth:
+  ssh_user: ubuntu
+# By default Ray creates a new private keypair, but you can also use your own.
+# If you do so, make sure to also set "KeyName" in the head and worker node
+# configurations below. This requires that you have added the key into the
+# project wide meta-data.
+#    ssh_private_key: /path/to/your/key.pem
+
+# Tell the autoscaler the allowed node types and the resources they provide.
+# The key is the name of the node type, which is just for debugging purposes.
+# How Ray will authenticate with newly launched nodes.
+# The node config specifies the launch config and physical instance type.
+available_node_types:
+    ray_head_default:
+        # The resources provided by this node type.
+        resources:
+          CPU: 2
+        # Provider-specific config for the head node, e.g. instance type. By default
+        # Ray will auto-configure unspecified fields such as subnets and ssh-keys.
+        # For more documentation on available fields, see:
+        # https://cloud.google.com/compute/docs/reference/rest/v1/instances/insert
+        node_config:
+            machineType: n1-standard-2
+            disks:
+              - boot: true
+                autoDelete: true
+                type: PERSISTENT
+                initializeParams:
+                  diskSizeGb: 50
+                  # See https://cloud.google.com/compute/docs/images for more images
+                  sourceImage: projects/deeplearning-platform-release/global/images/family/common-cpu
+
+            # Additional options can be found in in the compute docs at
+            # https://cloud.google.com/compute/docs/reference/rest/v1/instances/insert
+
+            # If the network interface is specified as below in both head and worker
+            # nodes, the manual network config is used.  Otherwise an existing subnet is
+            # used.  To use a shared subnet, ask the subnet owner to grant permission
+            # for 'compute.subnetworks.use' to the ray autoscaler account...
+            # networkInterfaces:
+            #   - kind: compute#networkInterface
+            #     subnetwork: path/to/subnet
+            #     aliasIpRanges: []
+
+    ray-worker-gpu-t4:
+      min_workers: 0
+      max_workers: 1
+      node_config:
+        machineType: n1-standard-2
+        disks:
+            - boot: true
+              autoDelete: true
+              type: PERSISTENT
+              initializeParams:
+                diskSizeGb: 128
+                sourceImage: projects/deeplearning-platform-release/global/images/family/common-cu113
+        guestAccelerators:
+          - acceleratorType: nvidia-tesla-t4
+            acceleratorCount: 1
+        metadata:
+          items:
+            - key: install-nvidia-driver
+              value: "True"
+        scheduling:
+          - onHostMaintenance: TERMINATE
+      resources:
+        CPU: 2
+        GPU: 1
+        accelerator_type:T4: 1
+
+    ray-worker-gpu-v100:
+      min_workers: 0
+      max_workers: 1
+      node_config:
+        machineType: n1-standard-2
+        disks:
+          - boot: true
+            autoDelete: true
+            type: PERSISTENT
+            initializeParams:
+              diskSizeGb: 128
+              sourceImage: projects/deeplearning-platform-release/global/images/family/common-cu113
+        guestAccelerators:
+          - acceleratorType: nvidia-tesla-v100
+            acceleratorCount: 1
+        metadata:
+          items:
+            - key: install-nvidia-driver
+              value: "True"
+        scheduling:
+          - onHostMaintenance: TERMINATE
+      resources:
+        CPU: 2
+        GPU: 1
+        accelerator_type:V100: 1
+
+    ray-worker-tpu-v2-8:
+      min_workers: 0
+      max_workers: 1
+      node_config:
+        schedulingConfig:
+          preemptible: true
+        acceleratorType: v2-8
+        runtimeVersion: v2-alpha
+      resources:
+        TPU-v2-8: 1
+
+    ray-worker-gpu-a100:
+      min_workers: 0
+      max_workers: 1
+      node_config:
+        machineType: a2-highgpu-1g
+        disks:
+          - boot: true
+            autoDelete: true
+            type: PERSISTENT
+            initializeParams:
+              diskSizeGb: 128
+              sourceImage: projects/deeplearning-platform-release/global/images/family/common-cu113
+        metadata:
+          items:
+            - key: install-nvidia-driver
+              value: "True"
+        scheduling:
+          - onHostMaintenance: TERMINATE
+      resources:
+        CPU: 12
+        GPU: 1
+        accelerator_type:A100: 1
+
+# Specify the node type of the head node (as configured above).
+head_node_type: ray_head_default
+
+# Files or directories to copy to the head and worker nodes. The format is a
+# dictionary from REMOTE_PATH: LOCAL_PATH, e.g.
+file_mounts: {
+#    "/path1/on/remote/machine": "/path1/on/local/machine",
+#    "/path2/on/remote/machine": "/path2/on/local/machine",
+}
+
+# Files or directories to copy from the head node to the worker nodes. The format is a
+# list of paths. The same path on the head node will be copied to the worker node.
+# This behavior is a subset of the file_mounts behavior. In the vast majority of cases
+# you should just use file_mounts. Only use this if you know what you're doing!
+cluster_synced_files: []
+
+# Whether changes to directories in file_mounts or cluster_synced_files in the head node
+# should sync to the worker node continuously
+file_mounts_sync_continuously: False
+
+# Patterns for files to exclude when running rsync up or rsync down
+rsync_exclude:
+    - "**/.git"
+    - "**/.git/**"
+
+# Pattern files to use for filtering out files when running rsync up or rsync down. The file is searched for
+# in the source directory and recursively through all subdirectories. For example, if .gitignore is provided
+# as a value, the behavior will match git's behavior for finding and using .gitignore files.
+rsync_filter:
+    - ".gitignore"
+
+# List of commands that will be run before `setup_commands`. If docker is
+# enabled, these commands will run outside the container and before docker
+# is setup.
+initialization_commands: []
+
+# List of shell commands to run to set up nodes.
+setup_commands: []
+    # Note: if you're developing Ray, you probably want to create a Docker image that
+    # has your Ray repo pre-cloned. Then, you can replace the pip installs
+    # below with a git checkout <your_sha> (and possibly a recompile).
+    # To run the nightly version of ray (as opposed to the latest), either use a rayproject docker image
+    # that has the "nightly" (e.g. "rayproject/ray-ml:nightly-gpu") or uncomment the following line:
+    # - pip install -U "ray[default] @ https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-3.0.0.dev0-cp37-cp37m-manylinux2014_x86_64.whl"
+
+
+# Custom commands that will be run on the head node after common setup.
+head_setup_commands:
+  - pip install google-api-python-client==1.7.8
+
+# Custom commands that will be run on worker nodes after common setup.
+worker_setup_commands: []
+
+# Command to start ray on the head node. You don't need to change this.
+head_start_ray_commands:
+  - ray stop
+  - ray start --head --port=6379 --object-manager-port=8076 --autoscaling-config=~/ray_bootstrap_config.yaml
+
+# Command to start ray on worker nodes. You don't need to change this.
+worker_start_ray_commands:
+  - ray stop
+  - ray start --address=$RAY_HEAD_IP:6379 --object-manager-port=8076

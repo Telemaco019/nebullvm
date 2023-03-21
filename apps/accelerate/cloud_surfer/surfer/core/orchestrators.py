@@ -66,15 +66,35 @@ class InferenceOptimizationTask:
         num_cpus: int = 1,
         num_gpus: int = 1,
     ):
-        remote_decorator = remote(
+        remote_decorator = self.__get_remote_decorator(
+            node,
+            num_cpus,
+            num_gpus,
+        )
+        self.node = node
+        self._num_cpus = num_cpus
+        self._num_gpus = num_gpus
+        self._run = remote_decorator(self._run)
+
+    @staticmethod
+    def __get_remote_decorator(
+        node: ClusterNode,
+        num_cpus: int,
+        num_gpus: int,
+    ):
+        if node.accelerator.is_tpu():
+            return remote(
+                num_cpus=0,
+                num_gpus=0,
+                resources={
+                    node.accelerator.value: 1,
+                },
+            )
+        return remote(
             num_cpus=num_cpus,
             num_gpus=num_gpus,
             accelerator_type=node.accelerator.value,
         )
-        self.node = node
-        self._run = remote_decorator(self._run)
-        self._num_cpus = num_cpus
-        self._num_gpus = num_gpus
 
     def __str__(self):
         return json.dumps(

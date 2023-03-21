@@ -15,9 +15,20 @@ class Accelerator(str, enum.Enum):
     NVIDIA_TESLA_K80 = "K80", "NVIDIA Tesla K80"
     NVIDIA_TESLA_A100 = "A100", "NVIDIA Tesla A100"
     NVIDIA_TESLA_A10G = "A10G", "NVIDIA Tesla A10G"
+    TPU_V2_8 = "TPU-v2-8", "TPU v2-8"
+    TPU_V2_32 = "TPU-v2-32", "TPU v2-32"
 
     def __new__(cls, *values):
         obj = super().__new__(cls)
         obj._value_ = values[0]
         obj.display_name = values[1]
         return obj
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+    def is_tpu(self):
+        return self.value in [
+            Accelerator.TPU_V2_8.value,
+            Accelerator.TPU_V2_32.value,
+        ]
