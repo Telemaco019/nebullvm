@@ -36,7 +36,7 @@ from surfer.utilities.nebullvm_utils import HardwareSetup
 
 
 class ExperimentStatus(str, Enum):
-    PENDING = "pending", ":warning:"
+    PENDING = "pending", ":yellow_circle:"
     RUNNING = "running", ":green_circle:"
     SUCCEEDED = "completed", ":white_check_mark:"
     STOPPED = "stopped", ":stop_button:"
