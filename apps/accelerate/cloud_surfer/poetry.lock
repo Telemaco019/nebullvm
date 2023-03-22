@@ -3459,19 +3459,19 @@ files = [
 
 [[package]]
 name = "nebullvm"
-version = "0.8.1"
+version = "0.9.1"
 description = ""
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "nebullvm-0.8.1-py3-none-any.whl", hash = "sha256:e647ccb1bc1a7aeb1bd1bcc2955f2ac0aeb2172ef0c68317853f6b073675dd1d"},
-    {file = "nebullvm-0.8.1.tar.gz", hash = "sha256:44ee54401d9d43344e531427ed7dbe8ad98c474684a5b93b5f86c502fd4de895"},
+    {file = "nebullvm-0.9.1-py3-none-any.whl", hash = "sha256:c0be49a3200734732a7d5715f68813b795155cb6d70e05f76dd6bdf1214c61d6"},
+    {file = "nebullvm-0.9.1.tar.gz", hash = "sha256:515d4be5790bbce7a8e6f9691e39bc831563283ff7333fdb6e37be08b630d425"},
 ]
 
 [package.dependencies]
 loguru = ">=0.5.3"
-numpy = ">=1.20.0,<=1.23.1"
+numpy = ">=1.21.0,<1.24.0"
 packaging = ">=21.3"
 psutil = ">=5.0.0"
 py-cpuinfo = ">=8.0.0"
@@ -4879,4 +4879,4 @@ gcp = ["google-cloud-storage", "google-api-python-client"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7, <3.10"
-content-hash = "8f72fade942739ec183145e25f64fb3650fc02f8f0b978365859927ec04bb3bc"
+content-hash = "1dea694b7db4f51386ae1e90105495f0e31b7feafbeb053536f481ba92f25de5"

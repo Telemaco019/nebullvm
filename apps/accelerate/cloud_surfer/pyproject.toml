@@ -23,7 +23,7 @@ aiofiles = "^23.1.0"
 mnemonic = "^0.20"
 aiohttp = "^3.8.4"
 py-cpuinfo = "^9.0.0"
-nebullvm = "^0.8.1"
+nebullvm = "^0.9"
 
 # Azure optionals
 azure-storage-blob = { version = "^12.15.0", optional = true }
