@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 import cpuinfo
 import psutil
+from diffusers import UNet2DConditionModel
 
 from nebullvm.operations.conversions.converters import (
     PytorchConverter,
@@ -15,11 +16,14 @@ from nebullvm.operations.conversions.converters import (
     Converter,
 )
 from nebullvm.optional_modules import torch
+from nebullvm.optional_modules.diffusers import diffusers
 from nebullvm.optional_modules.utils import (
     torch_is_available,
     tensorflow_is_available,
 )
 from nebullvm.tools.base import Device, DeepLearningFramework, DeviceType
+from nebullvm.tools.diffusers import DiffusionUNetWrapper, \
+    is_diffusion_model_pipe
 from nebullvm.tools.pytorch import torch_get_device_name
 from nebullvm.tools.tf import tensorflow_get_gpu_name
 
@@ -95,3 +99,13 @@ def get_conversion_op(framework: DeepLearningFramework) -> Converter:
 
 def get_throughput(latency: float, batch_size: int) -> float:
     return (1 / latency) * batch_size
+
+
+def is_diffusion_model(model):
+    if is_diffusion_model_pipe(model):
+        return True
+    if isinstance(model, (UNet2DConditionModel, DiffusionUNetWrapper)):
+        return True
+    if hasattr(model, "model"):
+        return isinstance(model.model, diffusers.models.UNet2DConditionModel)
+    return False

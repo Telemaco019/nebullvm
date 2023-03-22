@@ -28,6 +28,9 @@ from nebullvm.tools.base import (
     ModelParams,
 )
 from nebullvm.tools.data import DataManager
+from nebullvm.tools.diffusers import (
+    is_diffusion_model_pipe,
+)
 from nebullvm.tools.utils import (
     is_huggingface_data,
     check_input_data,
@@ -36,13 +39,19 @@ from nebullvm.tools.utils import (
     extract_info_from_data,
 )
 from surfer.optimization import types
-from surfer.optimization.adapters import OptimizerAdapter, HuggingFaceConverter
+from surfer.optimization.adapters import (
+    OptimizerAdapter,
+    HuggingFaceAdapter,
+    DiffusionAdapter,
+    ModelAdapter,
+)
 from surfer.optimization.models import (
     OptimizedModel,
     OriginalModel,
     OptimizeInferenceResult,
 )
 from surfer.utilities import nebullvm_utils
+from surfer.utilities.nebullvm_utils import is_diffusion_model
 
 
 class OptimizeInferenceOp(Operation):
@@ -125,10 +134,16 @@ class OptimizeInferenceOp(Operation):
                     "depending on the framework used.\n"
                 )
 
-        hf_converter = HuggingFaceConverter(model, data, self.device)
-        if is_huggingface_data(data[0]):
-            model = hf_converter.hf_model
-            data = hf_converter.data
+        # Setup adapters
+        model_adapter: Optional[ModelAdapter] = None
+        if is_diffusion_model_pipe(model):
+            self.logger.info(
+                "The provided model is a diffusion model. "
+                "Speedster will optimize the UNet part of the model."
+            )
+            model_adapter = DiffusionAdapter(model, data, self.device)
+        elif is_huggingface_data(data[0]):
+            model_adapter = HuggingFaceAdapter(model, data, self.device)
             if dynamic_info is None:
                 self.logger.warning(
                     "Dynamic shape info has not been provided for the "
@@ -139,6 +154,11 @@ class OptimizeInferenceOp(Operation):
                     "speedster/how-to-guides"
                     "#using-dynamic-shape."
                 )
+
+        # Adapt data and model
+        if model_adapter is not None:
+            data = model_adapter.adapted_data
+            model = model_adapter.adapted_model
 
         data = self._as_data_manager(data)
         dl_framework = get_dl_framework(model)
@@ -156,6 +176,7 @@ class OptimizeInferenceOp(Operation):
             dl_framework=dl_framework,
             dynamic_info=dynamic_info,
             device=self.device,
+            is_diffusion=is_diffusion_model(model),
         )
 
         data.split(TRAIN_TEST_SPLIT_RATIO)
@@ -198,7 +219,7 @@ class OptimizeInferenceOp(Operation):
                 optimized_models += self._optimize(
                     model=model,
                     input_data=data,
-                    hf_converter=hf_converter,
+                    model_adapter=model_adapter,
                     model_outputs=original_latency_op.get_result()[0],
                     optimization_time=optimization_time,
                     metric_drop_ths=metric_drop_ths,
@@ -236,7 +257,7 @@ class OptimizeInferenceOp(Operation):
         self,
         model: Any,
         model_outputs: Iterable,
-        hf_converter: HuggingFaceConverter,
+        model_adapter: Optional[ModelAdapter],
         input_data: types.InputData,
         optimization_time: OptimizationTime,
         metric_drop_ths: float,
@@ -256,7 +277,7 @@ class OptimizeInferenceOp(Operation):
         # Add adapter for output results
         optimization_op = OptimizerAdapter(
             optimizer=optimization_op,
-            hf_converter=hf_converter,
+            model_adapter=model_adapter,
             batch_size=model_params.batch_size,
             input_data=input_data,
         )
@@ -275,6 +296,7 @@ class OptimizeInferenceOp(Operation):
                 ignore_compilers=ignore_compilers,
                 ignore_compressors=ignore_compressors,
                 source_dl_framework=source_dl_framework,
+                is_diffusion=is_diffusion_model(model),
             )
             .get_result()
         )

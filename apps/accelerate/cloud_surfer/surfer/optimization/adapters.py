@@ -1,9 +1,25 @@
-from typing import List, Optional, Any
+import abc
+import copy
+from abc import abstractmethod
+from pathlib import Path
+from typing import List, Optional, Any, Union
 
 from nebullvm.operations.conversions.huggingface import convert_hf_model
-from nebullvm.operations.inference_learners.base import BaseInferenceLearner
+from nebullvm.operations.inference_learners.base import (
+    BaseInferenceLearner,
+    LearnerMetadata,
+)
 from nebullvm.operations.optimizations.base import Optimizer
-from nebullvm.tools.base import Device
+from nebullvm.optional_modules.diffusers import (
+    DiffusionPipeline,
+)
+from nebullvm.optional_modules.torch import torch
+from nebullvm.tools.base import Device, DeviceType
+from nebullvm.tools.diffusers import (
+    get_unet_inputs,
+    preprocess_diffusers,
+    postprocess_diffusers,
+)
 from nebullvm.tools.feedback_collector import FeedbackCollector
 from nebullvm.tools.utils import is_huggingface_data
 from surfer.optimization import types
@@ -11,19 +27,157 @@ from surfer.optimization.models import OptimizedModel
 from surfer.utilities import nebullvm_utils
 
 
-class HuggingFaceConverter:
-    def __init__(self, model: Any, data: List, device: Device):
-        self.model = model
-        self.data = data
+class ModelAdapter(abc.ABC):
+    @property
+    @abstractmethod
+    def adapted_model(self):
+        pass
+
+    @property
+    @abstractmethod
+    def adapted_data(self):
+        pass
+
+    @abstractmethod
+    def adapt_inference_learner(self, model) -> BaseInferenceLearner:
+        pass
+
+
+# TODO: move to Nebullvm
+class DiffusionInferenceLearner(BaseInferenceLearner):
+    def __init__(self, pipeline: DiffusionPipeline):
+        self.pipeline = pipeline
+
+    def __call__(self, *args, **kwargs):
+        return self.pipeline(*args, **kwargs)
+
+    def tensor2list(self, tensor: Any) -> List:
+        pass
+
+    def _read_file(self, input_file: str) -> Any:
+        pass
+
+    def _save_file(self, prediction: Any, output_file: str):
+        pass
+
+    def run(self, *args, **kwargs) -> Any:
+        self.pipeline(*args, **kwargs)
+
+    def save(self, path: Union[str, Path], **kwargs):
+        self.pipeline.unet.model.save(path)
+
+    @classmethod
+    def load(
+        cls,
+        path: Union[Path, str],
+        **kwargs,
+    ):
+        try:
+            pipe = kwargs["pipe"]
+        except KeyError:
+            raise TypeError("Missing required argument 'pipe'")
+        optimized_model = LearnerMetadata.read(path).load_model(path)
+        return postprocess_diffusers(
+            optimized_model,
+            pipe,
+            optimized_model.device,
+        )
+
+    def get_size(self):
+        return 0  # TODO - How do we get the size of a diffusion model?
+
+    def free_gpu_memory(self):
+        raise NotImplementedError()
+
+    def get_inputs_example(self):
+        raise NotImplementedError()
+
+    @property
+    def output_format(self):
+        return ".pt"
+
+    @property
+    def input_format(self):
+        return ".pt"
+
+    def list2tensor(self, listified_tensor: List) -> Any:
+        raise NotImplementedError()
+
+
+# TODO: move to Nebullvm
+class DiffusionAdapter(ModelAdapter):
+    def __init__(self, original_pipeline: Any, data: List, device: Device):
+        self.original_pipeline = original_pipeline
+        self.original_data = data
         self.device = device
-        self.__converted = False
+        self.__adapted = False
+        self.__df_model = None
+        self.__df_data = None
+
+    def __adapt(self):
+        model = copy.deepcopy(self.original_pipeline)
+        model.get_unet_inputs = get_unet_inputs
+        model.to(self.device.to_torch_format())
+        self.__df_data = [
+            (
+                tuple(
+                    d.reshape((1,)) if d.shape == torch.Size([]) else d
+                    for d in model.get_unet_inputs(
+                        model,
+                        prompt=prompt,
+                    )
+                    if d is not None
+                ),
+                None,
+            )
+            for prompt in self.original_data
+        ]
+        self.__df_model = preprocess_diffusers(model)
+        self.__adapted = True
+
+    @property
+    def adapted_model(self):
+        if self.__adapted is False:
+            self.__adapt()
+        return self.__df_model
+
+    @property
+    def adapted_data(self):
+        if self.__adapted is False:
+            self.__adapt()
+        return self.__df_data
+
+    def adapt_inference_learner(self, model) -> BaseInferenceLearner:
+        pipe = copy.deepcopy(self.original_pipeline)
+        if self.device.type is DeviceType.GPU:
+            pipe.to("cuda")
+            try:
+                pipe.enable_xformers_memory_efficient_attention()
+            except Exception:
+                pass
+        pipeline = postprocess_diffusers(
+            model,
+            self.original_pipeline,
+            self.device,
+        )
+        return DiffusionInferenceLearner(pipeline)
+
+
+# TODO: move to Nebullvm
+class HuggingFaceAdapter(ModelAdapter):
+    def __init__(self, model: Any, data: List, device: Device):
+        self.original_model = model
+        self.original_data = data
+        self.device = device
+        self.__adapted = False
         self.__hf_model = None
+        self.__hf_data = None
         self.__hf_input_names = None
         self.__hf_output_type = None
         self.__hf_output_structure = None
 
-    def __convert_model(self):
-        if not is_huggingface_data(self.data[0]):
+    def __adapt_model(self):
+        if not is_huggingface_data(self.original_data[0]):
             raise ValueError("Cannot convert non-HuggingFace data")
         (
             model,
@@ -31,49 +185,55 @@ class HuggingFaceConverter:
             input_names,
             output_structure,
             output_type,
-        ) = convert_hf_model(self.model, self.data, self.device)
+        ) = convert_hf_model(
+            self.original_model,
+            self.original_data,
+            self.device,
+        )
         self.__hf_model = model
+        self.__hf_data = data
         self.__hf_input_names = input_names
         self.__hf_output_type = output_type
         self.__hf_output_structure = output_structure
-        self.__converted = True
+        self.__adapted = True
 
     @property
-    def hf_model(self):
-        if self.__converted is False:
-            self.__convert_model()
+    def adapted_model(self):
+        if self.__adapted is False:
+            self.__adapt_model()
         return self.__hf_model
 
     @property
-    def hf_input_names(self):
-        if self.__converted is False:
-            self.__convert_model()
-        return self.__hf_input_names
+    def adapted_data(self):
+        if self.__adapted is False:
+            self.__adapt_model()
+        return self.__hf_data
 
-    @property
-    def hf_output_structure(self):
-        if self.__converted is False:
-            self.__convert_model()
-        return self.__hf_output_structure
+    def adapt_inference_learner(self, optimized_model) -> BaseInferenceLearner:
+        from nebullvm.operations.inference_learners.huggingface import (
+            HuggingFaceInferenceLearner,
+        )
 
-    @property
-    def hf_output_type(self):
-        if self.__converted is False:
-            return self.__hf_output_type
+        return HuggingFaceInferenceLearner(
+            core_inference_learner=optimized_model,
+            output_structure=self.__hf_output_structure,
+            input_names=self.__hf_input_names,
+            output_type=self.__hf_output_type,
+        )
 
 
 class OptimizerAdapter:
     def __init__(
         self,
         optimizer: Optimizer,
-        hf_converter: HuggingFaceConverter,
         batch_size: int,
         input_data: types.InputData,
+        model_adapter: Optional[ModelAdapter] = None,
     ):
         self.collector = FeedbackCollector("", "", "")
         self.optimizer = optimizer
         self.optimizer.set_feedback_collector(self.collector)
-        self.hf_converter = hf_converter
+        self.model_adapter = model_adapter
         self._batch_size = batch_size
         self._input_data = input_data
 
@@ -85,26 +245,15 @@ class OptimizerAdapter:
         self.optimizer.execute(*args, **kwargs)
         return self
 
-    def _wrap_hf_learner(
+    def _adapt_learner(
         self,
         base: Optional[BaseInferenceLearner],
     ) -> Optional[BaseInferenceLearner]:
         if base is None:
             return None
-
-        if is_huggingface_data(self._input_data[0]):
-            from nebullvm.operations.inference_learners.huggingface import (
-                HuggingFaceInferenceLearner,
-            )
-
-            return HuggingFaceInferenceLearner(
-                core_inference_learner=base,
-                output_structure=self.hf_converter.hf_output_structure,
-                input_names=self.hf_converter.hf_input_names,
-                output_type=self.hf_converter.hf_output_type,
-            )
-
-        return base
+        if self.model_adapter is None:
+            return base
+        return self.model_adapter.adapt_inference_learner(base)
 
     def get_result(self) -> List[OptimizedModel]:
         """
@@ -127,7 +276,7 @@ class OptimizerAdapter:
                 latency,
                 self._batch_size,
             )
-            inference_learner = self._wrap_hf_learner(optimized_model_tuple[0])
+            inference_learner = self._adapt_learner(optimized_model_tuple[0])
             # Compute model size
             model_size_mb = None
             if inference_learner is not None:
