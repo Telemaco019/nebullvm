@@ -100,6 +100,10 @@ available_node_types:
         scheduling:
           - onHostMaintenance: TERMINATE
           - preemptible: true
+        serviceAccounts:
+          - email: cloud-surfer-worker@cloud-surfer-dev.iam.gserviceaccount.com
+            scopes:
+            - https://www.googleapis.com/auth/cloud-platform
       resources:
         CPU: 2
         GPU: 1
@@ -127,6 +131,10 @@ available_node_types:
         scheduling:
           - onHostMaintenance: TERMINATE
           - preemptible: true
+        serviceAccounts:
+          - email: cloud-surfer-worker@cloud-surfer-dev.iam.gserviceaccount.com
+            scopes:
+              - https://www.googleapis.com/auth/cloud-platform
       resources:
         CPU: 2
         GPU: 1
@@ -140,6 +148,10 @@ available_node_types:
           preemptible: true
         acceleratorType: v2-8
         runtimeVersion: v2-alpha
+        serviceAccounts:
+          - email: cloud-surfer-worker@cloud-surfer-dev.iam.gserviceaccount.com
+            scopes:
+              - https://www.googleapis.com/auth/cloud-platform
       resources:
         TPU-v2-8: 1
 
@@ -162,6 +174,10 @@ available_node_types:
         scheduling:
           - onHostMaintenance: TERMINATE
           - preemptible: true
+        serviceAccounts:
+          - email: cloud-surfer-worker@cloud-surfer-dev.iam.gserviceaccount.com
+            scopes:
+              - https://www.googleapis.com/auth/cloud-platform
       resources:
         CPU: 12
         GPU: 1
