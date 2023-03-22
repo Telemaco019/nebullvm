@@ -280,6 +280,7 @@ class ExperimentService:
     def __get_run_cmd(
         experiment_path: ExperimentPath,
         workdir: JobWorkingDir,
+        config: schemas.ExperimentConfig,
     ) -> str:
         builder = (
             RunCommandBuilder()
@@ -287,6 +288,8 @@ class ExperimentService:
             .with_model_loader(workdir.model_loader_path)
             .with_data_loader(workdir.data_loader_path)
             .with_surfer_config(workdir.surfer_config_path)
+            .with_ignored_accelerators(config.ignored_accelerators)
+            .with_ignored_compilers(config.ignored_compilers)
         )
         if logger.level == logging.DEBUG:
             builder.with_debug()
@@ -416,7 +419,11 @@ class ExperimentService:
         # Submit Ray job
         async with job_working_dir(self.surfer_config, req.config) as workdir:
             # Build run command
-            entrypoint = self.__get_run_cmd(experiment_path, workdir)
+            entrypoint = self.__get_run_cmd(
+                experiment_path,
+                workdir,
+                req.config,
+            )
             # Build dependencies
             requirements = _get_base_job_requirements(
                 self.surfer_config.storage,
