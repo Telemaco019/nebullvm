@@ -31,7 +31,7 @@ provider:
     region: us-central1
     availability_zone: us-central1-c
     project_id: cloud-surfer-dev
-    cache_stopped_nodes: true
+    cache_stopped_nodes: True
 
 # How Ray will authenticate with newly launched nodes.
 auth:
@@ -82,14 +82,14 @@ available_node_types:
       min_workers: 0
       max_workers: 1
       node_config:
-        machineType: n1-standard-4
+        machineType: n1-standard-8
         disks:
-            - boot: true
-              autoDelete: true
-              type: PERSISTENT
-              initializeParams:
-                diskSizeGb: 128
-                sourceImage: projects/deeplearning-platform-release/global/images/family/common-cu113
+          - boot: true
+            autoDelete: true
+            type: PERSISTENT
+            initializeParams:
+              diskSizeGb: 128
+              sourceImage: projects/deeplearning-platform-release/global/images/family/common-cu113
         guestAccelerators:
           - acceleratorType: nvidia-tesla-t4
             acceleratorCount: 1
@@ -99,6 +99,7 @@ available_node_types:
               value: "True"
         scheduling:
           - onHostMaintenance: TERMINATE
+          - preemptible: true
       resources:
         CPU: 2
         GPU: 1
@@ -108,7 +109,7 @@ available_node_types:
       min_workers: 0
       max_workers: 1
       node_config:
-        machineType: n1-standard-4
+        machineType: n1-standard-8
         disks:
           - boot: true
             autoDelete: true
@@ -125,6 +126,7 @@ available_node_types:
               value: "True"
         scheduling:
           - onHostMaintenance: TERMINATE
+          - preemptible: true
       resources:
         CPU: 2
         GPU: 1
@@ -159,6 +161,7 @@ available_node_types:
               value: "True"
         scheduling:
           - onHostMaintenance: TERMINATE
+          - preemptible: true
       resources:
         CPU: 12
         GPU: 1

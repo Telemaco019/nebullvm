@@ -30,6 +30,7 @@ provider:
   type: azure
   location: westeurope
   resource_group: rg-surfer
+  cache_stopped_nodes: True
   # set subscription id otherwise the default from az cli will be used
   #subscription_id: <subscription-id>
   # set unique subnet mask or a random mask will be used
