@@ -11,7 +11,7 @@ from pydantic.error_wrappers import ValidationError
 from nebullvm.config import DEFAULT_METRIC_DROP_THS
 from surfer import storage
 from surfer.common import constants
-from surfer.computing.models import VMProvider
+from surfer.computing.models import VMProvider, Accelerator
 from surfer.storage.models import StorageConfig, StorageProvider
 
 
@@ -213,7 +213,7 @@ class ExperimentConfig(BaseModel):
     additional_requirements: List[str] = []
     metric_drop_threshold: float = DEFAULT_METRIC_DROP_THS
     ignored_compilers: List[str] = []
-    ignored_accelerators: List[str] = []
+    ignored_accelerators: List[Accelerator] = []
 
     class Config:
         extra = "forbid"

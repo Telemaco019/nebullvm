@@ -1,4 +1,5 @@
 import enum
+from dataclasses import dataclass
 
 
 class VMProvider(str, enum.Enum):
@@ -32,3 +33,8 @@ class Accelerator(str, enum.Enum):
             Accelerator.TPU_V2_8.value,
             Accelerator.TPU_V2_32.value,
         ]
+
+
+@dataclass(frozen=True)
+class VMPricingInfo:
+    pass
