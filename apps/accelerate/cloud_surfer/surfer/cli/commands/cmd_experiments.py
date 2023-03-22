@@ -8,6 +8,7 @@ from rich import box
 from rich import print
 from rich import progress
 from rich.panel import Panel
+from rich.progress import SpinnerColumn, TextColumn
 from rich.rule import Rule
 from rich.table import Table
 
@@ -32,28 +33,35 @@ def _new_experiment_service() -> surfer.core.experiments.ExperimentService:
 
 
 async def list_experiments():
-    # Init services
-    config = must_load_config()
-    experiment_service = surfer.core.experiments.new_experiment_service(config)
+    columns = [TextColumn("Loading experiments..."), SpinnerColumn()]
+    with progress.Progress(*columns, transient=True) as progress_bar:
+        progress_bar.add_task("")
 
-    # List experiments
-    experiments = await experiment_service.list()
-    if len(experiments) == 0:
-        logger.info("No experiments available")
-        return
+        # Init services
+        config = must_load_config()
+        experiment_service = surfer.core.experiments.new_experiment_service(config)
 
-    # Render
-    table = Table(box=box.SIMPLE)
-    table.add_column("Experiment", header_style="cyan")
-    table.add_column("Status", header_style="cyan")
-    table.add_column("Created at", header_style="cyan")
-    for e in experiments:
-        table.add_row(
-            e.name,
-            str(e.status),
-            surfer.utilities.datetime_utils.format_datetime_ui(e.created_at),
-        )
-    print(table)
+        # List experiments
+        experiments = await experiment_service.list()
+        if len(experiments) == 0:
+            print("No experiments available")
+            return
+
+        # Render
+        table = Table(box=box.SIMPLE)
+        table.add_column("Experiment", header_style="cyan")
+        table.add_column("Status", header_style="cyan")
+        table.add_column("Created at", header_style="cyan")
+        for e in experiments:
+            table.add_row(
+                e.name,
+                str(e.status),
+                surfer.utilities.datetime_utils.format_datetime_ui(e.created_at),
+            )
+        print(table)
+
+    print("\nYou can view experiment details with:")
+    print(Panel(f"> [green]surfer experiment describe <experiment>[/green]"))
 
 
 def _load_experiments_config(path: Path) -> ExperimentConfig:
