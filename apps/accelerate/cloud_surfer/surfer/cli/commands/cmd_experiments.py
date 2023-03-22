@@ -221,6 +221,11 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     # Results summary
     if experiment.result is None:
         return
+    print(
+        "[bold][yellow]Model: {}[/yellow][/bold]".format(
+            experiment.result.optimizations[0].original_model.name
+        )
+    )
     results_summary_table = Table(
         header_style="bold cyan",
         expand=True,
