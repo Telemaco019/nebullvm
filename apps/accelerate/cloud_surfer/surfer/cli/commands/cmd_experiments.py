@@ -222,7 +222,7 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     if experiment.result is None:
         return
     print(
-        "[bold][yellow]Model: {}[/yellow][/bold]".format(
+        "[bold]Model[/bold]: [yellow]{}[/yellow]".format(
             experiment.result.optimizations[0].original_model.name
         )
     )
