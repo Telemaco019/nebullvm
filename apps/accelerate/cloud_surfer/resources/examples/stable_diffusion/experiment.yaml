@@ -1,0 +1,10 @@
+description: "Description of the experiment"
+data_loader: resources/examples/basic_experiment/data_loader.py
+model_loader: resources/examples/basic_experiment/model_loader.py
+ignored_accelerators:
+  - T4
+  - A100
+  - TPU-v2-8
+additional_requirements:
+  - "torch==1.13.1"
+  - "diffusers==0.14.0"
