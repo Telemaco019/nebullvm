@@ -100,8 +100,11 @@ def get_throughput(latency: float, batch_size: int) -> float:
     return (1 / latency) * batch_size
 
 
-def is_diffusion_model(model):
-    from diffusers import UNet2DConditionModel
+def is_diffusion_model(model) -> bool:
+    try:
+        from diffusers import UNet2DConditionModel
+    except ImportError:
+        return False
 
     if is_diffusion_model_pipe(model):
         return True
