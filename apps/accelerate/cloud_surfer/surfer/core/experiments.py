@@ -548,7 +548,7 @@ class ExperimentService:
             ExperimentStatus.UNKNOWN,
         ]:
             result = await self._fetch_result(experiment_path)
-            if result is None:
+            if result is None and summary.status is ExperimentStatus.SUCCEEDED:
                 logger.warn(
                     f"experiment {experiment_name} is succeeded, "
                     "but results are missing"
