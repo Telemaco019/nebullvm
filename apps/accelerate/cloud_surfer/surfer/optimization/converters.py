@@ -3,6 +3,7 @@ from typing import Optional
 
 from surfer.common import schemas
 from surfer.computing.models import VMProvider
+from surfer.computing.schemas import HardwareInfo, VMInfo
 from surfer.optimization.models import (
     OptimizedModel,
     OriginalModel,
@@ -44,16 +45,12 @@ class HardwareSetupConverter:
     @staticmethod
     def to_hw_info_schema(
         h: HardwareSetup,
-        vm_size: str,
-        vm_provider: VMProvider,
-    ) -> schemas.HardwareInfo:
-        return schemas.HardwareInfo(
+    ) -> HardwareInfo:
+        return HardwareInfo(
             cpu=h.cpu,
             operating_system=h.operating_system,
             memory_gb=h.memory_gb,
             accelerator=h.gpu,
-            vm_size=vm_size,
-            vm_provider=vm_provider.value,
         )
 
 
@@ -61,7 +58,7 @@ class InferenceResultConverter:
     @staticmethod
     def to_optimization_result(
         res: OptimizeInferenceResult,
-        vm_size: str,
+        vm_sku: str,
         vm_provider: VMProvider,
         optimized_model_path: Optional[Path] = None,
     ) -> schemas.OptimizationResult:
@@ -72,8 +69,11 @@ class InferenceResultConverter:
         # Convert hw setup
         hw_info = HardwareSetupConverter.to_hw_info_schema(
             res.hardware_setup,
-            vm_size=vm_size,
-            vm_provider=vm_provider,
+        )
+        vm_info = VMInfo(
+            hardware_info=hw_info,
+            sku=vm_sku,
+            provider=vm_provider.value,
         )
         # Extract best model
         if res.optimized_model is not None:
@@ -83,13 +83,13 @@ class InferenceResultConverter:
             )
         else:
             return schemas.OptimizationResult(
-                hardware_info=hw_info,
+                vm_info=vm_info,
                 optimized_model=None,
                 original_model=original_model_desc,
             )
         # Return result
         return schemas.OptimizationResult(
-            hardware_info=hw_info,
+            vm_info=vm_info,
             optimized_model=optimized_model_desc,
             original_model=original_model_desc,
             latency_improvement_rate=res.latency_improvement_rate,

@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 from surfer import ModelLoader, DataLoader, ModelEvaluator
 from surfer.common import schemas
 from surfer.computing.clusters import Accelerator, ClusterNode
+from surfer.computing.schemas import VMInfo, HardwareInfo, VMPricing
 from surfer.core.orchestrators import RunConfig, RayOrchestrator
 from tests import _get_assets_path
 
@@ -111,7 +112,7 @@ class TestRayOrchestrator(unittest.TestCase):
             ClusterNode(
                 vm_size="",
                 accelerator=Accelerator.NVIDIA_TESLA_K80,
-            )
+            ),
         ]
         mocked_ray_cluster.get_nodes.return_value = nodes
         orchestrator = RayOrchestrator(
@@ -141,12 +142,22 @@ class TestRayOrchestrator(unittest.TestCase):
         )
         results = [
             schemas.OptimizationResult(
-                hardware_info=schemas.HardwareInfo(
-                    cpu="",
-                    operating_system="",
-                    memory_gb=0,
-                    vm_size="",
-                    vm_provider="azure",
+                vm_info=VMInfo(
+                    sku="Standard_NC6",
+                    provider="azure",
+                    pricing=VMPricing(
+                        currency="USD",
+                        region="westus",
+                        price_hr=1.1,
+                        price_hr_spot=1.2,
+                        price_hr_1yr=2.3,
+                        price_hr_3yr=3.5,
+                    ),
+                    hardware_info=HardwareInfo(
+                        cpu="",
+                        operating_system="",
+                        memory_gb=0,
+                    ),
                 ),
                 original_model=schemas.OriginalModelDescriptor(
                     name="test",
@@ -157,12 +168,22 @@ class TestRayOrchestrator(unittest.TestCase):
                 ),
             ),
             schemas.OptimizationResult(
-                hardware_info=schemas.HardwareInfo(
-                    cpu="",
-                    operating_system="",
-                    memory_gb=0,
-                    vm_size="",
-                    vm_provider="azure",
+                vm_info=VMInfo(
+                    sku="Standard_NC6",
+                    provider="azure",
+                    pricing=VMPricing(
+                        currency="USD",
+                        region="westus",
+                        price_hr=1.1,
+                        price_hr_spot=1.2,
+                        price_hr_1yr=2.3,
+                        price_hr_3yr=3.5,
+                    ),
+                    hardware_info=HardwareInfo(
+                        cpu="",
+                        operating_system="",
+                        memory_gb=0,
+                    ),
                 ),
                 original_model=schemas.OriginalModelDescriptor(
                     name="test",

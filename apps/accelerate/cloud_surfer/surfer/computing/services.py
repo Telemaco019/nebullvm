@@ -1,5 +1,6 @@
 import abc
 
+from surfer.computing import schemas
 from surfer.computing.models import VMPricingInfo
 
 
@@ -11,7 +12,7 @@ class PricingService(abc.ABC):
         region: str,
         currency: str = "USD",
         **kwargs,
-    ) -> VMPricingInfo:
+    ) -> schemas.VMPricing:
         """
         Get pricing information for a given VM size in a certain region.
 

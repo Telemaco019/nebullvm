@@ -53,9 +53,7 @@ class TestHardwareSetupConverter(unittest.TestCase):
             memory_gb=0,
             gpu="",
         )
-        res = converters.HardwareSetupConverter.to_hw_info_schema(
-            h, vm_size="test", vm_provider=VMProvider.AZURE
-        )
+        res = converters.HardwareSetupConverter.to_hw_info_schema(h)
         self.assertIsNotNone(res)
 
 
@@ -79,7 +77,7 @@ class TestInferenceResultConverter(unittest.TestCase):
         )
         res = converters.InferenceResultConverter.to_optimization_result(
             res=o,
-            vm_size="test",
+            vm_sku="test",
             vm_provider=VMProvider.AZURE,
         )
         self.assertIsNotNone(res)
@@ -111,7 +109,7 @@ class TestInferenceResultConverter(unittest.TestCase):
         )
         res = converters.InferenceResultConverter.to_optimization_result(
             res=o,
-            vm_size="test",
+            vm_sku="test",
             vm_provider=VMProvider.AZURE,
             optimized_model_path=Path("/tmp/invalid"),
         )

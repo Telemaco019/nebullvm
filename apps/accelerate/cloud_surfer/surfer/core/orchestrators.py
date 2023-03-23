@@ -165,7 +165,7 @@ class InferenceOptimizationTask:
         storage_config: StorageConfig,
         results_dir: Path,
         run_config: RunConfig,
-        vm_size: str,
+        vm_sku: str,
         vm_provider: VMProvider,
     ) -> schemas.OptimizationResult:
         # Run inference optimization
@@ -178,7 +178,7 @@ class InferenceOptimizationTask:
             optimized_model_path = InferenceOptimizationTask._upload_model(
                 storage_config,
                 results_dir,
-                vm_size,
+                vm_sku,
                 res.optimized_model,
             )
         else:
@@ -186,7 +186,7 @@ class InferenceOptimizationTask:
         # Return result
         return converters.InferenceResultConverter.to_optimization_result(
             res,
-            vm_size,
+            vm_sku,
             vm_provider,
             optimized_model_path,
         )

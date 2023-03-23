@@ -11,7 +11,8 @@ from pydantic.error_wrappers import ValidationError
 from nebullvm.config import DEFAULT_METRIC_DROP_THS
 from surfer import storage
 from surfer.common import constants
-from surfer.computing.models import VMProvider, Accelerator
+from surfer.computing.models import Accelerator
+from surfer.computing.schemas import VMInfo
 from surfer.storage.models import StorageConfig, StorageProvider
 
 
@@ -45,19 +46,6 @@ class OptimizedModelDescriptor(ModelDescriptor):
     model_path: Path
 
 
-class HardwareInfo(BaseModel):
-    class Config:
-        frozen = True
-        extra = "forbid"
-
-    cpu: str
-    operating_system: str
-    memory_gb: int
-    vm_size: str
-    vm_provider: VMProvider
-    accelerator: Optional[str]
-
-
 class OptimizationResult(BaseModel):
     class Config:
         frozen = True
@@ -67,7 +55,7 @@ class OptimizationResult(BaseModel):
         }
         keep_untouched = (cached_property,)
 
-    hardware_info: HardwareInfo
+    vm_info: VMInfo
     optimized_model: Optional[OptimizedModelDescriptor]
     original_model: OriginalModelDescriptor
     latency_improvement_rate: Optional[float]

@@ -121,7 +121,7 @@ def _render_optimization_result(res: schemas.OptimizationResult):
         box=box.SIMPLE,
         header_style="bold white",
         title_style="italic yellow",
-        title=res.hardware_info.vm_size,
+        title=res.vm_info.sku,
         expand=True,
     )
     hw_table.add_column("Cloud Provider")
@@ -131,12 +131,12 @@ def _render_optimization_result(res: schemas.OptimizationResult):
     hw_table.add_column("Memory (GB)")
     hw_table.add_column("Operating System")
     hw_table.add_row(
-        res.hardware_info.vm_provider.value,
-        res.hardware_info.vm_size,
-        res.hardware_info.accelerator,
-        res.hardware_info.cpu,
-        str(res.hardware_info.memory_gb),
-        res.hardware_info.operating_system,
+        res.vm_info.provider.value,
+        res.vm_info.sku,
+        res.vm_info.hardware_info.accelerator,
+        res.vm_info.hardware_info.cpu,
+        str(res.vm_info.hardware_info.memory_gb),
+        res.vm_info.hardware_info.operating_system,
     )
     print(hw_table)
 
@@ -240,8 +240,8 @@ def _render_experiment_summary(experiment: ExperimentDetails):
         if o.optimized_model is None:
             continue
         results_summary_table.add_row(
-            o.hardware_info.vm_size,
-            o.hardware_info.accelerator,
+            o.vm_info.sku,
+            o.vm_info.hardware_info.accelerator,
             __format_float(
                 o.original_model.latency_ms,
                 o.optimized_model.latency_ms,
@@ -276,7 +276,7 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     else:
         print(
             lowest_latency.format(
-                experiment.result.lowest_latency.hardware_info.vm_size,
+                experiment.result.lowest_latency.vm_info.sku,
                 format_float(
                     experiment.result.lowest_latency.optimized_model.latency_ms,
                 ),
@@ -284,7 +284,7 @@ def _render_experiment_summary(experiment: ExperimentDetails):
         )
         print(
             lowest_cost.format(
-                experiment.result.optimizations[0].hardware_info.vm_size,
+                experiment.result.optimizations[0].vm_info.sku,
                 format_float(random.randint(1, 1000) / 1000),
             )
         )

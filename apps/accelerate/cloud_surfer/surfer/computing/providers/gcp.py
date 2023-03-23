@@ -1,4 +1,4 @@
-from surfer.computing.models import VMPricingInfo
+from surfer.computing import schemas
 from surfer.computing.services import PricingService
 
 
@@ -9,5 +9,5 @@ class GCPPricingService(PricingService):
         region: str,
         currency: str = "USD",
         **kwargs,
-    ) -> VMPricingInfo:
+    ) -> schemas.VMPricing:
         raise NotImplementedError

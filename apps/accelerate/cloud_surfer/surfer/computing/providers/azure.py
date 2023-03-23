@@ -8,7 +8,7 @@ from pydantic.main import BaseModel
 
 from surfer.common import constants
 from surfer.common.exceptions import InternalError
-from surfer.computing.models import VMPricingInfo
+from surfer.computing import schemas
 from surfer.computing.services import PricingService
 from surfer.log import logger
 
@@ -212,10 +212,10 @@ class _RetailPricingClient:
             )
         self._spot_resp = linux_vms[0]
 
-    async def get_pricing_info(
+    async def get_pricing(
         self,
         session: aiohttp.ClientSession,
-    ) -> VMPricingInfo:
+    ) -> schemas.VMPricing:
         try:
             await asyncio.gather(
                 self._fetch_consumption_pricing(session),
@@ -236,7 +236,7 @@ class _RetailPricingClient:
             if self._discounted_3yr_resp is not None:
                 hours = constants.HOURS_PER_YEAR * 3
                 price_hr_3yr = self._discounted_3yr_resp.price / hours
-            return VMPricingInfo(
+            return schemas.VMPricing(
                 sku=self._sku,
                 region=self._region,
                 currency=self._currency,
@@ -265,7 +265,7 @@ class AzurePricingService(PricingService):
         region: str,
         currency: str = "USD",
         **kwargs,
-    ) -> VMPricingInfo:
+    ) -> schemas.VMPricing:
         async with aiohttp.ClientSession() as session:
             client = _RetailPricingClient(
                 url=self.api_url,
@@ -273,4 +273,4 @@ class AzurePricingService(PricingService):
                 region=region,
                 currency=currency,
             )
-            return await client.get_pricing_info(session)
+            return await client.get_pricing(session)

@@ -9,10 +9,9 @@ from surfer.common.schemas import (
     ExperimentConfig,
     OptimizedModelDescriptor,
     OptimizationResult,
-    HardwareInfo,
     OriginalModelDescriptor,
 )
-from surfer.computing.models import VMProvider
+from surfer.computing.schemas import VMPricing, HardwareInfo, VMInfo
 from surfer.storage.models import StorageConfig, StorageProvider
 
 
@@ -41,12 +40,22 @@ def new_optimization_result(
     size_rate_improvement: Optional[float] = None,
 ) -> OptimizationResult:
     return OptimizationResult(
-        hardware_info=HardwareInfo(
-            cpu="",
-            operating_system="",
-            memory_gb=0,
-            vm_size="",
-            vm_provider=VMProvider.AZURE,
+        vm_info=VMInfo(
+            sku="Standard_NC6",
+            provider="azure",
+            pricing=VMPricing(
+                currency="USD",
+                region="westus",
+                price_hr=1.1,
+                price_hr_spot=1.2,
+                price_hr_1yr=2.3,
+                price_hr_3yr=3.5,
+            ),
+            hardware_info=HardwareInfo(
+                cpu="",
+                operating_system="",
+                memory_gb=0,
+            ),
         ),
         optimized_model=optimized_model,
         original_model=OriginalModelDescriptor(

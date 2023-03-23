@@ -12,7 +12,7 @@ from surfer.computing.providers.azure import (
 
 
 class TestAzurePricingService(unittest.IsolatedAsyncioTestCase):
-    @patch.object(_RetailPricingClient, "get_pricing_info")
+    @patch.object(_RetailPricingClient, "get_pricing")
     async def test_get_vm_pricing(self, mock):
         service = AzurePricingService()
         info = VMPricingInfo(
@@ -258,7 +258,7 @@ class TestRetailPricingClient(unittest.IsolatedAsyncioTestCase):
             "westus",
             "USD",
         )
-        await client.get_pricing_info(MagicMock())
+        await client.get_pricing(MagicMock())
         self.assertIsNone(client._consumption_resp)
         self.assertIsNone(client._spot_resp)
         self.assertIsNone(client._discounted_1yr_resp)
@@ -277,7 +277,7 @@ class TestRetailPricingClient(unittest.IsolatedAsyncioTestCase):
             "USD",
         )
         with self.assertRaises(InternalError):
-            await client.get_pricing_info(MagicMock())
+            await client.get_pricing(MagicMock())
 
     @patch.object(_RetailPricingClient, "_fetch_discount_pricing")
     @patch.object(_RetailPricingClient, "_fetch_consumption_pricing")
@@ -345,8 +345,7 @@ class TestRetailPricingClient(unittest.IsolatedAsyncioTestCase):
         consumption_mock.side_effect = _set_consumption_resp
         discount_mock.side_effect = _set_discount_resps
 
-        pricing_info = await client.get_pricing_info(MagicMock())
-        self.assertEqual(sku, pricing_info.sku)
+        pricing_info = await client.get_pricing(MagicMock())
         self.assertEqual(currency, pricing_info.currency)
         self.assertEqual(region, pricing_info.region)
         self.assertEqual(pricing_consumption, pricing_info.price_hr)
