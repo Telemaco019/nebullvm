@@ -83,11 +83,11 @@ class OptimizationResult(BaseModel):
             )
         return values
 
-    def get_original_cost_per_inference(self) -> float:
+    def get_original_cost_per_batch(self) -> float:
         inference_per_hr = 3600 * 1e3 / self.original_model.latency_ms
         return self.vm_info.pricing.price_hr / inference_per_hr
 
-    def get_optimized_cost_per_inference(self) -> float:
+    def get_optimized_cost_per_batch(self) -> float:
         inference_per_hr = 3600 * 1e3 / self.optimized_model.latency_ms
         return self.vm_info.pricing.price_hr / inference_per_hr
 
@@ -121,7 +121,7 @@ class ExperimentResult(BaseModel):
             return None
         return min(
             res,
-            key=lambda x: x.get_optimized_cost_per_inference(),
+            key=lambda x: x.get_optimized_cost_per_batch(),
         )
 
 

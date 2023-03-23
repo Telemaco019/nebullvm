@@ -21,6 +21,7 @@ from surfer.cli.commands.common import (
 from surfer.common import schemas, constants
 from surfer.common.exceptions import NotFoundError, InternalError
 from surfer.common.schemas import ExperimentConfig
+from surfer.computing.schemas import VMInfo
 from surfer.core.experiments import ExperimentDetails
 from surfer.core.experiments import SubmitExperimentRequest
 from surfer.log import logger
@@ -29,6 +30,55 @@ from surfer.log import logger
 def _new_experiment_service() -> surfer.core.experiments.ExperimentService:
     config = must_load_config()
     return surfer.core.experiments.new_experiment_service(config)
+
+
+class VMInfoTable(Table):
+    def __init__(self, vm_info: VMInfo, **kwargs):
+        super().__init__(
+            box=box.SIMPLE,
+            header_style="bold white",
+            title_style="italic yellow",
+            title=vm_info.sku,
+            expand=True,
+            **kwargs,
+        )
+        # Prepare pricing info
+        if vm_info.pricing is None:
+            region = constants.NOT_AVAILABLE_MSG
+            price = constants.NOT_AVAILABLE_MSG
+            price_1yr = constants.NOT_AVAILABLE_MSG
+            price_3yr = constants.NOT_AVAILABLE_MSG
+            price_spot = constants.NOT_AVAILABLE_MSG
+        else:
+            region = vm_info.pricing.region
+            price = format_float(vm_info.pricing.price_hr)
+            price_1yr = format_float(vm_info.pricing.price_hr_1yr)
+            price_3yr = format_float(vm_info.pricing.price_hr_3yr)
+            price_spot = format_float(vm_info.pricing.price_hr_spot)
+        self.add_column("Cloud Provider")
+        self.add_column("VM Size")
+        self.add_column("Accelerator")
+        self.add_column("CPU")
+        self.add_column("Memory (GB)")
+        self.add_column("Operating System")
+        self.add_column("Region")
+        self.add_column("Price ($/hour)")
+        self.add_column("Price-1yr ($/hour)")
+        self.add_column("Price-3yr ($/hour)")
+        self.add_column("Price-spot ($/hour)")
+        self.add_row(
+            vm_info.provider.value,
+            vm_info.sku,
+            vm_info.hardware_info.accelerator,
+            vm_info.hardware_info.cpu,
+            str(vm_info.hardware_info.memory_gb),
+            vm_info.hardware_info.operating_system,
+            region,
+            price,
+            price_1yr,
+            price_3yr,
+            price_spot,
+        )
 
 
 async def list_experiments():
@@ -115,29 +165,9 @@ async def stop_experiment(name: str):
 def _render_optimization_result(res: schemas.OptimizationResult):
     print(Rule(style="bold white"))
 
-    # Hardware info
-    hw_table = Table(
-        box=box.SIMPLE,
-        header_style="bold white",
-        title_style="italic yellow",
-        title=res.vm_info.sku,
-        expand=True,
-    )
-    hw_table.add_column("Cloud Provider")
-    hw_table.add_column("VM Size")
-    hw_table.add_column("Accelerator")
-    hw_table.add_column("CPU")
-    hw_table.add_column("Memory (GB)")
-    hw_table.add_column("Operating System")
-    hw_table.add_row(
-        res.vm_info.provider.value,
-        res.vm_info.sku,
-        res.vm_info.hardware_info.accelerator,
-        res.vm_info.hardware_info.cpu,
-        str(res.vm_info.hardware_info.memory_gb),
-        res.vm_info.hardware_info.operating_system,
-    )
-    print(hw_table)
+    # VM info
+    vm_info_table = VMInfoTable(res.vm_info)
+    print(vm_info_table)
 
     # Models
     table = Table(
@@ -150,11 +180,11 @@ def _render_optimization_result(res: schemas.OptimizationResult):
     table.add_column("Backend")
     table.add_column("Technique")
     table.add_column(
-        "Latency (ms)",
+        "Latency (ms/batch)",
         footer=format_rate(res.latency_improvement_rate),
     )
     table.add_column(
-        "Throughput (batch/sec)",
+        "Throughput (data/sec)",
         footer=format_rate(res.throughput_improvement_rate),
     )
     table.add_column(
@@ -236,10 +266,10 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     results_summary_table.add_column("")
     results_summary_table.add_column("Accelerator")
     results_summary_table.add_column("Region")
-    results_summary_table.add_column("$/hr")
-    results_summary_table.add_column("Latency (ms)")
-    results_summary_table.add_column("Throughput (batch/sec)")
-    results_summary_table.add_column("$/inference")
+    results_summary_table.add_column("Price ($/hour)")
+    results_summary_table.add_column("Latency (ms/batch)")
+    results_summary_table.add_column("Throughput (data/sec)")
+    results_summary_table.add_column("Cost ($/batch)")
     for o in experiment.result.optimizations:
         if o.optimized_model is None:
             continue
@@ -257,8 +287,8 @@ def _render_experiment_summary(experiment: ExperimentDetails):
                 o.optimized_model.throughput,
             ),
             __format_str(
-                "{:.2E}".format(o.get_original_cost_per_inference()),
-                "{:.2E}".format(o.get_optimized_cost_per_inference()),
+                "{:.2E}".format(o.get_original_cost_per_batch()),
+                "{:.2E}".format(o.get_optimized_cost_per_batch()),
             ),
         )
     print(results_summary_table)
@@ -267,9 +297,7 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     lowest_latency_template = (
         "[bold]Lowest latency[/bold]: [green]{}[/green] ({}ms, {}$/hr)"
     )
-    lowest_cost_template = (
-        "[bold]Lowest cost[/bold]: [green]{}[/green] ({}ms, {}$/hr)"
-    )
+    lowest_cost_template = "[bold]Lowest cost[/bold]: [green]{}[/green] ({}ms, {}$/hr)"
     if experiment.result.lowest_latency is None:
         print(
             lowest_latency_template.format(

@@ -27,7 +27,9 @@ def must_load_config() -> SurferConfig:
     return config
 
 
-def format_float(f: float, precision=2) -> str:
+def format_float(f: Optional[float], precision=2) -> str:
+    if f is None:
+        return constants.NOT_AVAILABLE_MSG
     return f"{f:.{precision}f}"
 
 
