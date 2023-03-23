@@ -7,7 +7,6 @@ from typing import Any, Optional
 
 import cpuinfo
 import psutil
-from diffusers import UNet2DConditionModel
 
 from nebullvm.operations.conversions.converters import (
     PytorchConverter,
@@ -102,6 +101,8 @@ def get_throughput(latency: float, batch_size: int) -> float:
 
 
 def is_diffusion_model(model):
+    from diffusers import UNet2DConditionModel
+
     if is_diffusion_model_pipe(model):
         return True
     if isinstance(model, (UNet2DConditionModel, DiffusionUNetWrapper)):
