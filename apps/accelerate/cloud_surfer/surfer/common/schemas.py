@@ -83,6 +83,14 @@ class OptimizationResult(BaseModel):
             )
         return values
 
+    def get_original_cost_per_inference(self) -> float:
+        inference_per_hr = 3600 * 1e3 / self.original_model.latency_ms
+        return self.vm_info.pricing.price_hr / inference_per_hr
+
+    def get_optimized_cost_per_inference(self) -> float:
+        inference_per_hr = 3600 * 1e3 / self.optimized_model.latency_ms
+        return self.vm_info.pricing.price_hr / inference_per_hr
+
 
 class ExperimentResult(BaseModel):
     optimizations: List[OptimizationResult]
@@ -104,6 +112,16 @@ class ExperimentResult(BaseModel):
         return min(
             res,
             key=lambda x: x.optimized_model.latency_seconds,
+        )
+
+    @cached_property
+    def lowest_cost(self) -> Optional[OptimizationResult]:
+        res = self.__results_with_optimized_model()
+        if len(res) == 0:
+            return None
+        return min(
+            res,
+            key=lambda x: x.get_optimized_cost_per_inference(),
         )
 
 

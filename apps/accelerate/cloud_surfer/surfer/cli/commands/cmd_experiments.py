@@ -1,4 +1,3 @@
-import random
 from pathlib import Path
 
 import typer
@@ -204,10 +203,13 @@ def _render_experiment_results(experiment: ExperimentDetails):
 
 
 def _render_experiment_summary(experiment: ExperimentDetails):
-    def __format_float(original: float, optimized: float) -> str:
+    def __format_float(original: float, optimized: float, **kwargs) -> str:
         return "Original: {}\nOptimized: {}".format(
-            format_float(original), format_float(optimized)
+            format_float(original, **kwargs), format_float(optimized, **kwargs)
         )
+
+    def __format_str(original: str, optimized: str) -> str:
+        return "Original: {}\nOptimized: {}".format(original, optimized)
 
     print(Rule("Summary"))
     print("[bold]Experiment name[/bold]: {}".format(experiment.name))
@@ -233,15 +235,19 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     )
     results_summary_table.add_column("")
     results_summary_table.add_column("Accelerator")
+    results_summary_table.add_column("Region")
+    results_summary_table.add_column("$/hr")
     results_summary_table.add_column("Latency (ms)")
     results_summary_table.add_column("Throughput (batch/sec)")
-    results_summary_table.add_column("Cost ($/inference)")
+    results_summary_table.add_column("$/inference")
     for o in experiment.result.optimizations:
         if o.optimized_model is None:
             continue
         results_summary_table.add_row(
             o.vm_info.sku,
             o.vm_info.hardware_info.accelerator,
+            o.vm_info.pricing.region,
+            format_float(o.vm_info.pricing.price_hr),
             __format_float(
                 o.original_model.latency_ms,
                 o.optimized_model.latency_ms,
@@ -250,16 +256,16 @@ def _render_experiment_summary(experiment: ExperimentDetails):
                 o.original_model.throughput,
                 o.optimized_model.throughput,
             ),
-            __format_float(
-                random.randint(1, 1000) / 1000,
-                random.randint(1, 1000) / 1000,
+            __format_str(
+                "{:.2E}".format(o.get_original_cost_per_inference()),
+                "{:.2E}".format(o.get_optimized_cost_per_inference()),
             ),
         )
     print(results_summary_table)
 
     # Best results
     lowest_latency = "[bold]Lowest latency[/bold]: [green]{}[/green] ({} ms)"
-    lowest_cost = "[bold]Lowest cost[/bold]: [green]{}[/green] ({} $/inference)"
+    lowest_cost = "[bold]Lowest cost[/bold]: [green]{}[/green] ({} $/hr)"
     if experiment.result.lowest_latency is None:
         print(
             lowest_latency.format(
@@ -284,8 +290,8 @@ def _render_experiment_summary(experiment: ExperimentDetails):
         )
         print(
             lowest_cost.format(
-                experiment.result.optimizations[0].vm_info.sku,
-                format_float(random.randint(1, 1000) / 1000),
+                experiment.result.lowest_cost.vm_info.sku,
+                experiment.result.lowest_cost.vm_info.pricing.price_hr,
             )
         )
 
