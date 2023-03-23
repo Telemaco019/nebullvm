@@ -1,15 +1,16 @@
 import asyncio
-from typing import List
+from typing import List, Optional
 
 import aiohttp
 from pydantic.config import Extra
 from pydantic.fields import Field
 from pydantic.main import BaseModel
 
-from surfer.common.exceptions import NotFoundError
+from surfer.common import constants
+from surfer.common.exceptions import InternalError
 from surfer.computing.models import VMPricingInfo
 from surfer.computing.services import PricingService
-from surfer.log import logger, configure_debug_mode
+from surfer.log import logger
 
 RETAIL_PRICES_API_VERSION = "2023-01-01-preview"
 RETAIL_PRICES_API_URL = (
@@ -19,12 +20,13 @@ RETAIL_PRICES_API_URL = (
 )
 
 
-class _RetainPriceRespItem(BaseModel):
+class _RetailPriceRespItem(BaseModel):
     price: float = Field(..., alias="retailPrice")
     sku: str = Field(..., alias="skuName")
     region: str = Field(..., alias="armRegionName")
     currency: str = Field(..., alias="currencyCode")
     product_name: str = Field(..., alias="productName")
+    reservation_term: Optional[str] = Field(None, alias="reservationTerm")
 
     class Config:
         extras = Extra.ignore
@@ -34,14 +36,14 @@ class _RetainPriceRespItem(BaseModel):
 
 
 class _RetailPricesResp(BaseModel):
-    items: List[_RetainPriceRespItem] = Field(..., alias="Items")
+    items: List[_RetailPriceRespItem] = Field(..., alias="Items")
     currency: str = Field(..., alias="BillingCurrency")
 
     class Config:
         extras = Extra.ignore
 
     @property
-    def linux_items(self) -> List[_RetainPriceRespItem]:
+    def linux_items(self) -> List[_RetailPriceRespItem]:
         return [item for item in self.items if not item.is_windows()]
 
 
@@ -79,67 +81,183 @@ class _RetailPricesQuery:
         return self._query
 
 
-class AzurePricingService(PricingService):
-    def __init__(self, api_url: str = RETAIL_PRICES_API_URL):
-        self.api_url = api_url
+class _RetailPricingClient:
+    def __init__(self, url: str, sku: str, region: str, currency: str):
+        self._url = url
+        self._sku = sku
+        self._region = region
+        self._currency = currency
+        # Responses
+        self._consumption_resp: Optional[_RetailPriceRespItem] = None
+        self._spot_resp: Optional[_RetailPriceRespItem] = None
+        self._discounted_1yr_resp: Optional[_RetailPriceRespItem] = None
+        self._discounted_3yr_resp: Optional[_RetailPriceRespItem] = None
 
     def _get_url(self, query: str):
-        return "{}&{}".format(self.api_url, query)
+        return "{}&{}".format(self._url, query)
 
-    async def _get_spot_price(
+    async def __call__(
         self,
         session: aiohttp.ClientSession,
-        sku: str,
-        region: str,
-        currency: str,
-    ) -> float:
-        consumption = (
-            _RetailPricesQuery()
-            .with_price_type("Consumption")
-            .with_sku(sku)
-            .with_region(region)
-            .with_currency(currency)
-            .get_query()
-        )
-        reservation = (
-            _RetailPricesQuery()
-            .with_price_type("Reservation")
-            .with_sku(sku)
-            .with_region(region)
-            .with_currency(currency)
-            .get_query()
-        )
-        query = (
-            _RetailPricesQuery()
-            .with_price_type("Consumption")
-            .with_sku(sku)
-            .with_spot_priority()
-            .with_region(region)
-            .with_currency(currency)
-            .get_query()
-        )
-        url = self._get_url(query)
+        url: str,
+    ) -> _RetailPricesResp:
         logger.debug("GET > {}".format(url))
         async with session.get(url) as resp:
             resp.raise_for_status()
             resp_dict = await resp.json()
-        resp_obj = _RetailPricesResp.parse_obj(resp_dict)
-        linux_vms = resp_obj.linux_items
+        return _RetailPricesResp.parse_obj(resp_dict)
+
+    async def _fetch_discount_pricing(self, session: aiohttp.ClientSession):
+        reservation = (
+            _RetailPricesQuery()
+            .with_price_type("Reservation")
+            .with_sku(self._sku)
+            .with_region(self._region)
+            .with_currency(self._currency)
+            .get_query()
+        )
+        resp = await self(session, self._get_url(reservation))
+        linux_vms = resp.linux_items
         if len(linux_vms) == 0:
-            raise NotFoundError(
-                "no spot price found for {} - {}".format(
-                    sku,
-                    region,
+            logger.warn(
+                "no reservation pricing found for {} - {}".format(
+                    self._sku,
+                    self._region,
                 ),
             )
+            return
+        for vm in linux_vms:
+            if vm.reservation_term == "1 Year":
+                self._discounted_1yr_resp = vm
+            elif vm.reservation_term == "3 Years":
+                self._discounted_3yr_resp = vm
+        if self._discounted_1yr_resp is None:
+            logger.warn(
+                "no 1 year reservation pricing found for {} - {}".format(
+                    self._sku,
+                    self._region,
+                ),
+            )
+        if self._discounted_3yr_resp is None:
+            logger.warn(
+                "no 3 year reservation pricing found for {} - {}".format(
+                    self._sku,
+                    self._region,
+                ),
+            )
+
+    async def _fetch_consumption_pricing(self, session: aiohttp.ClientSession):
+        def __sku_is_spot(i: _RetailPriceRespItem) -> bool:
+            if "spot" in i.sku.lower():
+                return True
+            if "priority" in i.sku.lower():
+                return True
+            return False
+
+        query = (
+            _RetailPricesQuery()
+            .with_price_type("Consumption")
+            .with_sku(self._sku)
+            .with_region(self._region)
+            .with_currency(self._currency)
+            .get_query()
+        )
+        resp = await self(session, self._get_url(query))
+        linux_vms = list(
+            filter(lambda x: not __sku_is_spot(x), resp.linux_items),
+        )
+        if len(linux_vms) == 0:
+            logger.warn(
+                "no consumption price found for {} - {}".format(
+                    self._sku,
+                    self._region,
+                ),
+            )
+            return
+        if len(linux_vms) > 1:
+            logger.warn(
+                "more than one consumption price found for {} - {}".format(
+                    self._sku,
+                    self._region,
+                )
+            )
+        self._consumption_resp = linux_vms[0]
+
+    async def _fetch_spot_pricing(self, session: aiohttp.ClientSession):
+        query = (
+            _RetailPricesQuery()
+            .with_price_type("Consumption")
+            .with_sku(self._sku)
+            .with_spot_priority()
+            .with_region(self._region)
+            .with_currency(self._currency)
+            .get_query()
+        )
+        resp = await self(session, self._get_url(query))
+        linux_vms = resp.linux_items
+        if len(linux_vms) == 0:
+            logger.warn(
+                "no spot price found for {} - {}".format(
+                    self._sku,
+                    self._region,
+                ),
+            )
+            return
         if len(linux_vms) > 1:
             logger.warn(
                 "more than one spot price found for {} - {}".format(
-                    sku,
-                    region,
+                    self._sku,
+                    self._region,
                 )
             )
-        return linux_vms[0].price
+        self._spot_resp = linux_vms[0]
+
+    async def get_pricing_info(
+        self,
+        session: aiohttp.ClientSession,
+    ) -> VMPricingInfo:
+        try:
+            await asyncio.gather(
+                self._fetch_consumption_pricing(session),
+                self._fetch_spot_pricing(session),
+                self._fetch_discount_pricing(session),
+            )
+            price_hr = None
+            spot_price_hr = None
+            price_hr_1yr = None
+            price_hr_3yr = None
+            if self._consumption_resp is not None:
+                price_hr = self._consumption_resp.price
+            if self._spot_resp is not None:
+                spot_price_hr = self._spot_resp.price
+            if self._discounted_1yr_resp is not None:
+                hours = constants.HOURS_PER_YEAR
+                price_hr_1yr = self._discounted_1yr_resp.price / hours
+            if self._discounted_3yr_resp is not None:
+                hours = constants.HOURS_PER_YEAR * 3
+                price_hr_3yr = self._discounted_3yr_resp.price / hours
+            return VMPricingInfo(
+                sku=self._sku,
+                region=self._region,
+                currency=self._currency,
+                price_hr=price_hr,
+                price_hr_spot=spot_price_hr,
+                price_hr_1yr=price_hr_1yr,
+                price_hr_3yr=price_hr_3yr,
+            )
+        except Exception as e:
+            raise InternalError(
+                "failed to fetch pricing info for {} - {}: {}".format(
+                    self._sku,
+                    self._region,
+                    e,
+                )
+            )
+
+
+class AzurePricingService(PricingService):
+    def __init__(self, api_url: str = RETAIL_PRICES_API_URL):
+        self.api_url = api_url
 
     async def get_vm_pricing(
         self,
@@ -149,23 +267,10 @@ class AzurePricingService(PricingService):
         **kwargs,
     ) -> VMPricingInfo:
         async with aiohttp.ClientSession() as session:
-            return await self._get_spot_price(
-                session,
+            client = _RetailPricingClient(
+                url=self.api_url,
                 sku=vm_size,
                 region=region,
                 currency=currency,
             )
-
-
-async def main():
-    configure_debug_mode(True)
-    service = AzurePricingService()
-    res = await service.get_vm_pricing(
-        vm_size="Standard_D2s_v3",
-        region="eastus",
-    )
-    print(res)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+            return await client.get_pricing_info(session)

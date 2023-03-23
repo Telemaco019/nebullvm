@@ -1,5 +1,6 @@
 import enum
 from dataclasses import dataclass
+from typing import Optional
 
 
 class VMProvider(str, enum.Enum):
@@ -37,4 +38,10 @@ class Accelerator(str, enum.Enum):
 
 @dataclass(frozen=True)
 class VMPricingInfo:
-    pass
+    currency: str
+    region: str
+    sku: str
+    price_hr: Optional[float]
+    price_hr_spot: Optional[float]
+    price_hr_1yr: Optional[float]
+    price_hr_3yr: Optional[float]

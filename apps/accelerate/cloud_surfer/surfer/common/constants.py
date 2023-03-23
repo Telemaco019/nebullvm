@@ -13,6 +13,7 @@ SURFER_CONFIG_FILE_NAME = "config.yaml"
 # Datetime
 INTERNAL_DATETIME_FORMAT = "%Y-%m-%d-%H:%M:%S-%f"
 DISPLAYED_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+HOURS_PER_YEAR = 8760
 
 # Storage
 EXPERIMENTS_STORAGE_PREFIX = "nebuly/surfer/experiments"
