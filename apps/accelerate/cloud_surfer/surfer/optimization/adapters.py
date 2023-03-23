@@ -10,9 +10,7 @@ from nebullvm.operations.inference_learners.base import (
     LearnerMetadata,
 )
 from nebullvm.operations.optimizations.base import Optimizer
-from nebullvm.optional_modules.diffusers import (
-    DiffusionPipeline,
-)
+from nebullvm.optional_modules.diffusers import StableDiffusionPipeline
 from nebullvm.optional_modules.torch import torch
 from nebullvm.tools.base import Device, DeviceType
 from nebullvm.tools.diffusers import (
@@ -45,20 +43,22 @@ class ModelAdapter(abc.ABC):
 
 # TODO: move to Nebullvm
 class DiffusionInferenceLearner(BaseInferenceLearner):
-    def __init__(self, pipeline: DiffusionPipeline):
+    name = "StableDiffusion"
+
+    def __init__(self, pipeline: StableDiffusionPipeline):
         self.pipeline = pipeline
 
     def __call__(self, *args, **kwargs):
         return self.pipeline(*args, **kwargs)
 
     def tensor2list(self, tensor: Any) -> List:
-        pass
+        raise NotImplementedError()
 
     def _read_file(self, input_file: str) -> Any:
-        pass
+        raise NotImplementedError()
 
     def _save_file(self, prediction: Any, output_file: str):
-        pass
+        raise NotImplementedError()
 
     def run(self, *args, **kwargs) -> Any:
         self.pipeline(*args, **kwargs)
@@ -106,8 +106,13 @@ class DiffusionInferenceLearner(BaseInferenceLearner):
 
 # TODO: move to Nebullvm
 class DiffusionAdapter(ModelAdapter):
-    def __init__(self, original_pipeline: Any, data: List, device: Device):
-        self.original_pipeline = original_pipeline
+    def __init__(
+        self,
+        original_pipeline: StableDiffusionPipeline,
+        data: List,
+        device: Device,
+    ):
+        self.original_pipeline = copy.deepcopy(original_pipeline)
         self.original_data = data
         self.device = device
         self.__adapted = False
@@ -155,12 +160,12 @@ class DiffusionAdapter(ModelAdapter):
                 pipe.enable_xformers_memory_efficient_attention()
             except Exception:
                 pass
-        pipeline = postprocess_diffusers(
+        pipe = postprocess_diffusers(
             model,
-            self.original_pipeline,
+            pipe,
             self.device,
         )
-        return DiffusionInferenceLearner(pipeline)
+        return DiffusionInferenceLearner(pipe)
 
 
 # TODO: move to Nebullvm
