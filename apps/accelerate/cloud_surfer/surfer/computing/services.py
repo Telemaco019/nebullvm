@@ -1,14 +1,31 @@
 import abc
 
 from surfer.computing import schemas
-from surfer.computing.models import VMPricingInfo
+from surfer.computing.models import VMPricingInfo, VMProvider
 
 
 class PricingService(abc.ABC):
+    @classmethod
+    def from_provider(cls, provider: VMProvider, **kwargs) -> "PricingService":
+        if provider is VMProvider.AWS:
+            from surfer.computing.providers import aws
+
+            return aws.AWSPricingService()
+        if provider is VMProvider.GCP:
+            from surfer.computing.providers import gcp
+
+            return gcp.GCPPricingService()
+        if provider is VMProvider.AZURE:
+            from surfer.computing.providers import azure
+
+            return azure.AzurePricingService(**kwargs)
+
+        raise ValueError(f"provider {provider} is not supported")
+
     @abc.abstractmethod
-    def get_vm_pricing(
+    async def get_vm_pricing(
         self,
-        vm_size: str,
+        vm_sku: str,
         region: str,
         currency: str = "USD",
         **kwargs,
@@ -18,7 +35,7 @@ class PricingService(abc.ABC):
 
         Parameters
         ----------
-        vm_size: str
+        vm_sku: str
             The VM size (e.g. the SKU) to get pricing information for.
             The format of the VM size depends on the specific cloud provider.
             Examples:

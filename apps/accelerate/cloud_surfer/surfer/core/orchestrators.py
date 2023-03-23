@@ -14,10 +14,13 @@ from nebullvm.tools.base import DeviceType, Device
 from nebullvm.tools.utils import gpu_is_available
 from surfer import ModelLoader, DataLoader, ModelEvaluator
 from surfer.common import schemas, constants
+from surfer.common.exceptions import InternalError
 from surfer.common.schemas import SurferConfig
 from surfer.computing.clusters import ClusterNode
 from surfer.computing.clusters import RayCluster, Accelerator
 from surfer.computing.models import VMProvider
+from surfer.computing.schemas import VMPricing
+from surfer.computing.services import PricingService
 from surfer.log import logger
 from surfer.optimization import converters
 from surfer.optimization.models import OptimizeInferenceResult, OptimizedModel
@@ -118,11 +121,7 @@ class InferenceOptimizationTask:
         model: OptimizedModel,
     ) -> Path:
         with TemporaryDirectory() as tmp:
-            dir_path = Path(
-                tmp,
-                # Fixme: BaseInferenceLearner should expose property "name"
-                model.inference_learner.name,
-            )
+            dir_path = Path(tmp, model.inference_learner.name)
             model.inference_learner.save(dir_path)
             client = StorageClient.from_config(storage_config)
             dest_path = Path(
@@ -165,45 +164,61 @@ class InferenceOptimizationTask:
         storage_config: StorageConfig,
         results_dir: Path,
         run_config: RunConfig,
-        vm_sku: str,
+        node: ClusterNode,
         vm_provider: VMProvider,
     ) -> schemas.OptimizationResult:
         # Run inference optimization
         logger.info("starting inference optimization")
-        res = InferenceOptimizationTask._optimize_inference(run_config)
+        inference_res = InferenceOptimizationTask._optimize_inference(
+            run_config,
+        )
         # Extract best model (if present) and upload it to storage
         optimized_model_path: Optional[Path] = None
-        if res.optimized_model is not None:
+        if inference_res.optimized_model is not None:
             logger.info("saving inference learner")
             optimized_model_path = InferenceOptimizationTask._upload_model(
                 storage_config,
                 results_dir,
-                vm_sku,
-                res.optimized_model,
+                node.vm_size,
+                inference_res.optimized_model,
             )
         else:
             logger.warning("optimization didn't produce any inference learner")
-        # Return result
-        return converters.InferenceResultConverter.to_optimization_result(
-            res,
-            vm_sku,
+        # Prepare result
+        result = converters.InferenceResultConverter.to_optimization_result(
+            inference_res,
+            node.vm_size,
             vm_provider,
             optimized_model_path,
         )
+        # Get pricing info
+        pricing_service = PricingService.from_provider(vm_provider)
+        pricing: Optional[VMPricing] = None
+        try:
+            pricing = asyncio.run(
+                pricing_service.get_vm_pricing(
+                    vm_sku=node.vm_size,
+                    region=node.region,
+                )
+            )
+        except InternalError as e:
+            logger.error("failed to get pricing info", e)
+        result.vm_info.pricing = pricing
+        return result
 
     def run(
         self,
         storage_config: StorageConfig,
         results_dir: Path,
         run_config: RunConfig,
-        vm_size: str,
+        node: ClusterNode,
         vm_provider: VMProvider,
     ) -> ray.ObjectRef:
         return self._run.remote(
             storage_config,
             results_dir,
             run_config,
-            vm_size,
+            node,
             vm_provider,
         )
 
@@ -255,7 +270,7 @@ class RayOrchestrator:
                 storage_config=self.surfer_config.storage,
                 results_dir=results_dir,
                 run_config=config,
-                vm_size=t.node.vm_size,
+                node=t.node,
                 vm_provider=self.cluster.provider,
             )
             objs.append(o)

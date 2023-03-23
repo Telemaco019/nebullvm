@@ -11,6 +11,7 @@ from surfer.computing.models import Accelerator, VMProvider
 @dataclass
 class ClusterNode:
     vm_size: str
+    region: str
     accelerator: Accelerator
 
 
@@ -18,9 +19,10 @@ class RayCluster:
     def __init__(self, config: dict):
         self.config = config
         self.provider = self.__get_provider(config)
+        self.region = self.__get_region(config)
 
     @staticmethod
-    def __get_provider(config) -> VMProvider:
+    def __get_provider(config: dict) -> VMProvider:
         provider = config.get("provider", None)
         if provider is None:
             raise ValueError("missing field 'provider' in cluster config")
@@ -28,6 +30,26 @@ class RayCluster:
         if provider_type is None:
             raise ValueError("missing field 'provider.type' in cluster config")
         return VMProvider(provider_type)
+
+    @staticmethod
+    def __get_region(config: dict):
+        try:
+            provider = config["provider"]
+        except KeyError:
+            raise ValueError("missing field 'provider' in cluster config")
+        try:
+            return provider["location"]  # azure
+        except KeyError:
+            pass
+        try:
+            return provider["region"]  # gcp
+        except KeyError:
+            pass
+        try:
+            return provider["availability_zone"]  # aws
+        except KeyError:
+            pass
+        raise ValueError("cluster config does not contain region info")
 
     @staticmethod
     def __get_instance_type(node_config: Dict[str, any]):
@@ -76,7 +98,12 @@ class RayCluster:
                     )
                 else:
                     instance_type = self.__get_instance_type(node_config)
-                nodes.append(ClusterNode(instance_type, accelerator))
+                node = ClusterNode(
+                    vm_size=instance_type,
+                    region=self.region,
+                    accelerator=accelerator,
+                )
+                nodes.append(node)
         return nodes
 
 

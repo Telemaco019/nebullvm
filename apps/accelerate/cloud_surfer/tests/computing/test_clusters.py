@@ -30,6 +30,7 @@ class TestRayCluster(unittest.TestCase):
             config={
                 "provider": {
                     "type": "azure",
+                    "location": "westeurope",
                 },
                 "available_node_types": {},
             }
@@ -39,7 +40,10 @@ class TestRayCluster(unittest.TestCase):
     def test_get_nodes__invalid_node_config(self):
         cluster = RayCluster(
             config={
-                "provider": {"type": "azure"},
+                "provider": {
+                    "type": "azure",
+                    "location": "westeurope",
+                },
                 "available_node_types": {
                     "node0": {
                         "resources": {
@@ -56,9 +60,13 @@ class TestRayCluster(unittest.TestCase):
             cluster.get_nodes()
 
     def test_get_nodes(self):
+        region = "westeurope"
         cluster = RayCluster(
             config={
-                "provider": {"type": "azure"},
+                "provider": {
+                    "type": "azure",
+                    "location": region,
+                },
                 "available_node_types": {
                     "node0": {},
                     "node1": {
@@ -123,6 +131,8 @@ class TestRayCluster(unittest.TestCase):
         self.assertIn("m5.large", vm_sizes)
         self.assertIn("Standard_1", vm_sizes)
         self.assertIn("n1-standard-1", vm_sizes)
+        # Check region
+        self.assertTrue(all(node.region == "westeurope" for node in nodes))
 
 
 class TestGetRayCluster(unittest.TestCase):

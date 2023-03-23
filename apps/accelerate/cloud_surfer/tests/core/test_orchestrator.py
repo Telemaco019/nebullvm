@@ -81,10 +81,12 @@ class TestRayOrchestrator(unittest.TestCase):
             ClusterNode(
                 accelerator=Accelerator.NVIDIA_TESLA_V100,
                 vm_size="Standard_NC6",
+                region="westus",
             ),
             ClusterNode(
                 accelerator=Accelerator.NVIDIA_TESLA_K80,
                 vm_size="test",
+                region="westus",
             ),
         ]
         mocked_ray_cluster.get_nodes.return_value = nodes
@@ -106,12 +108,14 @@ class TestRayOrchestrator(unittest.TestCase):
         v100_node = ClusterNode(
             vm_size="",
             accelerator=Accelerator.NVIDIA_TESLA_V100,
+            region="westus",
         )
         nodes = [
             v100_node,
             ClusterNode(
                 vm_size="",
                 accelerator=Accelerator.NVIDIA_TESLA_K80,
+                region="westus",
             ),
         ]
         mocked_ray_cluster.get_nodes.return_value = nodes

@@ -261,7 +261,7 @@ class AzurePricingService(PricingService):
 
     async def get_vm_pricing(
         self,
-        vm_size: str,
+        vm_sku: str,
         region: str,
         currency: str = "USD",
         **kwargs,
@@ -269,7 +269,7 @@ class AzurePricingService(PricingService):
         async with aiohttp.ClientSession() as session:
             client = _RetailPricingClient(
                 url=self.api_url,
-                sku=vm_size,
+                sku=vm_sku,
                 region=region,
                 currency=currency,
             )

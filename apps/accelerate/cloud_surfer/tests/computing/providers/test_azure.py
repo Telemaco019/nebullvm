@@ -26,7 +26,7 @@ class TestAzurePricingService(unittest.IsolatedAsyncioTestCase):
         )
         mock.return_value = info
         res = await service.get_vm_pricing(
-            vm_size="Standard_D2s_v3",
+            vm_sku="Standard_D2s_v3",
             region="westus",
             currency="USD",
         )
