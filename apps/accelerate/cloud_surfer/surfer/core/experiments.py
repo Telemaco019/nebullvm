@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import functools
 import logging
-import os
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -17,22 +16,15 @@ from ray.dashboard.modules.job.pydantic_models import JobDetails
 from ray.dashboard.modules.job.sdk import JobSubmissionClient
 
 import surfer
-from nebullvm.tools.base import DeepLearningFramework
 from surfer.cli.runner import RunCommandBuilder
 from surfer.common import constants, schemas
 from surfer.common.exceptions import InternalError, NotFoundError
 from surfer.common.schemas import SurferConfig, ExperimentResult
 from surfer.log import logger
-from surfer.optimization.models import (
-    OptimizeInferenceResult,
-    OriginalModel,
-    OptimizedModel,
-)
 from surfer.storage import StorageProvider
 from surfer.storage.clients import StorageClient
 from surfer.storage.models import StorageConfig
 from surfer.utilities.file_utils import tmp_dir_clone, copy_files
-from surfer.utilities.nebullvm_utils import HardwareSetup
 
 
 class ExperimentStatus(str, Enum):
@@ -185,75 +177,6 @@ async def job_working_dir(
         yield working_dir
 
 
-def _mocked_experiment_result() -> ExperimentResult:
-    from surfer.computing.models import VMProvider
-    from surfer.optimization import converters
-
-    res_1 = converters.InferenceResultConverter.to_optimization_result(
-        res=OptimizeInferenceResult(
-            hardware_setup=HardwareSetup(
-                cpu="Intel Xeon E5-2690 v4 (Broadwell)",
-                gpu="NVIDIA Tesla V100-SXM2-16GB",
-                memory_gb=128,
-                operating_system="Ubuntu 18.04",
-            ),
-            original_model=OriginalModel(
-                model=None,
-                name="restnet50",
-                framework=DeepLearningFramework.PYTORCH,
-                latency_seconds=31.135991,
-                size_mb=194,
-                throughput=8.5,
-            ),
-            optimized_model=OptimizedModel(
-                inference_learner=None,
-                metric_drop=0.1,
-                latency_seconds=24.885,
-                size_mb=180,
-                throughput=12.5,
-                compiler="onnx",
-                technique="quantization",
-            ),
-        ),
-        vm_size="Standard NC6s v3",
-        vm_provider=VMProvider.AZURE,
-        optimized_model_path=Path("experiments/1/optimized_model.onnx"),
-    )
-
-    res_2 = converters.InferenceResultConverter.to_optimization_result(
-        res=OptimizeInferenceResult(
-            hardware_setup=HardwareSetup(
-                cpu="AMD EPYC 7V12(Rome)",
-                gpu="AMD Radeon Instinct MI25",
-                memory_gb=14,
-                operating_system="Ubuntu 18.04",
-            ),
-            original_model=OriginalModel(
-                model=None,
-                name="restnet50",
-                framework=DeepLearningFramework.PYTORCH,
-                latency_seconds=62.135991,
-                size_mb=194,
-                throughput=4.5,
-            ),
-            optimized_model=OptimizedModel(
-                inference_learner=None,
-                technique="quantization",
-                compiler="onnx",
-                metric_drop=0.1,
-                latency_seconds=40.2311,
-                size_mb=190,
-                throughput=7.5,
-            ),
-        ),
-        vm_size="Standard_NV4as_v4",
-        vm_provider=VMProvider.AZURE,
-        optimized_model_path=Path("experiments/1/optimized_model.onnx"),
-    )
-
-    return ExperimentResult(optimizations=[res_1, res_2])
-
-
 class ExperimentService:
     def __init__(
         self,
@@ -261,10 +184,6 @@ class ExperimentService:
         job_client: JobSubmissionClient,
         surfer_config: SurferConfig,
     ):
-        # TODO: remove mocking
-        self.__mocking = False
-        if os.getenv("MOCKING", "false") == "true":
-            self.__mocking = True
         self.storage_client = storage_client
         self.job_client = job_client
         self.surfer_config = surfer_config
@@ -374,8 +293,6 @@ class ExperimentService:
         self,
         experiment_path: ExperimentPath,
     ) -> Optional[ExperimentResult]:
-        if self.__mocking:  # TODO: remove mocking
-            return _mocked_experiment_result()
         try:
             path = Path(
                 experiment_path.as_path(),
