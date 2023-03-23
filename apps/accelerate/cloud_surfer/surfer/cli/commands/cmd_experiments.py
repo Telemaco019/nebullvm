@@ -264,34 +264,42 @@ def _render_experiment_summary(experiment: ExperimentDetails):
     print(results_summary_table)
 
     # Best results
-    lowest_latency = "[bold]Lowest latency[/bold]: [green]{}[/green] ({} ms)"
-    lowest_cost = "[bold]Lowest cost[/bold]: [green]{}[/green] ({} $/hr)"
+    lowest_latency_template = (
+        "[bold]Lowest latency[/bold]: [green]{}[/green] ({}ms, {}$/hr)"
+    )
+    lowest_cost_template = (
+        "[bold]Lowest cost[/bold]: [green]{}[/green] ({}ms, {}$/hr)"
+    )
     if experiment.result.lowest_latency is None:
         print(
-            lowest_latency.format(
+            lowest_latency_template.format(
+                constants.NOT_AVAILABLE_MSG,
                 constants.NOT_AVAILABLE_MSG,
                 constants.NOT_AVAILABLE_MSG,
             )
         )
         print(
-            lowest_cost.format(
+            lowest_cost_template.format(
+                constants.NOT_AVAILABLE_MSG,
                 constants.NOT_AVAILABLE_MSG,
                 constants.NOT_AVAILABLE_MSG,
             )
         )
     else:
+        lowest_latency = experiment.result.lowest_latency
+        lowest_cost = experiment.result.lowest_cost
         print(
-            lowest_latency.format(
-                experiment.result.lowest_latency.vm_info.sku,
-                format_float(
-                    experiment.result.lowest_latency.optimized_model.latency_ms,
-                ),
+            lowest_latency_template.format(
+                lowest_latency.vm_info.sku,
+                format_float(lowest_latency.optimized_model.latency_ms),
+                lowest_latency.vm_info.pricing.price_hr,
             )
         )
         print(
-            lowest_cost.format(
-                experiment.result.lowest_cost.vm_info.sku,
-                experiment.result.lowest_cost.vm_info.pricing.price_hr,
+            lowest_cost_template.format(
+                lowest_cost.vm_info.sku,
+                format_float(lowest_cost.optimized_model.latency_ms),
+                lowest_cost.vm_info.pricing.price_hr,
             )
         )
 
