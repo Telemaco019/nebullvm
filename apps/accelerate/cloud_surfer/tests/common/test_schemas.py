@@ -195,18 +195,21 @@ class TestModelDescriptor(unittest.TestCase):
 class TestExperimentResult(unittest.TestCase):
     def test_lowest_latency__empty_optimization(self):
         res = ExperimentResult(
+            model_name="",
             optimizations=[],
         )
         self.assertIsNone(res.lowest_latency)
 
     def test_lowest_latency__optimizations_without_models(self):
         res = ExperimentResult(
+            model_name="",
             optimizations=[new_optimization_result()],
         )
         self.assertIsNone(res.lowest_latency)
 
     def test_lowest_latency(self):
         res = ExperimentResult(
+            model_name="test",
             optimizations=[
                 new_optimization_result(
                     optimized_model=OptimizedModelDescriptor(

@@ -98,6 +98,7 @@ class OptimizationResult(BaseModel):
 
 class ExperimentResult(BaseModel):
     optimizations: List[OptimizationResult]
+    model_name: str
 
     class Config:
         frozen = True

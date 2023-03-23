@@ -212,6 +212,7 @@ class TestExperimentCli(unittest.TestCase):
             ],
             result=ExperimentResult(
                 optimizations=[],
+                model_name="",
             ),
         )
         factory.return_value = service_mock
@@ -244,6 +245,7 @@ class TestExperimentCli(unittest.TestCase):
                 ),
             ],
             result=ExperimentResult(
+                model_name="test",
                 optimizations=[
                     new_optimization_result(
                         optimized_model=None,

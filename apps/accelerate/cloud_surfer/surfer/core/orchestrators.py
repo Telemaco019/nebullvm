@@ -26,6 +26,7 @@ from surfer.optimization.operations import (
 )
 from surfer.storage.clients import StorageClient
 from surfer.storage.models import StorageConfig
+from surfer.utilities import nebullvm_utils
 from surfer.utilities.python_utils import ClassLoader
 
 
@@ -221,9 +222,13 @@ class RayOrchestrator:
     def save_results(
         self,
         results_dir: Path,
+        model_name: str,
         task_results: List[schemas.OptimizationResult],
     ):
-        res = schemas.ExperimentResult(optimizations=task_results)
+        res = schemas.ExperimentResult(
+            optimizations=task_results,
+            model_name=model_name,
+        )
         coro = self.storage_client.upload_content(
             content=res.json(),
             dest=results_dir / constants.EXPERIMENT_RESULT_FILE_NAME,
@@ -260,6 +265,9 @@ class RayOrchestrator:
         if len(results) == 0:
             logger.warn("optimization tasks produced no results")
             return
+        # Get original model info
+        model = config.model_loader.load_model()
+        model_name = nebullvm_utils.get_model_name(model)
         # Save results
         logger.info("saving results to directory {}".format(results_dir))
-        self.save_results(results_dir, results)
+        self.save_results(results_dir, model_name, results)

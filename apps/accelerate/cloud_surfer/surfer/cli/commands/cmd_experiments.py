@@ -223,7 +223,7 @@ def _render_experiment_summary(experiment: ExperimentDetails):
         return
     print(
         "[bold]Model[/bold]: [yellow]{}[/yellow]".format(
-            experiment.result.optimizations[0].original_model.name
+            experiment.result.model_name,
         )
     )
     results_summary_table = Table(

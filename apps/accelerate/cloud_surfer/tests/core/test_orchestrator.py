@@ -173,5 +173,5 @@ class TestRayOrchestrator(unittest.TestCase):
                 ),
             ),
         ]
-        orchestrator.save_results(Path(), results)
+        orchestrator.save_results(Path(), "test", results)
         mocked_storage_client.upload_content.assert_called_once()
