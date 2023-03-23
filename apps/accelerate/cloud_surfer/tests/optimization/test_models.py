@@ -117,7 +117,7 @@ class TestOptimizeInferenceResult(unittest.TestCase):
             hardware_setup=MagicMock(),
             optimized_model=MagicMock(size_mb=optimized_size),
         )
-        self.assertEqual(-1, res.size_improvement_rate)
+        self.assertEqual(1, res.size_improvement_rate)
 
     def test_size_improvement_rate__original_size_is_zero(self):
         original_size = 0.0

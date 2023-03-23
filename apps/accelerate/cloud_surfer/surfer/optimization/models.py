@@ -42,7 +42,9 @@ class OptimizeInferenceResult:
             return None
         if self.optimized_model.latency_seconds == 0:
             return -1
-        return self.original_model.latency_seconds / self.optimized_model.latency_seconds
+        return (
+            self.original_model.latency_seconds / self.optimized_model.latency_seconds
+        )
 
     @cached_property
     def throughput_improvement_rate(self) -> Optional[float]:
@@ -57,5 +59,5 @@ class OptimizeInferenceResult:
         if self.optimized_model is None:
             return None
         if self.optimized_model.size_mb == 0:
-            return -1
+            return 1
         return self.original_model.size_mb / self.optimized_model.size_mb
