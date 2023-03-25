@@ -5,7 +5,7 @@ ARG COMPILER=all
 ARG NEBULLVM_VERSION=0.8.1
 
 # Envs
-ENV TRT_OSSPATH=/TensorRT
+ENV TRT_PATH=/TensorRT
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install libraries
@@ -17,18 +17,18 @@ RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://down
     && pip install --no-cache-dir accelerate \
     && pip install --no-cache-dir onnx-graphsurgeon --extra-index-url https://pypi.ngc.nvidia.com \
     && python3 -m pip install --no-cache-dir --upgrade tensorrt
-RUN git clone https://github.com/NVIDIA/TensorRT.git \
-    && cd TensorRT \
+RUN git clone https://github.com/NVIDIA/TensorRT.git ${TRT_PATH} \
+    && cd ${TRT_PATH} \
     && git submodule update --init --recursive
-RUN cd /TensorRT \
+RUN cd ${TRT_PATH} \
     && mkdir -p build && cd build \
     && cmake .. -DTRT_OUT_DIR=$PWD/out \
     && cd plugin \
     && make -j$(nproc)
 
 # TensorRT envs
-ENV PLUGIN_LIBS=/TensorRT/build/out/libnvinfer_plugin.so
-ENV LD_PRELOAD=/TensorRT/build/out/libnvinfer_plugin.so
+ENV PLUGIN_LIBS=${TRT_PATH}/build/out/libnvinfer_plugin.so
+ENV LD_PRELOAD=${TRT_PATH}/build/out/libnvinfer_plugin.so
 
 # Install required python modules
 RUN pip3 install --no-cache-dir cmake
