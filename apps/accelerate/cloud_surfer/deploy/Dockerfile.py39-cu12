@@ -1,0 +1,66 @@
+FROM nvidia/cuda:12.1.0-base-ubuntu22.04
+# TODO: move to Ray base image once CUDA-12 version is available
+
+# Args
+ARG COMPILER=all
+ARG NEBULLVM_VERSION=0.9.1
+ARG PYTHON_VERSION=3.9.15
+
+# Envs
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHON_VERSION=${PYTHON_VERSION}
+ENV PLUGIN_LIBS=/TensorRT/build/out/libnvinfer_plugin.so
+ENV LD_PRELOAD=/TensorRT/build/out/libnvinfer_plugin.so
+ENV TRT_OSSPATH=/TensorRT
+
+# Install set of all dependencies needed for pyenv to work on Ubuntu
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
+  libsqlite3-dev wget ca-certificates curl llvm libncurses5-dev xz-utils \
+  tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev mecab-ipadic-utf8 git
+
+# Set-up necessary Env vars for PyEnv
+ENV PYENV_ROOT /root/.pyenv
+ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+
+# Install pyenv
+RUN set -ex && curl https://pyenv.run | bash \
+    && pyenv update \
+    && pyenv install $PYTHON_VERSION \
+    && pyenv global $PYTHON_VERSION \
+    && pyenv rehash
+
+# Install Ray nightly release
+RUN pip3 install --no-cache-dir -U "ray [default] @ https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-3.0.0.dev0-cp310-cp310-manylinux2014_x86_64.whl"
+
+# Install libraries
+RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cu117  \
+    && python3 -m pip install --upgrade pip \
+    && pip install --no-cache-dir xformers \
+    && pip install --no-cache-dir -U diffusers \
+    && pip install --no-cache-dir cuda-python \
+    && pip install --no-cache-dir accelerate \
+    && pip install --no-cache-dir onnx-graphsurgeon --extra-index-url https://pypi.ngc.nvidia.com \
+    && python3 -m pip install --no-cache-dir --upgrade tensorrt
+RUN git clone https://github.com/NVIDIA/TensorRT.git \
+    && cd TensorRT \
+    && git submodule update --init --recursive
+RUN cd $TRT_OSSPATH \
+    && mkdir -p build && cd build \
+    && cmake .. -DTRT_OUT_DIR=$PWD/out \
+    && cd plugin \
+    && make -j$(nproc)
+
+# Install required python modules
+RUN pip3 install --no-cache-dir cmake
+
+# Install Nebullvm
+RUN pip3 install --no-cache-dir nebullvm==${NEBULLVM_VERSION}
+
+# Install deep learning compilers
+RUN python3 -m nebullvm.installers.auto_installer --frameworks all --extra-backends all --compilers all
+
+ENV SIGOPT_PROJECT="tmp"
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/python3.9/dist-packages/tensorrt
+ENV CUDA_MODULE_LOADING="LAZY"
+
