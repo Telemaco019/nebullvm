@@ -1,4 +1,4 @@
-FROM rayproject/ray:nightly-py39-cu118
+FROM rayproject/ray:nightly-py310-cu118
 
 # Args
 ARG COMPILER=all
