@@ -28,7 +28,7 @@ RUN set -ex && curl https://pyenv.run | bash \
     && pyenv rehash
 
 # Install Ray nightly release
-RUN pip3 install --no-cache-dir -U "ray [default] @ https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-3.0.0.dev0-cp310-cp310-manylinux2014_x86_64.whl"
+RUN pip3 install --no-cache-dir -U "ray [default] @ https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-3.0.0.dev0-cp39-cp39-manylinux2014_x86_64.whl"
 
 # Install libraries
 RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cu117  \
