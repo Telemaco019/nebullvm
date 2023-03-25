@@ -591,6 +591,7 @@ def _get_base_job_requirements(storage_config: StorageConfig) -> List[str]:
         "nebullvm",
         "aiofiles",
         "protobuf==3.20.*",
+        "aiohttp",
     ]
 
     # Add GCP storage dependency
