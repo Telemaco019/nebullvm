@@ -5,7 +5,7 @@ ARG COMPILER=all
 ARG NEBULLVM_VERSION=0.8.1
 
 # Envs
-ENV TRT_PATH=/TensorRT
+ENV TRT_PATH=$(pwd)/TensorRT
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install libraries

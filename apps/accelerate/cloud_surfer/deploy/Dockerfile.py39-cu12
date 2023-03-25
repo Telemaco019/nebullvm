@@ -9,7 +9,7 @@ ARG PYTHON_VERSION=3.9.15
 # Envs
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHON_VERSION=${PYTHON_VERSION}
-ENV TRT_PATH=/TensorRT
+ENV TRT_PATH=$(pwd)/TensorRT
 
 # Install set of all dependencies needed for pyenv to work on Ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends \
