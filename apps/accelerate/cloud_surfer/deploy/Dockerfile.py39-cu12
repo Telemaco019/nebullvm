@@ -9,6 +9,7 @@ ARG PYTHON_VERSION=3.9.15
 # Envs
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHON_VERSION=${PYTHON_VERSION}
+ENV TRT_PATH=/TensorRT
 
 # Install set of all dependencies needed for pyenv to work on Ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -39,18 +40,18 @@ RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://down
     && pip install --no-cache-dir accelerate \
     && pip install --no-cache-dir onnx-graphsurgeon --extra-index-url https://pypi.ngc.nvidia.com \
     && python3 -m pip install --no-cache-dir --upgrade tensorrt
-RUN git clone https://github.com/NVIDIA/TensorRT.git \
-    && cd TensorRT \
+RUN git clone https://github.com/NVIDIA/TensorRT.git ${TRT_PATH} \
+    && cd ${TRT_PATH} \
     && git submodule update --init --recursive
-RUN cd /TensorRT \
+RUN cd ${TRT_PATH} \
     && mkdir -p build && cd build \
     && cmake .. -DTRT_OUT_DIR=$PWD/out \
     && cd plugin \
     && make -j$(nproc)
 
 # TensorRT envs
-ENV PLUGIN_LIBS=/TensorRT/build/out/libnvinfer_plugin.so
-ENV LD_PRELOAD=/TensorRT/build/out/libnvinfer_plugin.so
+ENV PLUGIN_LIBS=${TRT_PATH}/build/out/libnvinfer_plugin.so
+ENV LD_PRELOAD=${TRT_PATH}/build/out/libnvinfer_plugin.so
 
 # Install required python modules
 RUN pip3 install --no-cache-dir cmake
