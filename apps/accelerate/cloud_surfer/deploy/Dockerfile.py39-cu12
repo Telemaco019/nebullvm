@@ -46,7 +46,7 @@ RUN cd /TensorRT \
     && mkdir -p build && cd build \
     && cmake .. -DTRT_OUT_DIR=$PWD/out \
     && cd plugin \
-    && make -j$(nproc) \
+    && make -j$(nproc)
 
 # TensorRT envs
 ENV PLUGIN_LIBS=/TensorRT/build/out/libnvinfer_plugin.so
