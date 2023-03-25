@@ -1,0 +1,48 @@
+FROM rayproject/ray:nightly-py39-cu118
+
+# Args
+ARG COMPILER=all
+ARG NEBULLVM_VERSION=0.8.1
+
+# Envs
+ENV PLUGIN_LIBS=/TensorRT/build/out/libnvinfer_plugin.so
+ENV LD_PRELOAD=/TensorRT/build/out/libnvinfer_plugin.so
+ENV TRT_OSSPATH=/TensorRT
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install libraries
+RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cu117  \
+    && python3 -m pip install --upgrade pip \
+    && pip install --no-cache-dir xformers \
+    && pip install --no-cache-dir -U diffusers \
+    && pip install --no-cache-dir cuda-python \
+    && pip install --no-cache-dir accelerate \
+    && pip install --no-cache-dir onnx-graphsurgeon --extra-index-url https://pypi.ngc.nvidia.com \
+    && python3 -m pip install --no-cache-dir --upgrade tensorrt
+RUN git clone https://github.com/NVIDIA/TensorRT.git \
+    && cd TensorRT \
+    && git submodule update --init --recursive
+RUN cd $TRT_OSSPATH \
+    && mkdir -p build && cd build \
+    && cmake .. -DTRT_OUT_DIR=$PWD/out \
+    && cd plugin \
+    && make -j$(nproc)
+
+
+# Install dl frameworks
+RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cu118
+RUN pip3 install --no-cache-dir tensorflow
+RUN pip3 install --no-cache-dir onnx
+RUN pip3 install --no-cache-dir transformers
+
+# Install required python modules
+RUN pip3 install --no-cache-dir cmake
+
+# Install Nebullvm
+RUN pip3 install --no-cache-dir nebullvm==${NEBULLVM_VERSION}
+
+# Install deep learning compilers
+RUN python3 -m nebullvm.installers.auto_installer --frameworks all --extra-backends all --compilers all
+
+ENV SIGOPT_PROJECT="tmp"
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/python3.9/dist-packages/tensorrt
