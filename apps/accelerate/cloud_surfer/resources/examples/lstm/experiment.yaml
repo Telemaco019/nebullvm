@@ -1,5 +1,0 @@
-description: "Description of the experiment"
-data_loader: resources/examples/lstm/data_loader.py
-model_loader: resources/examples/lstm/model_loader.py
-additional_requirements:
-  - "torch==1.13.1"
