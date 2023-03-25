@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import functools
 import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -579,7 +578,6 @@ def new_experiment_service(config: SurferConfig) -> ExperimentService:
     )
 
 
-@functools.cache
 def _get_base_job_requirements(storage_config: StorageConfig) -> List[str]:
     def __with_version(req: List[str]) -> List[str]:
         for r in req:
