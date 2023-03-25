@@ -1,5 +1,5 @@
 FROM nvidia/cuda:12.1.0-base-ubuntu22.04
-
+# TODO: move to Ray base image once CUDA-12 version is available
 
 # Args
 ARG COMPILER=all
@@ -27,7 +27,7 @@ RUN set -ex && curl https://pyenv.run | bash \
     && pyenv rehash
 
 # Install Ray nightly release
-RUN pip3 install --no-cache-dir -U https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-3.0.0.dev0-cp310-cp310-manylinux2014_x86_64.whl
+RUN pip3 install --no-cache-dir -U "ray [default] @ https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-3.0.0.dev0-cp310-cp310-manylinux2014_x86_64.whl"
 
 # Install dl frameworks
 RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cu118
