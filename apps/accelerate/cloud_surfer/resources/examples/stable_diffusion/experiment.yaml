@@ -2,10 +2,10 @@ description: "Description of the experiment"
 data_loader: resources/examples/stable_diffusion/data_loader.py
 model_loader: resources/examples/stable_diffusion/model_loader.py
 ignored_accelerators:
+  - V100
   - T4
-  - A100
   - TPU-v2-8
 additional_requirements:
-  - "torch==1.13.1"
+  - "transformers"
   - "diffusers==0.14.0"
   - "accelerate"
