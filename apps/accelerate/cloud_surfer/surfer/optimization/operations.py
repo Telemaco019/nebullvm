@@ -283,6 +283,7 @@ class OptimizeInferenceOp(Operation):
         )
 
         # Run optimization
+        is_diffusion = is_diffusion_model(model)
         optimized_models = (
             optimization_op.to(self.device)
             .execute(
@@ -296,7 +297,7 @@ class OptimizeInferenceOp(Operation):
                 ignore_compilers=ignore_compilers,
                 ignore_compressors=ignore_compressors,
                 source_dl_framework=source_dl_framework,
-                is_diffusion=is_diffusion_model(model),
+                is_diffusion=is_diffusion,
             )
             .get_result()
         )
