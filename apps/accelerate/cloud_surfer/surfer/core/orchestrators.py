@@ -287,4 +287,5 @@ class RayOrchestrator:
         model_name = nebullvm_utils.get_model_name(model)
         # Save results
         logger.info("saving results to directory {}".format(results_dir))
+
         self.save_results(results_dir, model_name, results)
