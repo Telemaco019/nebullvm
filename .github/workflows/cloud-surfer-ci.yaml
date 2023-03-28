@@ -52,6 +52,8 @@ jobs:
         uses: snok/install-poetry@v1
       - name: Install dependencies
         run: poetry install --extras all --with dev
+      - name: Set Python virtualenv
+        run: source $VENV
       - name: Run tests
         run: make test
 
