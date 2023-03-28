@@ -9,7 +9,6 @@ ARG PYTHON_VERSION=3.9.15
 # Envs
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHON_VERSION=${PYTHON_VERSION}
-ENV TRT_PATH=$(pwd)/TensorRT
 
 # Install set of all dependencies needed for pyenv to work on Ubuntu
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -32,26 +31,14 @@ RUN set -ex && curl https://pyenv.run | bash \
 RUN pip3 install --no-cache-dir -U "ray [default] @ https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-3.0.0.dev0-cp39-cp39-manylinux2014_x86_64.whl"
 
 # Install libraries
-RUN pip3 install --no-cache-dir torch torchvision --extra-index-url https://download.pytorch.org/whl/cu117  \
+RUN pip3 install torch==1.13.1+cu117 torchvision==0.14.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117 \
     && python3 -m pip install --upgrade pip \
-    && pip install --no-cache-dir xformers \
-    && pip install --no-cache-dir -U diffusers \
-    && pip install --no-cache-dir cuda-python \
-    && pip install --no-cache-dir accelerate \
-    && pip install --no-cache-dir onnx-graphsurgeon --extra-index-url https://pypi.ngc.nvidia.com \
-    && python3 -m pip install --no-cache-dir --upgrade tensorrt
-RUN git clone https://github.com/NVIDIA/TensorRT.git ${TRT_PATH} \
-    && cd ${TRT_PATH} \
-    && git submodule update --init --recursive
-RUN cd "${TRT_PATH}" \
-    && mkdir -p build && cd build \
-    && cmake .. -DTRT_OUT_DIR=$PWD/out \
-    && cd plugin \
-    && make -j$(nproc)
-
-# TensorRT envs
-ENV PLUGIN_LIBS=${TRT_PATH}/build/out/libnvinfer_plugin.so
-ENV LD_PRELOAD=${TRT_PATH}/build/out/libnvinfer_plugin.so
+    && pip3 install --no-cache-dir xformers \
+    && pip3 install --no-cache-dir diffusers \
+    && pip3 install --no-cache-dir cuda-python \
+    && pip3 install --no-cache-dir accelerate \
+    && pip3 install --no-cache-dir onnx-graphsurgeon --extra-index-url https://pypi.ngc.nvidia.com \
+    && pip3 install --no-cache-dir tensorrt==8.6.0
 
 # Install required python modules
 RUN pip3 install --no-cache-dir cmake
