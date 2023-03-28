@@ -14,7 +14,7 @@ help: ## Display this help.
 ##@ Test
 .PHONY: test
 test: ## Run the tests
-	coverage run -m pytest -v .
+	poetry run coverage run -m pytest -v .
 
 
 ##@ Build
