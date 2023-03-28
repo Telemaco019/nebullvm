@@ -166,7 +166,7 @@ class InferenceOptimizationTask:
         run_config: RunConfig,
         node: ClusterNode,
         vm_provider: VMProvider,
-    ) -> schemas.OptimizationResult:
+    ) -> str:
         # Run inference optimization
         logger.info("starting inference optimization")
         inference_res = InferenceOptimizationTask._optimize_inference(
@@ -204,7 +204,7 @@ class InferenceOptimizationTask:
         except InternalError as e:
             logger.error("failed to get pricing info", e)
         result.vm_info.pricing = pricing
-        return result
+        return result.json()
 
     def run(
         self,
@@ -275,11 +275,13 @@ class RayOrchestrator:
             )
             objs.append(o)
         logger.info("waiting for results...")
-        results = ray.get(objs)
-        logger.info("collected {} results".format(len(results)))
-        if len(results) == 0:
+        results_json = ray.get(objs)
+        logger.info("collected {} results".format(len(results_json)))
+        if len(results_json) == 0:
             logger.warn("optimization tasks produced no results")
             return
+        # Deserialize results
+        results = [schemas.OptimizationResult.parse_raw(r) for r in results_json]
         # Get original model info
         model = config.model_loader.load_model()
         model_name = nebullvm_utils.get_model_name(model)

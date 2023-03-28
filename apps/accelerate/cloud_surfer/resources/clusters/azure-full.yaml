@@ -15,8 +15,8 @@ docker:
   # 16/03/222 - At the moment we need to use nightly release for head node until 2.3.1 release,
   # since issue https://github.com/ray-project/ray/issues/10920 prevents
   # Azure autoscaler from working properly.
-  head_image: "rayproject/ray:nightly-py39" # FIXME
-  worker_image: "telemaco019/cloud-surfer:0.1.0-py39-cu118"
+  head_image: "rayproject/ray:nightly-py39"
+  worker_image: "telemaco019/cloud-surfer:0.1.0-py39-cu12"
   container_name: "ray_container"
   pull_before_run: False
   run_options:
@@ -75,8 +75,8 @@ available_node_types:
       azure_arm_parameters:
         vmSize: Standard_D2s_v3
         imagePublisher: microsoft-dsvm
-        imageOffer: ubuntu-1804
-        imageSku: 1804-gen2
+        imageOffer: ubuntu-2004
+        imageSku: 2004-gen2
         imageVersion: latest
         priority: Spot
     resources:
@@ -89,8 +89,8 @@ available_node_types:
       azure_arm_parameters:
         vmSize: Standard_NC4as_T4_v3
         imagePublisher: microsoft-dsvm
-        imageOffer: ubuntu-1804
-        imageSku: 1804-gen2
+        imageOffer: ubuntu-2004
+        imageSku: 2004-gen2
         imageVersion: latest
         priority: Spot
     resources:
@@ -105,8 +105,8 @@ available_node_types:
       azure_arm_parameters:
         vmSize: Standard_NC6s_v3
         imagePublisher: microsoft-dsvm
-        imageOffer: ubuntu-1804
-        imageSku: 1804-gen2
+        imageOffer: ubuntu-2004
+        imageSku: 2004-gen2
         imageVersion: latest
         priority: Spot
     resources:
@@ -121,8 +121,8 @@ available_node_types:
       azure_arm_parameters:
         vmSize: Standard_NC24ads_A100_v4
         imagePublisher: microsoft-dsvm
-        imageOffer: ubuntu-1804
-        imageSku: 1804-gen2
+        imageOffer: ubuntu-2004
+        imageSku: 2004-gen2
         imageVersion: latest
         priority: Spot
     resources:
