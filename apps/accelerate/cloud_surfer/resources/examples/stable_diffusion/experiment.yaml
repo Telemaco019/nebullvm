@@ -1,6 +1,7 @@
 description: "Description of the experiment"
 data_loader: resources/examples/stable_diffusion/data_loader.py
 model_loader: resources/examples/stable_diffusion/model_loader.py
+metric_drop_threshold: 0.05
 ignored_accelerators:
   - T4
   - TPU-v2-8
