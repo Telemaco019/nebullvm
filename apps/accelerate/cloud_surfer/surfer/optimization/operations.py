@@ -215,6 +215,7 @@ class OptimizeInferenceOp(Operation):
 
             # Optimize models
             optimized_models: List[OptimizedModel] = []
+            is_diffusion = is_diffusion_model(model)
             for model in conversion_op.get_result():
                 optimized_models += self._optimize(
                     model=model,
@@ -228,6 +229,7 @@ class OptimizeInferenceOp(Operation):
                     ignore_compilers=ignore_compilers,
                     ignore_compressors=ignore_compressors,
                     source_dl_framework=dl_framework,
+                    is_diffusion=is_diffusion,
                 )
 
         optimized_models.sort(key=lambda x: x.latency_seconds, reverse=False)
@@ -266,6 +268,7 @@ class OptimizeInferenceOp(Operation):
         ignore_compilers: List[ModelCompiler],
         ignore_compressors: List[ModelCompressor],
         source_dl_framework: DeepLearningFramework,
+        is_diffusion: bool,
     ) -> List[OptimizedModel]:
         if isinstance(model, torch.nn.Module):
             optimization_op = PytorchOptimizer()
@@ -283,7 +286,6 @@ class OptimizeInferenceOp(Operation):
         )
 
         # Run optimization
-        is_diffusion = is_diffusion_model(model)
         optimized_models = (
             optimization_op.to(self.device)
             .execute(
