@@ -270,8 +270,24 @@ class OptimizerAdapter:
         res = []
         # Merge models returned by th operation with the
         # latencies stored internally in the feedback collector
+        #
+        # technique_result:
+        #   - "compiler" -> str
+        #   - "technique" -> str
+        #   - "latency" -> float
+        #
+        # optimized_model_tuple:
+        #   [0] -> Inference learner (BaseInferenceLearner)
+        #   [1] -> Latency (str)
+        #   [2] -> Metric drop (float)
+        # fmt: off
+        optimizations = [
+            o for o in self.collector.get("optimizations", [])
+            if o[1] > 0  # Filter out failed optimizations
+        ]
+        # fmt: on
         for technique_result, optimized_model_tuple in zip(
-            self.collector.get("optimizations"), self.optimizer.get_result()
+            optimizations, self.optimizer.get_result()
         ):
             metric_drop = optimized_model_tuple[2]
             compiler = technique_result["compiler"]
