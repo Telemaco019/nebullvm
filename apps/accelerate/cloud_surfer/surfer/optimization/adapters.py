@@ -281,13 +281,13 @@ class OptimizerAdapter:
         #   [1] -> Latency (str)
         #   [2] -> Metric drop (float)
         # fmt: off
-        optimizations = [
+        technique_results = [
             o for o in self.collector.get("optimizations", [])
-            if o[1] > 0  # Filter out failed optimizations
+            if o["latency"] > 0  # Filter out failed optimizations
         ]
         # fmt: on
         for technique_result, optimized_model_tuple in zip(
-            optimizations, self.optimizer.get_result()
+            technique_results, self.optimizer.get_result()
         ):
             metric_drop = optimized_model_tuple[2]
             compiler = technique_result["compiler"]
