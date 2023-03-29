@@ -67,7 +67,7 @@ def run(
         help="Enable debug mode",
     ),
 ):
-    surfer.log.configure_debug_mode(debug)
+    surfer.log.setup_logger(debug)
     with open(surfer_config_path) as f:
         config_dict = yaml.safe_load(f.read())
         surfer_config = SurferConfig.parse_obj(config_dict)

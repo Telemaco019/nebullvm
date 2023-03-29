@@ -7,9 +7,9 @@ from urllib.parse import urlparse
 import aiofiles
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob.aio import ContainerClient
+from loguru import logger
 from rich.prompt import Prompt, PromptType, InvalidResponse
 
-from surfer.log import logger
 from surfer.storage import util
 from surfer.storage.clients import StorageClient
 from surfer.storage.models import StorageConfig, StorageProvider
@@ -61,7 +61,7 @@ async def _upload_file(
     source: Path,
     dest: Path,
 ):
-    logger.debug("uploading {} to {}".format(source, dest))
+    logger.debug("uploading {} to {}", source, dest)
     async with aiofiles.open(source, "rb") as f:
         blob = container.get_blob_client(dest.as_posix())
         await blob.upload_blob(f, overwrite=True)
@@ -77,7 +77,7 @@ class BlobStorageClient(StorageClient):
             yield container
 
     async def upload_content(self, content: str, dest: Path):
-        logger.debug("uploading content to {}".format(dest))
+        logger.debug("uploading content to {}", dest)
         async with self.__container_client() as container:
             blob = container.get_blob_client(dest.as_posix())
             await blob.upload_blob(content, overwrite=True)
@@ -138,7 +138,7 @@ class BlobStorageClient(StorageClient):
         try:
             async with self.__container_client() as container:
                 async for b in container.list_blobs(path.as_posix()):
-                    logger.debug("deleting {}".format(b.name))
+                    logger.debug("deleting {}", b.name)
                     await container.get_blob_client(b).delete_blob()
         except ResourceNotFoundError as e:
             raise FileNotFoundError(e.message)

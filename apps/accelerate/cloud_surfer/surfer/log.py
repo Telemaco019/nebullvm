@@ -1,42 +1,45 @@
 import logging
+import sys
 
+from loguru import logger
 from rich.console import Console
 
 
-class Logger:
-    """
-    Wrapper of rich.Console that exposes methods that show output
-    using different styles according to the respective log level.
-    """
-
-    def __init__(self, log_level=logging.INFO):
-        self.level = log_level
+class _Console:
+    def __init__(self):
+        self._error_console = Console(stderr=True, style="red")
         self.__console = Console()
 
-    def info(self, *objs: any, **kwargs):
-        if self.level <= logging.INFO:
-            self.__console.print(*objs, **kwargs)
+    def print(self, *objs: any, **kwargs):
+        self.__console.print(*objs, **kwargs)
 
     def warn(self, *objs: any, **kwargs):
-        if self.level <= logging.WARNING:
-            self.__console.print(
-                "\[warning]", *objs, style="yellow", **kwargs  # noqa W605
-            )
-
-    def debug(self, *objs: any, **kwargs):
-        if self.level <= logging.DEBUG:
-            self.__console.print(
-                "\[debug]", *objs, style="cyan", **kwargs  # noqa W605
-            )
+        self.__console.print(
+            "\[warning]",
+            *objs,
+            style="yellow",
+            **kwargs,
+        )
 
     def error(self, *objs: any, **kwargs):
-        self.__console.print(*objs, style="red", **kwargs)
+        self._error_console.print(*objs, **kwargs)
 
 
-logger = Logger()
+console = _Console()
+level = logging.INFO
 
 
-def configure_debug_mode(debug: bool):
+def setup_logger(debug: bool = False):
+    global level
     if debug is True:
-        logger.level = logging.DEBUG
-        logger.debug("debug mode enabled")
+        level = logging.DEBUG
+    logger.remove()
+    logger.add(
+        sys.stdout,
+        colorize=None,
+        format=(
+            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+            "<level>{level: <8}</level> | <level>{message}</level>"
+        ),
+        level=level,
+    )

@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import Optional, List
 
-from surfer.log import logger
-
 
 def rglob(
     source: Path,

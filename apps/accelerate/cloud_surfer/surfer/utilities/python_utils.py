@@ -4,7 +4,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Generic, Type, List, TypeVar
 
-from surfer.log import logger
+from surfer.log import console
 
 _T = TypeVar("_T")
 
@@ -56,7 +56,7 @@ class ClassLoader(Generic[_T]):
             )
             raise ValueError(msg)
         if len(loaded_classes) > 1:
-            logger.warn(
+            console.warn(
                 "multiple {} classes found in {}, using {}".format(
                     self._cls.__name__,
                     module_path,

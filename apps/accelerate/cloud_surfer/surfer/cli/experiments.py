@@ -16,7 +16,7 @@ def list_experiments(
         help="Enable debug mode",
     ),
 ):
-    surfer.log.configure_debug_mode(debug)
+    surfer.log.setup_logger(debug)
     asyncio.run(cmd.list_experiments())
 
 
@@ -43,7 +43,7 @@ def submit_experiment(
         help="Enable debug mode",
     ),
 ):
-    surfer.log.configure_debug_mode(debug)
+    surfer.log.setup_logger(debug)
     asyncio.run(cmd.submit_experiment(name, experiment_config))
 
 
@@ -62,7 +62,7 @@ def stop_experiment(
         help="Enable debug mode",
     ),
 ):
-    surfer.log.configure_debug_mode(debug)
+    surfer.log.setup_logger(debug)
     typer.confirm(
         f"Are you sure you want to stop experiment {name}?",
         abort=True,
@@ -85,7 +85,7 @@ def describe_experiment(
         help="Enable debug mode",
     ),
 ):
-    surfer.log.configure_debug_mode(debug)
+    surfer.log.setup_logger(debug)
     asyncio.run(cmd.describe_experiment(name))
 
 
@@ -105,7 +105,7 @@ def delete_experiment(
         help="Enable debug mode",
     ),
 ):
-    surfer.log.configure_debug_mode(debug)
+    surfer.log.setup_logger(debug)
     typer.confirm(
         f"Are you sure you want to delete experiment {name}?",
         abort=True,

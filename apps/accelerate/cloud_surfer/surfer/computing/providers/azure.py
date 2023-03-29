@@ -2,6 +2,7 @@ import asyncio
 from typing import List, Optional
 
 import aiohttp
+from loguru import logger
 from pydantic.config import Extra
 from pydantic.fields import Field
 from pydantic.main import BaseModel
@@ -10,7 +11,7 @@ from surfer.common import constants
 from surfer.common.exceptions import InternalError
 from surfer.computing import schemas
 from surfer.computing.services import PricingService
-from surfer.log import logger
+from surfer.log import console
 
 RETAIL_PRICES_API_VERSION = "2023-01-01-preview"
 RETAIL_PRICES_API_URL = (
@@ -101,7 +102,7 @@ class _RetailPricingClient:
         session: aiohttp.ClientSession,
         url: str,
     ) -> _RetailPricesResp:
-        logger.debug("GET > {}".format(url))
+        logger.debug("GET > {}", url)
         async with session.get(url) as resp:
             resp.raise_for_status()
             resp_dict = await resp.json()
@@ -119,7 +120,7 @@ class _RetailPricingClient:
         resp = await self(session, self._get_url(reservation))
         linux_vms = resp.linux_items
         if len(linux_vms) == 0:
-            logger.warn(
+            console.warn(
                 "no reservation pricing found for {} - {}".format(
                     self._sku,
                     self._region,
@@ -132,14 +133,14 @@ class _RetailPricingClient:
             elif vm.reservation_term == "3 Years":
                 self._discounted_3yr_resp = vm
         if self._discounted_1yr_resp is None:
-            logger.warn(
+            console.warn(
                 "no 1 year reservation pricing found for {} - {}".format(
                     self._sku,
                     self._region,
                 ),
             )
         if self._discounted_3yr_resp is None:
-            logger.warn(
+            console.warn(
                 "no 3 year reservation pricing found for {} - {}".format(
                     self._sku,
                     self._region,
@@ -167,7 +168,7 @@ class _RetailPricingClient:
             filter(lambda x: not __sku_is_spot(x), resp.linux_items),
         )
         if len(linux_vms) == 0:
-            logger.warn(
+            console.warn(
                 "no consumption price found for {} - {}".format(
                     self._sku,
                     self._region,
@@ -175,7 +176,7 @@ class _RetailPricingClient:
             )
             return
         if len(linux_vms) > 1:
-            logger.warn(
+            console.warn(
                 "more than one consumption price found for {} - {}".format(
                     self._sku,
                     self._region,
@@ -196,7 +197,7 @@ class _RetailPricingClient:
         resp = await self(session, self._get_url(query))
         linux_vms = resp.linux_items
         if len(linux_vms) == 0:
-            logger.warn(
+            console.warn(
                 "no spot price found for {} - {}".format(
                     self._sku,
                     self._region,
@@ -204,7 +205,7 @@ class _RetailPricingClient:
             )
             return
         if len(linux_vms) > 1:
-            logger.warn(
+            console.warn(
                 "more than one spot price found for {} - {}".format(
                     self._sku,
                     self._region,

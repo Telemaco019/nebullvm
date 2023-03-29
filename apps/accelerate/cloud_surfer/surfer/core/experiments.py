@@ -9,17 +9,19 @@ from pathlib import Path
 from typing import List, Optional
 
 import aiofiles
+from loguru import logger
 from pydantic.error_wrappers import ValidationError
 from ray.dashboard.modules.job.common import JobStatus
 from ray.dashboard.modules.job.pydantic_models import JobDetails
 from ray.dashboard.modules.job.sdk import JobSubmissionClient
 
 import surfer
+from surfer import log
 from surfer.cli.runner import RunCommandBuilder
 from surfer.common import constants, schemas
 from surfer.common.exceptions import InternalError, NotFoundError
 from surfer.common.schemas import SurferConfig, ExperimentResult
-from surfer.log import logger
+from surfer.log import console
 from surfer.storage import StorageProvider
 from surfer.storage.clients import StorageClient
 from surfer.storage.models import StorageConfig
@@ -209,7 +211,7 @@ class ExperimentService:
             .with_ignored_accelerators(config.ignored_accelerators)
             .with_ignored_compilers(config.ignored_compilers)
         )
-        if logger.level == logging.DEBUG:
+        if log.level == logging.DEBUG:
             builder.with_debug()
 
         return builder.get_command()
@@ -276,7 +278,7 @@ class ExperimentService:
         if experiment_name is not None:
             prefix += f"{experiment_name}/"
         experiment_paths = []
-        logger.debug("listing paths with prefix: ", prefix)
+        logger.debug("listing paths with prefix: {}", prefix)
         for path in await self.storage_client.list(prefix):
             try:
                 p = ExperimentPath.from_path(path)
@@ -347,7 +349,7 @@ class ExperimentService:
             requirements += req.config.additional_requirements
             # Submit Job
             logger.debug(
-                "submitting Ray job",
+                "submitting Ray job {}",
                 {
                     "entrypoint": entrypoint,
                     "working_dir": workdir.base.as_posix(),
@@ -364,7 +366,7 @@ class ExperimentService:
                     constants.JOB_METADATA_EXPERIMENT_NAME: req.name,
                 },
             )
-            logger.debug("job ID", job_id)
+            logger.debug("job ID {}", job_id)
 
     async def delete(self, experiment_name: str):
         """Delete the experiment and all its data
@@ -409,7 +411,7 @@ class ExperimentService:
             raise NotFoundError(
                 "experiment {} does not exist".format(experiment_name),
             )
-        logger.info("deleting experiment data...")
+        console.print("deleting experiment data...")
         delete_data_coros = []
         for path in experiment_paths:
             delete_data_coros.append(self.storage_client.delete(path.as_path()))
@@ -418,7 +420,7 @@ class ExperimentService:
         except FileNotFoundError as e:
             logger.debug("trying to delete non-existing file: ", e)
         # Delete Jobs
-        logger.info("deleting experiment jobs...")
+        console.print("deleting experiment jobs...")
         delete_job_coros = []
         for j in experiment_jobs:
             coro = asyncio.get_event_loop().run_in_executor(
@@ -465,7 +467,7 @@ class ExperimentService:
         if self.__can_stop_experiment(status) is False:
             raise ValueError("cannot stop {} experiment".format(status.value))
         # Stop experiment jobs
-        logger.info("stopping experiment jobs...")
+        console.print("stopping experiment jobs...")
         coros = []
         for j in experiment_jobs:
             coros.append(self._stop_job(j.job_id))
@@ -548,7 +550,7 @@ class ExperimentService:
         ]:
             result = await self._fetch_result(experiment_path)
             if result is None and summary.status is ExperimentStatus.SUCCEEDED:
-                logger.warn(
+                console.warn(
                     f"experiment {experiment_name} is succeeded, "
                     "but results are missing"
                 )

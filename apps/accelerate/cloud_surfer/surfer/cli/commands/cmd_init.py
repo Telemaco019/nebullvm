@@ -6,13 +6,13 @@ from rich.prompt import Confirm, Prompt
 from surfer import storage
 from surfer.common.schemas import SurferConfig
 from surfer.core.config import SurferConfigManager
-from surfer.log import logger
+from surfer.log import console
 from surfer.storage.models import StorageProvider, StorageConfig
 
 
 def _new_azure_storage_config() -> StorageConfig:
     if StorageProvider.AZURE not in storage.enabled_providers:
-        logger.error(
+        console.error(
             "Azure storage is not enabled. "
             'Please install "surfer\[azure]" to use Azure as storage provider'
         )
@@ -28,7 +28,7 @@ def _new_azure_storage_config() -> StorageConfig:
 
 def _new_gcp_storage_config() -> StorageConfig:
     if StorageProvider.GCP not in storage.enabled_providers:
-        logger.error(
+        console.error(
             "GCP storage is not enabled. "
             'Please install "surfer\[gcp]" to use GCP as storage provider'
         )
@@ -43,7 +43,7 @@ def _new_gcp_storage_config() -> StorageConfig:
 
 def _new_aws_storage_config():
     if StorageProvider.AWS not in storage.enabled_providers:
-        logger.error(
+        console.error(
             "AWS storage is not enabled. "
             'Please install "surfer\[aws]" to use AWS as storage provider'
         )
@@ -86,7 +86,7 @@ def init(
             ray_address=ray_address,
         )
         config_manager.save_config(config)
-        logger.info(
+        console.print(
             "Cloud Surfer configuration initialized",
             config_manager.load_config(),
         )

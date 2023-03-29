@@ -4,8 +4,8 @@ from typing import Optional, TextIO, List
 
 from google.cloud import storage, exceptions
 from google.cloud.storage import Blob
+from loguru import logger
 
-from surfer.log import logger
 from surfer.storage import util
 from surfer.storage.clients import StorageClient
 from surfer.storage.models import StorageConfig, StorageProvider
@@ -56,7 +56,11 @@ class GCSBucketClient(StorageClient):
 
     async def _upload_file(self, source_file_path: Path, dest_path: Path):
         final_dest_path = dest_path / source_file_path.name
-        logger.debug(f'uploading "{source_file_path}" to "{final_dest_path}"')
+        logger.debug(
+            'uploading "{}" to "{}"',
+            source_file_path,
+            final_dest_path,
+        )
         blob = self.bucket.blob(final_dest_path.as_posix())
         await self._async_upload_blob_from_filename(blob, source_file_path.as_posix())
 
@@ -81,7 +85,7 @@ class GCSBucketClient(StorageClient):
 
     async def upload_content(self, content: str, dest: Path):
         blob = self.bucket.blob(dest.as_posix())
-        logger.debug(f"uploading content to {dest}")
+        logger.debug("uploading content to {}", dest)
         await self._async_upload_from_from_string(blob, content)
 
     async def list(self, prefix: Optional[str] = None) -> List[Path]:

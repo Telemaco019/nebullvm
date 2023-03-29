@@ -1,26 +1,24 @@
 import logging
-from unittest.mock import patch
 
 import surfer.log
+from surfer import log
 
 
-@patch("surfer.log.logger")
-def test_configure_debug_mode__set_debug_true(logger_mock):
+def test_configure_debug_mode__set_debug_true():
+    original_level = log.level
     # Given
     debug = True
     # When
-    surfer.log.configure_debug_mode(debug)
+    surfer.log.setup_logger(debug)
     # Then
-    assert logger_mock.level == logging.DEBUG
+    assert log.level == logging.DEBUG
+    log.level = original_level
 
 
-@patch("surfer.log.logger")
-def test_configure_debug_mode__set_debug_false(logger_mock):
+def test_configure_debug_mode__set_debug_false():
     # Given
-    debug = False
-    original_logger_level = 1
-    logger_mock.level = original_logger_level
+    original_level = log.level
     # When
-    surfer.log.configure_debug_mode(debug)
+    surfer.log.setup_logger(debug=False)
     # Then
-    assert logger_mock.level == original_logger_level
+    assert log.level == original_level

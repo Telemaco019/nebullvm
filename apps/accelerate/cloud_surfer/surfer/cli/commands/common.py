@@ -6,7 +6,7 @@ from pydantic.error_wrappers import ValidationError
 from surfer.common import constants
 from surfer.common.schemas import SurferConfig
 from surfer.core.config import SurferConfigManager
-from surfer.log import logger
+from surfer.log import console
 
 config_manager = SurferConfigManager()
 
@@ -15,11 +15,11 @@ def must_load_config() -> SurferConfig:
     try:
         config = config_manager.load_config()
     except ValidationError as e:
-        logger.error(e)
+        console.error(e)
         raise typer.Exit(1)
 
     if config is None:
-        logger.error(
+        console.error(
             "Cloud Surfer is not initialized. Please run `surfer init` first.",
         )
         raise typer.Exit(1)

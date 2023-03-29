@@ -24,7 +24,7 @@ from surfer.common.schemas import ExperimentConfig
 from surfer.computing.schemas import VMInfo
 from surfer.core.experiments import ExperimentDetails
 from surfer.core.experiments import SubmitExperimentRequest
-from surfer.log import logger
+from surfer.log import console
 
 
 def _new_experiment_service() -> surfer.core.experiments.ExperimentService:
@@ -123,7 +123,7 @@ def _load_experiments_config(path: Path) -> ExperimentConfig:
             content = yaml.safe_load(f.read())
             return ExperimentConfig.parse_obj(content)
     except ValidationError as e:
-        logger.error("Error parsing experiment config", e)
+        console.error("Error parsing experiment config", e)
         raise typer.Exit(1)
 
 
@@ -137,13 +137,13 @@ async def submit_experiment(name: str, config_path: Path):
         name=name,
     )
     try:
-        logger.info("Submitting experiment...")
+        console.print("Submitting experiment...")
         await experiment_service.submit(req)
-        logger.info("Experiment submitted successfully :tada:")
-        logger.info("\nYou can check the status of the experiment with:")
+        console.print("Experiment submitted successfully :tada:")
+        console.print("\nYou can check the status of the experiment with:")
         print(Panel(f"> [green]surfer experiment describe {req.name}[/green]"))
     except (InternalError, ValueError) as e:
-        logger.error(f"Failed to submit experiment: {e}")
+        console.error(f"Failed to submit experiment: {e}")
         raise typer.Exit(1)
 
 
@@ -154,12 +154,12 @@ async def stop_experiment(name: str):
     try:
         await experiment_service.stop(name)
     except NotFoundError:
-        logger.error("Experiment not found")
+        console.error("Experiment not found")
         raise typer.Exit(1)
     except (InternalError, ValueError) as e:
-        logger.error(f"Failed to stop experiment: {e}")
+        console.error(f"Failed to stop experiment: {e}")
         raise typer.Exit(1)
-    logger.info("Experiment stopped")
+    console.print("Experiment stopped")
 
 
 def _render_optimization_result(res: schemas.OptimizationResult):
@@ -353,10 +353,10 @@ async def describe_experiment(name: str):
     try:
         experiment: ExperimentDetails = await experiment_service.get(name)
     except InternalError as e:
-        logger.error(f"Failed to fetch experiment: {e}")
+        console.error(f"Failed to fetch experiment: {e}")
         raise typer.Exit(1)
     if experiment is None:
-        logger.error("Experiment not found")
+        console.error("Experiment not found")
         raise typer.Exit(1)
     # Render
     _render_experiment_summary(experiment)
@@ -371,9 +371,9 @@ async def delete_experiment(name: str):
     try:
         await experiment_service.delete(name)
     except NotFoundError:
-        logger.error("Experiment not found")
+        console.error("Experiment not found")
         raise typer.Exit(1)
     except InternalError as e:
-        logger.error(f"Failed to delete experiment: {e}")
+        console.error(f"Failed to delete experiment: {e}")
         raise typer.Exit(1)
-    logger.info("Experiment deleted")
+    console.print("Experiment deleted")

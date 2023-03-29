@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 from typing import Optional, List
 
 import ray
+from loguru import logger
 from ray import remote
 
 from nebullvm.tools.base import DeviceType, Device
@@ -21,7 +22,6 @@ from surfer.computing.clusters import RayCluster, Accelerator
 from surfer.computing.models import VMProvider
 from surfer.computing.schemas import VMPricing
 from surfer.computing.services import PricingService
-from surfer.log import logger
 from surfer.optimization import converters
 from surfer.optimization.models import OptimizeInferenceResult, OptimizedModel
 from surfer.optimization.operations import (
@@ -44,13 +44,13 @@ class RunConfig:
 
     @cached_property
     def model_loader(self) -> ModelLoader:
-        logger.info("loading model loader", self.model_loader_path)
+        logger.info("loading model loader {}", self.model_loader_path)
         loader = ClassLoader[ModelLoader](ModelLoader)
         return loader.load_from_module(self.model_loader_path)()
 
     @cached_property
     def data_loader(self) -> DataLoader:
-        logger.info("loading data loader", self.data_loader_path)
+        logger.info("loading data loader {}", self.data_loader_path)
         loader = ClassLoader[DataLoader](DataLoader)
         return loader.load_from_module(self.data_loader_path)()
 
@@ -58,7 +58,7 @@ class RunConfig:
     def model_evaluator(self) -> Optional[ModelEvaluator]:
         if self.model_evaluator_path is None:
             return None
-        logger.info("loading model evaluator", self.model_evaluator_path)
+        logger.info("loading model evaluator {}", self.model_evaluator_path)
         loader = ClassLoader[ModelEvaluator](ModelEvaluator)
         return loader.load_from_module(self.model_evaluator_path)()
 
@@ -202,7 +202,7 @@ class InferenceOptimizationTask:
                 )
             )
         except InternalError as e:
-            logger.error("failed to get pricing info", e)
+            logger.exception("failed to get pricing info", e)
         result.vm_info.pricing = pricing
         return result.json()
 
@@ -262,10 +262,10 @@ class RayOrchestrator:
                 continue
             tasks.append(InferenceOptimizationTask(node))
         # Submit
-        logger.info("submitting {} tasks".format(len(tasks)))
+        logger.info("submitting {} tasks", tasks)
         objs = []
         for t in tasks:
-            logger.debug("submitting task", t)
+            logger.debug("submitting task {}", t)
             o = t.run(
                 storage_config=self.surfer_config.storage,
                 results_dir=results_dir,
@@ -276,9 +276,9 @@ class RayOrchestrator:
             objs.append(o)
         logger.info("waiting for results...")
         results_json = ray.get(objs)
-        logger.info("collected {} results".format(len(results_json)))
+        logger.info("collected {} results", results_json)
         if len(results_json) == 0:
-            logger.warn("optimization tasks produced no results")
+            logger.warning("optimization tasks produced no results")
             return
         # Deserialize results
         results = [schemas.OptimizationResult.parse_raw(r) for r in results_json]
@@ -286,5 +286,5 @@ class RayOrchestrator:
         model = config.model_loader.load_model()
         model_name = nebullvm_utils.get_model_name(model)
         # Save results
-        logger.info("saving results to directory {}".format(results_dir))
+        logger.info("saving results to directory {}", results_dir)
         self.save_results(results_dir, model_name, results)

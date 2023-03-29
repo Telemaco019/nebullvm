@@ -8,7 +8,7 @@ from typing import Dict
 
 import aiofiles
 
-from surfer.log import logger
+from surfer.log import console
 
 
 @asynccontextmanager
@@ -104,7 +104,7 @@ class SpeedsterResultsCollector:
             )
             raise ValueError(msg)
         if len(result_riles) > 1:
-            logger.warn(
+            console.warn(
                 f"found {len(result_riles)} Nebullvm results file, "
                 f"using only {result_riles[0]}"
             )
