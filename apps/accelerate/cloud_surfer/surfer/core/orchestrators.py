@@ -268,6 +268,7 @@ class RayOrchestrator:
             logger.debug("submitting task", t)
             o = t.run(
                 storage_config=self.surfer_config.storage,
+
                 results_dir=results_dir,
                 run_config=config,
                 node=t.node,

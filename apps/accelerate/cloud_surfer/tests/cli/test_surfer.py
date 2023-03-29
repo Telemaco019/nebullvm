@@ -124,6 +124,7 @@ class TestInitSurferConfigCli(unittest.TestCase):
 
     @patch.object(SurferConfigManager, "config_exists", return_value=True)
     @patch.object(SurferConfigManager, "save_config")
+    @patch.object(SurferConfigManager, "load_config")
     def test_config_exists_should_ask_confirm(
         self,
         *_,
