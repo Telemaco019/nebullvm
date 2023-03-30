@@ -6,7 +6,6 @@ from typing import Any
 
 from loguru import logger
 
-
 levels_map = {
     0: "ERROR",
     1: "WARNING",
@@ -28,7 +27,7 @@ def setup_logger():
     logger.remove()
     logger.add(
         sys.stdout,
-        colorize=True,
+        colorize=None,
         format=(
             "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
             "<level>{level: <8}</level> | <level>{message}</level>"
